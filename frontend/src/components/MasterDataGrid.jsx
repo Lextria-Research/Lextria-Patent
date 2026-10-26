@@ -9,7 +9,7 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Search, Filter, Download, Upload, Eye, ArrowUpDown, Clock, AlertTriangle, CheckCircle,
-  FileText, ExternalLink, RefreshCw
+  FileText, ExternalLink, RefreshCw, Plus, Edit3
 } from 'lucide-react';
 
 export const VIEW_PRESETS = {
@@ -27,7 +27,12 @@ export default function MasterDataGrid({
   onOpenImport,
   onExportExcel,
   activeKpiFilter,
-  onClearKpiFilter
+  onClearKpiFilter,
+  onOpenCreate,
+  onOpenEdit,
+  onOpenTimeline,
+  userRole = 'SUPER_ADMIN',
+  selectedDrafter = null,
 }) {
   const [currentPreset, setCurrentPreset] = useState(VIEW_PRESETS.ALL_MASTER);
   const [globalFilter, setGlobalFilter] = useState('');
@@ -97,8 +102,13 @@ export default function MasterDataGrid({
       );
     }
 
+    // Role-based drafter filtering
+    if (userRole === 'DRAFTER' && selectedDrafter) {
+      data = data.filter((r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase());
+    }
+
     return data;
-  }, [records, activeKpiFilter, currentPreset, maheFilter, statusFilter, globalFilter]);
+  }, [records, activeKpiFilter, currentPreset, maheFilter, statusFilter, globalFilter, userRole, selectedDrafter]);
 
   // Unique statuses for filter dropdown
   const statusOptions = useMemo(() => {
@@ -292,15 +302,79 @@ export default function MasterDataGrid({
       {
         accessorKey: 'assigned_to',
         header: 'Assigned To',
-        size: 140,
+        size: 130,
         cell: ({ row }) => (
           <span style={{ fontSize: '12px', fontWeight: 600 }}>
             {row.original.assigned_to || 'Unassigned'}
           </span>
         ),
       },
+      // Row Actions
+      {
+        id: 'actions',
+        header: 'Actions',
+        size: 110,
+        cell: ({ row }) => (
+          <div
+            style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => onSelectRecord(row.original)}
+              style={{
+                padding: '4px 6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="View Details"
+            >
+              <Eye size={13} />
+            </button>
+
+            <button
+              onClick={() => onOpenTimeline && onOpenTimeline(row.original)}
+              style={{
+                padding: '4px 6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--accent)',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+              }}
+              title="Master Prosecution Timeline"
+            >
+              <Clock size={13} />
+            </button>
+
+            <button
+              onClick={() => onOpenEdit && onOpenEdit(row.original)}
+              style={{
+                padding: '4px 6px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#fff',
+                cursor: 'pointer',
+                borderRadius: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                boxShadow: '0 1px 2px rgba(16, 185, 129, 0.25)',
+              }}
+              title="Edit Application"
+            >
+              <Edit3 size={13} />
+            </button>
+          </div>
+        ),
+      },
     ];
-  }, []);
+  }, [onSelectRecord, onOpenTimeline, onOpenEdit]);
 
   const table = useReactTable({
     data: filteredData,
@@ -368,8 +442,30 @@ export default function MasterDataGrid({
           ))}
         </div>
 
-        {/* Action Buttons: Import, Export */}
+        {/* Action Buttons: Create, Import, Export */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onOpenCreate && (
+            <button
+              onClick={onOpenCreate}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
+              }}
+            >
+              <Plus size={14} /> New Application
+            </button>
+          )}
+
           <button
             onClick={onOpenImport}
             style={{

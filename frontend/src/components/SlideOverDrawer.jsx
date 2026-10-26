@@ -1,10 +1,16 @@
 import React, { useState } from 'react';
 import {
   X, Copy, Check, ExternalLink, Calendar, FileText, User, AlertCircle,
-  Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle
+  Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle, Edit3
 } from 'lucide-react';
 
-export default function SlideOverDrawer({ record, onClose, onSaveManualNotes }) {
+export default function SlideOverDrawer({
+  record,
+  onClose,
+  onSaveManualNotes,
+  onOpenEdit,
+  onOpenTimeline
+}) {
   if (!record) return null;
 
   const [copiedField, setCopiedField] = useState(null);
@@ -150,19 +156,66 @@ export default function SlideOverDrawer({ record, onClose, onSaveManualNotes }) 
           </div>
         </div>
 
-        <button
-          onClick={onClose}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--muted)',
-            cursor: 'pointer',
-            padding: '4px',
-            borderRadius: '6px'
-          }}
-        >
-          <X size={20} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {onOpenTimeline && (
+            <button
+              onClick={() => onOpenTimeline(record)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--accent)',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+              }}
+              title="View Complete Statutory Prosecution Timeline"
+            >
+              <Clock size={14} /> Timeline
+            </button>
+          )}
+
+          {onOpenEdit && (
+            <button
+              onClick={() => onOpenEdit(record)}
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #10B981, #059669)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
+              }}
+              title="Edit Application Details"
+            >
+              <Edit3 size={14} /> Edit
+            </button>
+          )}
+
+          <button
+            onClick={onClose}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--muted)',
+              cursor: 'pointer',
+              padding: '6px',
+              borderRadius: '6px',
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
