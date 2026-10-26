@@ -487,9 +487,18 @@ export default function MasterDataGrid({
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 48,
-    overscan: 15,
+    estimateSize: () => 52,
+    overscan: 10,
   });
+
+  const virtualRows = rowVirtualizer.getVirtualItems();
+  const totalSize = rowVirtualizer.getTotalSize();
+
+  const paddingTop = virtualRows.length > 0 ? virtualRows[0]?.start || 0 : 0;
+  const paddingBottom =
+    virtualRows.length > 0
+      ? totalSize - (virtualRows[virtualRows.length - 1]?.end || 0)
+      : 0;
 
   const selectedRowsList = useMemo(() => {
     return Object.keys(rowSelection)
@@ -858,24 +867,28 @@ export default function MasterDataGrid({
             ))}
           </thead>
 
-          {/* Virtualized Rows */}
+          {/* Virtualized Rows in Normal Flow with Dynamic Spacers */}
           <tbody>
-            {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+            {paddingTop > 0 && (
+              <tr style={{ height: `${paddingTop}px`, display: 'flex', width: '100%' }}>
+                <td style={{ height: `${paddingTop}px`, padding: 0, border: 'none', width: '100%' }} />
+              </tr>
+            )}
+            {virtualRows.map((virtualRow) => {
               const row = rows[virtualRow.index];
+              if (!row) return null;
               const isSelected = selectedCode === row.original.project_code || row.getIsSelected();
 
               return (
                 <tr
                   key={row.id}
+                  ref={rowVirtualizer.measureElement}
+                  data-index={virtualRow.index}
                   onClick={() => onSelectRecord(row.original)}
                   style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
                     display: 'flex',
+                    width: '100%',
+                    minHeight: `${virtualRow.size}px`,
                     background: isSelected ? 'var(--accent-soft)' : (virtualRow.index % 2 === 0 ? 'var(--surface)' : 'var(--page)'),
                     cursor: 'pointer',
                     transition: 'background 0.15s ease',
@@ -909,6 +922,33 @@ export default function MasterDataGrid({
                 </tr>
               );
             })}
+            {paddingBottom > 0 && (
+              <tr style={{ height: `${paddingBottom}px`, display: 'flex', width: '100%' }}>
+                <td style={{ height: `${paddingBottom}px`, padding: 0, border: 'none', width: '100%' }} />
+              </tr>
+            )}
+            {rows.length === 0 && (
+              <tr style={{ display: 'flex', width: '100%' }}>
+                <td
+                  style={{
+                    padding: '60px 20px',
+                    textAlign: 'center',
+                    color: 'var(--muted)',
+                    width: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    border: 'none',
+                  }}
+                >
+                  <FileText size={36} style={{ opacity: 0.35, marginBottom: '4px' }} />
+                  <span style={{ fontSize: '14px', fontWeight: 700, color: 'var(--ink)' }}>No patent applications found</span>
+                  <span style={{ fontSize: '12px', color: 'var(--muted)' }}>Try adjusting your search query, status filter, or tag selection.</span>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
