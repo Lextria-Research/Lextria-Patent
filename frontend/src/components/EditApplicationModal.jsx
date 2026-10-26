@@ -1,9 +1,10 @@
 // frontend/src/components/EditApplicationModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
-  X, Save, Edit3, Calendar, User, Tag,
-  ExternalLink, CheckCircle2, AlertTriangle, Layers
+  X, Save, Edit3, Calendar, User, Tag as TagIcon,
+  ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building
 } from 'lucide-react';
+import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
 
 const DRAFTERS = [
   'Anusha', 'Ayush', 'Abhishek', 'Fiona',
@@ -28,7 +29,14 @@ const COLOR_CODES = [
   { value: 'GREY', label: 'Grey (Abandoned / Closed)' },
 ];
 
-export default function EditApplicationModal({ isOpen, onClose, record, onUpdate }) {
+export default function EditApplicationModal({
+  isOpen,
+  onClose,
+  record,
+  onUpdate,
+  clients = [],
+  tags = []
+}) {
   if (!isOpen || !record) return null;
 
   const [formData, setFormData] = useState({
@@ -46,6 +54,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
     workdrive_folder_url: '',
     inventors_summary: '',
     ps_filing_date: '',
+    post_dated_date: '',
     cs_filing_date: '',
     publication_date: '',
     fer_notice_date: '',
@@ -61,6 +70,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
     status_notes: '',
     suggested_action: '',
     issue: '',
+    selectedTags: [],
   });
 
   const [activeTab, setActiveTab] = useState('BASIC'); // BASIC, DATES, FORMS, NOTES
@@ -69,6 +79,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
   useEffect(() => {
     if (record) {
+      const rTags = Array.isArray(record.tags) ? record.tags : (record.classification ? [record.classification] : []);
       setFormData({
         title: record.title || '',
         application_number: record.application_number || '',
@@ -84,6 +95,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
         workdrive_folder_url: record.workdrive_folder_url || '',
         inventors_summary: record.inventors_summary || '',
         ps_filing_date: record.ps_filing_date ? record.ps_filing_date.slice(0, 10) : '',
+        post_dated_date: record.post_dated_date ? record.post_dated_date.slice(0, 10) : '',
         cs_filing_date: record.cs_filing_date ? record.cs_filing_date.slice(0, 10) : '',
         publication_date: record.publication_date ? record.publication_date.slice(0, 10) : '',
         fer_notice_date: record.fer_notice_date ? record.fer_notice_date.slice(0, 10) : '',
@@ -99,9 +111,15 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
         status_notes: record.status_notes || '',
         suggested_action: record.suggested_action || '',
         issue: record.issue || '',
+        selectedTags: rTags,
       });
     }
   }, [record]);
+
+  // Live Statutory Deadline Calculations (Requirements 4, 5, 6)
+  const statutoryCalculations = useMemo(() => {
+    return calculateAllStatutoryDeadlines(formData);
+  }, [formData]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -111,6 +129,16 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
     }));
   };
 
+  const toggleTag = (tagName) => {
+    setFormData((prev) => {
+      const exists = prev.selectedTags.includes(tagName);
+      const updated = exists
+        ? prev.selectedTags.filter((t) => t !== tagName)
+        : [...prev.selectedTags, tagName];
+      return { ...prev, selectedTags: updated };
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
@@ -118,13 +146,25 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
       return;
     }
 
+    // Validate Section 17 Post-Dating limitation
+    if (formData.post_dated_date && formData.ps_filing_date) {
+      const validation = validateSection17PostDating(formData.ps_filing_date, formData.post_dated_date);
+      if (!validation.isValid) {
+        setError(validation.message);
+        return;
+      }
+    }
+
     try {
       setIsSubmitting(true);
       setError(null);
-      await onUpdate(record.project_code, formData);
+      await onUpdate(record.project_code, {
+        ...formData,
+        tags: formData.selectedTags,
+      });
       onClose();
     } catch (err) {
-      setError(err.message || 'Failed to update application.');
+      setError(err.message || 'Failed to update patent application.');
     } finally {
       setIsSubmitting(false);
     }
@@ -150,8 +190,8 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
           background: 'var(--surface)',
           borderRadius: '12px',
           width: '100%',
-          maxWidth: '800px',
-          maxHeight: '90vh',
+          maxWidth: '820px',
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
@@ -189,27 +229,26 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h2 style={{ fontSize: '17px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                  Edit Application
+                  Edit Application: {record.project_code}
                 </h2>
                 <span
                   style={{
                     fontSize: '11px',
-                    fontWeight: 800,
                     padding: '2px 8px',
-                    borderRadius: '4px',
-                    background: 'var(--accent-soft)',
-                    color: 'var(--accent)',
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    background: 'rgba(59, 130, 246, 0.15)',
+                    color: '#2563EB',
                   }}
                 >
-                  {record.project_code}
+                  {record.specification_type || 'PS'}
                 </span>
               </div>
               <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                {record.application_number || 'Application number unassigned'} · {record.applicant_name}
+                App No: {record.application_number || 'Not yet assigned'} · Assigned to: {formData.assigned_to || 'Unassigned'}
               </p>
             </div>
           </div>
-
           <button
             onClick={onClose}
             style={{
@@ -230,31 +269,33 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
           style={{
             display: 'flex',
             borderBottom: '1px solid var(--line)',
-            background: 'var(--page)',
+            background: 'var(--surface)',
             padding: '0 24px',
+            gap: '16px',
           }}
         >
           {[
-            { id: 'BASIC', label: 'General & Triage' },
-            { id: 'DATES', label: 'Prosecution Dates' },
-            { id: 'FORMS', label: 'Statutory Forms' },
-            { id: 'NOTES', label: 'Notes & Vault' },
-          ].map((tab) => (
+            { id: 'BASIC', label: '1. Basic Info & Triage' },
+            { id: 'DATES', label: '2. Prosecution Dates & Post-Date' },
+            { id: 'FORMS', label: '3. Statutory Forms (1, 26, 3, 18)' },
+            { id: 'NOTES', label: '4. Internal Notes & Actions' },
+          ].map((t) => (
             <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              key={t.id}
+              type="button"
+              onClick={() => setActiveTab(t.id)}
               style={{
-                padding: '10px 16px',
+                padding: '12px 0',
+                background: 'none',
                 border: 'none',
-                background: 'transparent',
-                borderBottom: activeTab === tab.id ? '2px solid var(--accent)' : '2px solid transparent',
-                color: activeTab === tab.id ? 'var(--accent)' : 'var(--muted)',
-                fontWeight: activeTab === tab.id ? 800 : 600,
+                borderBottom: activeTab === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+                color: activeTab === t.id ? 'var(--accent)' : 'var(--muted)',
+                fontWeight: activeTab === t.id ? 800 : 600,
                 fontSize: '13px',
                 cursor: 'pointer',
               }}
             >
-              {tab.label}
+              {t.label}
             </button>
           ))}
         </div>
@@ -281,10 +322,10 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
             </div>
           )}
 
-          {/* TAB 1: General & Triage */}
+          {/* TAB 1: BASIC INFO & TRIAGE */}
           {activeTab === 'BASIC' && (
-            <div>
-              <div style={{ marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                   Invention Title *
                 </label>
@@ -300,15 +341,16 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                     border: '1px solid var(--line)',
                     background: 'var(--page)',
                     fontSize: '13px',
+                    resize: 'vertical',
                   }}
                   required
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Application Number
+                    Application Number (IPO)
                   </label>
                   <input
                     type="text"
@@ -335,7 +377,6 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                     name="patent_number"
                     value={formData.patent_number}
                     onChange={handleChange}
-                    placeholder="e.g. 542190"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -371,7 +412,61 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+              {/* Client & Tags Selection */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                    Applicant Name (Interconnected Client)
+                  </label>
+                  <input
+                    type="text"
+                    name="applicant_name"
+                    value={formData.applicant_name}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '13px',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                    Assigned Tags (Requirement 10)
+                  </label>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                    {['Priority', 'Ticket Raised', 'Critical', 'Political', ...tags.filter(t => !['priority','ticket raised','critical','political'].includes(t.name.toLowerCase())).map(t => t.name)].map((tg) => {
+                      const isSelected = formData.selectedTags.includes(tg);
+                      return (
+                        <button
+                          key={tg}
+                          type="button"
+                          onClick={() => toggleTag(tg)}
+                          style={{
+                            padding: '4px 10px',
+                            borderRadius: '16px',
+                            border: `1px solid ${isSelected ? '#2563EB' : 'var(--line)'}`,
+                            background: isSelected ? 'rgba(37, 99, 235, 0.15)' : 'var(--page)',
+                            color: isSelected ? '#1D4ED8' : 'var(--muted)',
+                            fontSize: '11px',
+                            fontWeight: isSelected ? 800 : 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {tg}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drafter & Triage Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                     Assigned Drafter
@@ -390,7 +485,6 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                       fontWeight: 700,
                     }}
                   >
-                    <option value="">-- Unassigned --</option>
                     {DRAFTERS.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
@@ -441,81 +535,13 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                   />
                 </div>
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Filing Receipt Status
-                  </label>
-                  <select
-                    name="application_filing_receipt_status"
-                    value={formData.application_filing_receipt_status}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  >
-                    <option value="RECEIVED">RECEIVED (Receipt on file)</option>
-                    <option value="PENDING">PENDING (Awaiting Receipt)</option>
-                    <option value="NOT_RECEIVED">NOT RECEIVED (Overdue Alert)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Classification / Department
-                  </label>
-                  <input
-                    type="text"
-                    name="classification"
-                    value={formData.classification}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Inventors (Comma-separated)
-                </label>
-                <input
-                  type="text"
-                  name="inventors_summary"
-                  value={formData.inventors_summary}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--page)',
-                    fontSize: '13px',
-                  }}
-                />
-              </div>
             </div>
           )}
 
-          {/* TAB 2: Prosecution Dates */}
+          {/* TAB 2: PROSECUTION DATES & POST-DATING */}
           {activeTab === 'DATES' && (
-            <div>
-              <p style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
-                Changing filing and notice dates automatically re-calculates 12-month CS, 6-month FER, and 15-day Written Submission statutory deadlines.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                     PS Filing Date
@@ -537,6 +563,26 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                 </div>
 
                 <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: '#7C3AED' }}>
+                    Sec 17 Post-Date (Max 6m)
+                  </label>
+                  <input
+                    type="date"
+                    name="post_dated_date"
+                    value={formData.post_dated_date}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid #C4B5FD',
+                      background: 'rgba(139, 92, 246, 0.05)',
+                      fontSize: '13px',
+                    }}
+                  />
+                </div>
+
+                <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                     CS Filing Date
                   </label>
@@ -544,6 +590,103 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                     type="date"
                     name="cs_filing_date"
                     value={formData.cs_filing_date}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '13px',
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Live Statutory Deadlines Preview Card */}
+              <div
+                style={{
+                  padding: '14px 18px',
+                  borderRadius: '8px',
+                  background: 'rgba(37, 99, 235, 0.06)',
+                  border: '1px solid rgba(37, 99, 235, 0.2)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 800, color: '#1D4ED8', marginBottom: '8px' }}>
+                  <Clock size={14} /> LIVE STATUTORY DEADLINES (INDIAN PATENTS ACT)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '12px' }}>
+                  <div>
+                    <span style={{ color: 'var(--muted)', display: 'block', fontSize: '10.5px' }}>CS Deadline:</span>
+                    <strong style={{ color: statutoryCalculations.cs_deadline ? '#DC2626' : 'var(--muted)' }}>
+                      {statutoryCalculations.cs_deadline || '—'}
+                    </strong>
+                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
+                      {formData.post_dated_date ? '12m from post-date' : '12m from PS (Sec 9(1))'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ color: 'var(--muted)', display: 'block', fontSize: '10.5px' }}>Form 1 (POR):</span>
+                    <strong style={{ color: '#059669' }}>
+                      {statutoryCalculations.form_1_deadline || '—'}
+                    </strong>
+                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
+                      6m from filing (Rule 10)
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ color: 'var(--muted)', display: 'block', fontSize: '10.5px' }}>Form 26 (POA):</span>
+                    <strong style={{ color: '#059669' }}>
+                      {statutoryCalculations.form_26_deadline || '—'}
+                    </strong>
+                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
+                      3m from filing (Rule 135)
+                    </span>
+                  </div>
+
+                  <div>
+                    <span style={{ color: 'var(--muted)', display: 'block', fontSize: '10.5px' }}>FER Reply Deadline:</span>
+                    <strong style={{ color: statutoryCalculations.fer_reply_deadline ? '#DC2626' : 'var(--muted)' }}>
+                      {statutoryCalculations.fer_reply_deadline || '—'}
+                    </strong>
+                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
+                      6m from FER (Sec 21)
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                    FER Notice Date
+                  </label>
+                  <input
+                    type="date"
+                    name="fer_notice_date"
+                    value={formData.fer_notice_date}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '13px',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                    FER Reply Filing Date
+                  </label>
+                  <input
+                    type="date"
+                    name="fer_reply_filing_date"
+                    value={formData.fer_reply_filing_date}
                     onChange={handleChange}
                     style={{
                       width: '100%',
@@ -577,52 +720,10 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px', marginBottom: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    FER Notice Issued Date
-                  </label>
-                  <input
-                    type="date"
-                    name="fer_notice_date"
-                    value={formData.fer_notice_date}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    FER Reply Filed Date
-                  </label>
-                  <input
-                    type="date"
-                    name="fer_reply_filing_date"
-                    value={formData.fer_reply_filing_date}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
-                </div>
-              </div>
-
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Controller Hearing Date
+                    Hearing Date
                   </label>
                   <input
                     type="date"
@@ -642,7 +743,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Written Submission (WS) Filed
+                    Written Submissions Filing Date
                   </label>
                   <input
                     type="date"
@@ -662,7 +763,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Patent Grant Date
+                    Grant Date
                   </label>
                   <input
                     type="date"
@@ -683,16 +784,13 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
             </div>
           )}
 
-          {/* TAB 3: Statutory Forms */}
+          {/* TAB 3: STATUTORY FORMS */}
           {activeTab === 'FORMS' && (
-            <div>
-              <p style={{ fontSize: '12px', color: 'var(--muted)', marginBottom: '16px' }}>
-                Track Form 1 Proof of Right (6 months), Form 26 POA (3 months), Form 3 Foreign Filings, and Form 18 RFE.
-              </p>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 1 (Proof of Right) Date
+                    Form 1 (Proof of Right Filing Date)
                   </label>
                   <input
                     type="date"
@@ -712,7 +810,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 26 (Power of Attorney) Date
+                    Form 26 (Power of Attorney Filing Date)
                   </label>
                   <input
                     type="date"
@@ -732,7 +830,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 3 (Section 8) Date
+                    Form 3 (Foreign Filings Date)
                   </label>
                   <input
                     type="date"
@@ -754,7 +852,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 9 (Early Publication) Date
+                    Form 9 (Early Publication Filing Date)
                   </label>
                   <input
                     type="date"
@@ -774,7 +872,7 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 18 (RFE Request) Date
+                    Form 18 / 18A (RFE Filing Date)
                   </label>
                   <input
                     type="date"
@@ -795,59 +893,18 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
             </div>
           )}
 
-          {/* TAB 4: Notes & Vault */}
+          {/* TAB 4: INTERNAL NOTES & ACTIONS */}
           {activeTab === 'NOTES' && (
-            <div>
-              <div style={{ marginBottom: '14px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Zoho WorkDrive Cloud Folder URL
-                </label>
-                <input
-                  type="url"
-                  name="workdrive_folder_url"
-                  value={formData.workdrive_folder_url}
-                  onChange={handleChange}
-                  placeholder="https://workdrive.zohoexternal.com/folder/..."
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--page)',
-                    fontSize: '13px',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Status Notes / Internal Remarks
+                  Status Notes / Senior Remarks
                 </label>
                 <textarea
                   name="status_notes"
                   value={formData.status_notes}
                   onChange={handleChange}
-                  rows={2}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--page)',
-                    fontSize: '13px',
-                  }}
-                />
-              </div>
-
-              <div style={{ marginBottom: '14px' }}>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Suggested Action
-                </label>
-                <textarea
-                  name="suggested_action"
-                  value={formData.suggested_action}
-                  onChange={handleChange}
-                  rows={2}
+                  rows={3}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -861,13 +918,33 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Operational Issue / Blocker
+                  Suggested Action
                 </label>
-                <textarea
+                <input
+                  type="text"
+                  name="suggested_action"
+                  value={formData.suggested_action}
+                  onChange={handleChange}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--page)',
+                    fontSize: '13px',
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+                  Issue / Blocker
+                </label>
+                <input
+                  type="text"
                   name="issue"
                   value={formData.issue}
                   onChange={handleChange}
-                  rows={2}
                   style={{
                     width: '100%',
                     padding: '8px 12px',
@@ -881,30 +958,28 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
             </div>
           )}
 
-          {/* Footer Actions */}
+          {/* Form Actions */}
           <div
             style={{
-              marginTop: '24px',
-              paddingTop: '16px',
+              paddingTop: '20px',
               borderTop: '1px solid var(--line)',
               display: 'flex',
-              alignItems: 'center',
               justifyContent: 'flex-end',
               gap: '12px',
+              marginTop: '16px',
             }}
           >
             <button
               type="button"
               onClick={onClose}
-              disabled={isSubmitting}
               style={{
                 padding: '9px 18px',
                 borderRadius: '6px',
                 border: '1px solid var(--line)',
-                background: 'var(--page)',
+                background: 'var(--surface)',
                 color: 'var(--ink)',
                 fontSize: '13px',
-                fontWeight: 700,
+                fontWeight: 600,
                 cursor: 'pointer',
               }}
             >
@@ -920,21 +995,16 @@ export default function EditApplicationModal({ isOpen, onClose, record, onUpdate
                 background: 'linear-gradient(135deg, #10B981, #059669)',
                 color: '#fff',
                 fontSize: '13px',
-                fontWeight: 800,
-                cursor: 'pointer',
+                fontWeight: 700,
+                cursor: isSubmitting ? 'wait' : 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)',
+                boxShadow: '0 2px 4px rgba(16, 185, 129, 0.25)',
               }}
             >
-              {isSubmitting ? (
-                <>Saving Changes...</>
-              ) : (
-                <>
-                  <Save size={16} /> Save Changes
-                </>
-              )}
+              <Save size={15} />
+              {isSubmitting ? 'Saving Changes...' : 'Save & Recalculate Deadlines'}
             </button>
           </div>
         </form>

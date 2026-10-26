@@ -3,13 +3,13 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
-  getFilteredRowModel,
   flexRender,
 } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
-  Search, Filter, Download, Upload, Eye, ArrowUpDown, Clock, AlertTriangle, CheckCircle,
-  FileText, ExternalLink, RefreshCw, Plus, Edit3
+  Search, Filter, Download, Upload, Eye, ArrowUpDown, Clock,
+  FileText, ExternalLink, Plus, Edit3, Tag as TagIcon,
+  CheckSquare, Square, User, Building, X
 } from 'lucide-react';
 
 export const VIEW_PRESETS = {
@@ -26,6 +26,7 @@ export default function MasterDataGrid({
   selectedCode,
   onOpenImport,
   onExportExcel,
+  onOpenExportReport,
   activeKpiFilter,
   onClearKpiFilter,
   onOpenCreate,
@@ -33,14 +34,18 @@ export default function MasterDataGrid({
   onOpenTimeline,
   userRole = 'SUPER_ADMIN',
   selectedDrafter = null,
+  clients = [],
+  tags = [],
 }) {
   const [currentPreset, setCurrentPreset] = useState(VIEW_PRESETS.ALL_MASTER);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [maheFilter, setMaheFilter] = useState('ALL'); // ALL, MAHE, NON_MAHE
+  const [clientFilter, setClientFilter] = useState('ALL');
+  const [tagFilter, setTagFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [sorting, setSorting] = useState([{ id: 'project_code', desc: false }]);
+  const [rowSelection, setRowSelection] = useState({});
 
-  // Filter records based on active KPI card filter
+  // Filter records based on role, KPI filter, preset, dropdowns, and search
   const filteredData = useMemo(() => {
     let data = records;
 
@@ -76,19 +81,38 @@ export default function MasterDataGrid({
     if (currentPreset === VIEW_PRESETS.MAHE_TTO) {
       data = data.filter((r) => r.is_mahe);
     } else if (currentPreset === VIEW_PRESETS.EXTERNAL_PORTFOLIO) {
-      data = data.filter((r) => r.record_category === 'EXTERNAL_TAKEOVER' || r.project_code.startsWith('EX-') || r.project_code.startsWith('GR'));
+      data = data.filter((r) => r.record_category === 'EXTERNAL_TAKEOVER' || (r.project_code && (r.project_code.startsWith('EX-') || r.project_code.startsWith('GR'))));
     } else if (currentPreset === VIEW_PRESETS.WORKSHOP_TRIAGE) {
-      data = data.filter((r) => r.record_category === 'WORKSHOP_IDF' || ['DA', 'KM', 'MB', 'MS', 'MI'].some((p) => r.project_code.startsWith(p)));
+      data = data.filter((r) => r.record_category === 'WORKSHOP_IDF' || (r.project_code && ['DA', 'KM', 'MB', 'MS', 'MI'].some((p) => r.project_code.startsWith(p))));
     } else if (currentPreset === VIEW_PRESETS.DEADLINES_BOTTLENECK) {
       data = data.filter((r) => r.cs_deadline || r.fer_reply_deadline || r.ws_deadline || r.f1_status === 'Delayed' || r.f26_status === 'Delayed');
     }
 
-    // MAHE dropdown filter
-    if (maheFilter === 'MAHE') data = data.filter((r) => r.is_mahe);
-    if (maheFilter === 'NON_MAHE') data = data.filter((r) => !r.is_mahe);
+    // Client dropdown filter (Interconnected with core.clients / applicant_name)
+    if (clientFilter !== 'ALL') {
+      data = data.filter((r) => {
+        const clientVal = (r.applicant_name || r.client_name || '').toLowerCase();
+        return clientVal.includes(clientFilter.toLowerCase());
+      });
+    }
+
+    // Tag dropdown filter (Requirement 10)
+    if (tagFilter !== 'ALL') {
+      data = data.filter((r) => {
+        const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? [r.classification] : []);
+        return rTags.some((t) => String(t).toLowerCase() === tagFilter.toLowerCase());
+      });
+    }
 
     // Status dropdown filter
-    if (statusFilter !== 'ALL') data = data.filter((r) => r.current_status === statusFilter);
+    if (statusFilter !== 'ALL') {
+      data = data.filter((r) => r.current_status === statusFilter);
+    }
+
+    // Role-based drafter filtering (Requirement 3)
+    if (userRole === 'DRAFTER' && selectedDrafter) {
+      data = data.filter((r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase());
+    }
 
     // Global Search filter
     if (globalFilter.trim()) {
@@ -98,17 +122,13 @@ export default function MasterDataGrid({
         (r.application_number && r.application_number.toLowerCase().includes(q)) ||
         (r.title && r.title.toLowerCase().includes(q)) ||
         (r.inventors_summary && r.inventors_summary.toLowerCase().includes(q)) ||
-        (r.applicant_name && r.applicant_name.toLowerCase().includes(q))
+        (r.applicant_name && r.applicant_name.toLowerCase().includes(q)) ||
+        (r.assigned_to && r.assigned_to.toLowerCase().includes(q))
       );
     }
 
-    // Role-based drafter filtering
-    if (userRole === 'DRAFTER' && selectedDrafter) {
-      data = data.filter((r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase());
-    }
-
     return data;
-  }, [records, activeKpiFilter, currentPreset, maheFilter, statusFilter, globalFilter, userRole, selectedDrafter]);
+  }, [records, activeKpiFilter, currentPreset, clientFilter, tagFilter, statusFilter, globalFilter, userRole, selectedDrafter]);
 
   // Unique statuses for filter dropdown
   const statusOptions = useMemo(() => {
@@ -116,36 +136,149 @@ export default function MasterDataGrid({
     return Array.from(s).sort();
   }, [records]);
 
-  // Columns definition
+  // Unique clients for dropdown (combine core.clients + existing applicant names)
+  const clientOptions = useMemo(() => {
+    const set = new Set();
+    clients.forEach((c) => {
+      if (c.client_name) set.add(c.client_name);
+    });
+    records.forEach((r) => {
+      if (r.applicant_name) set.add(r.applicant_name);
+    });
+    return Array.from(set).filter(Boolean).sort();
+  }, [clients, records]);
+
+  // Helper to resolve tag color
+  const getTagColor = (tagName) => {
+    const lower = String(tagName).toLowerCase();
+    if (lower === 'priority') return { bg: 'rgba(239, 68, 68, 0.12)', fg: '#DC2626', border: 'rgba(239, 68, 68, 0.3)' };
+    if (lower === 'critical') return { bg: 'rgba(220, 38, 38, 0.15)', fg: '#991B1B', border: 'rgba(220, 38, 38, 0.4)' };
+    if (lower === 'ticket raised') return { bg: 'rgba(245, 158, 11, 0.12)', fg: '#D97706', border: 'rgba(245, 158, 11, 0.3)' };
+    if (lower === 'political') return { bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED', border: 'rgba(139, 92, 246, 0.3)' };
+    
+    // Check in tags prop
+    const found = tags.find((t) => t.name.toLowerCase() === lower);
+    if (found) {
+      return { bg: `${found.color}1A`, fg: found.color, border: `${found.color}4D` };
+    }
+    return { bg: 'rgba(59, 130, 246, 0.1)', fg: '#2563EB', border: 'rgba(59, 130, 246, 0.25)' };
+  };
+
+  // Helper to format specification type (CS / PS / CS-PS)
+  const formatSpecType = (type, hasPs, hasCs) => {
+    const val = String(type || '').toUpperCase();
+    if (val === 'PS_TO_CS' || (hasPs && hasCs) || val.includes('CS-PS') || val.includes('PS TO CS')) {
+      return { label: 'CS-PS', bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED' };
+    }
+    if (val === 'CS' || val.includes('COMPLETE')) {
+      return { label: 'CS', bg: 'rgba(16, 185, 129, 0.12)', fg: '#059669' };
+    }
+    if (val === 'PS' || val.includes('PROVISIONAL')) {
+      return { label: 'PS', bg: 'rgba(59, 130, 246, 0.12)', fg: '#2563EB' };
+    }
+    if (val === 'DIVISIONAL') {
+      return { label: 'Divisional', bg: 'rgba(245, 158, 11, 0.12)', fg: '#D97706' };
+    }
+    return { label: val || 'PS', bg: 'rgba(107, 114, 128, 0.12)', fg: '#4B5563' };
+  };
+
+  // =========================================================================
+  // Requirement 11: Reduce columns strictly to:
+  // "Codes, Application Number, title of invention, CS/PS/CS-PS, Current Status, Drafter Assigned"
+  // Plus selection checkbox and actions buttons.
+  // =========================================================================
   const columns = useMemo(() => {
     return [
-      // Pinned Left 1: Project Code
+      // 0. Row Selection Checkbox
       {
-        accessorKey: 'project_code',
-        header: 'Code',
-        size: 110,
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllPageRowsSelected()}
+            onChange={table.getToggleAllPageRowsSelectedHandler()}
+            style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+            title="Select all matters"
+          />
+        ),
+        size: 40,
         cell: ({ row }) => (
-          <span style={{ fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.2px' }}>
-            {row.original.project_code}
-          </span>
+          <input
+            type="checkbox"
+            checked={row.getIsSelected()}
+            disabled={!row.getCanSelect()}
+            onChange={row.getToggleSelectedHandler()}
+            onClick={(e) => e.stopPropagation()}
+            style={{ cursor: 'pointer', width: '15px', height: '15px' }}
+          />
         ),
       },
-      // Pinned Left 2: Application Number
+
+      // 1. Codes (project_code + Tag Badges)
+      {
+        accessorKey: 'project_code',
+        header: 'Codes',
+        size: 140,
+        cell: ({ row }) => {
+          const code = row.original.project_code;
+          const rTags = Array.isArray(row.original.tags) ? row.original.tags : (row.original.classification ? [row.original.classification] : []);
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflow: 'hidden' }}>
+              <span style={{ fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.2px', fontSize: '13px' }}>
+                {code}
+              </span>
+              {rTags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
+                  {rTags.slice(0, 2).map((tg, idx) => {
+                    const c = getTagColor(tg);
+                    return (
+                      <span
+                        key={idx}
+                        style={{
+                          fontSize: '9.5px',
+                          fontWeight: 700,
+                          padding: '1px 5px',
+                          borderRadius: '4px',
+                          background: c.bg,
+                          color: c.fg,
+                          border: `1px solid ${c.border}`,
+                          lineHeight: '1.2',
+                        }}
+                      >
+                        {tg}
+                      </span>
+                    );
+                  })}
+                  {rTags.length > 2 && (
+                    <span style={{ fontSize: '9px', color: 'var(--muted)', fontWeight: 700 }}>
+                      +{rTags.length - 2}
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+          );
+        },
+      },
+
+      // 2. Application Number
       {
         accessorKey: 'application_number',
-        header: 'Application No.',
-        size: 150,
+        header: 'Application Number',
+        size: 160,
         cell: ({ row }) => (
-          <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600 }}>
+          <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
             {row.original.application_number || '—'}
           </span>
         ),
       },
-      // Pinned Left 3: Title
+
+      // 3. Title of Invention
       {
         accessorKey: 'title',
         header: 'Title of Invention',
-        size: 280,
+        size: 340,
         cell: ({ row }) => (
           <div
             title={row.original.title}
@@ -153,163 +286,124 @@ export default function MasterDataGrid({
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               whiteSpace: 'nowrap',
-              fontWeight: 500
+              fontWeight: 500,
+              fontSize: '12.5px',
+              color: 'var(--ink)'
             }}
           >
-            {row.original.title}
+            {row.original.title || 'Untitled Invention'}
           </div>
         ),
       },
-      // Status Pill
+
+      // 4. CS / PS / CS-PS
       {
-        accessorKey: 'current_status',
-        header: 'Status',
-        size: 160,
+        accessorKey: 'specification_type',
+        header: 'CS / PS / CS-PS',
+        size: 120,
         cell: ({ row }) => {
-          const color = row.original.color_code_status;
-          let bg = 'rgba(78, 158, 86, 0.12)';
-          let fg = '#4E9E56';
-          if (color === 'PURPLE') { bg = 'rgba(138, 79, 255, 0.12)'; fg = '#8A4FFF'; }
-          else if (color === 'RED') { bg = 'rgba(194, 59, 46, 0.12)'; fg = '#C23B2E'; }
-          else if (color === 'YELLOW') { bg = 'rgba(201, 138, 44, 0.12)'; fg = '#C98A2C'; }
-          else if (color === 'BLUE') { bg = 'rgba(58, 134, 255, 0.12)'; fg = '#3A86FF'; }
+          const spec = formatSpecType(
+            row.original.specification_type,
+            row.original.ps_filing_date,
+            row.original.cs_filing_date
+          );
 
           return (
-            <span style={{
-              display: 'inline-block',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              fontSize: '11px',
-              fontWeight: 700,
-              background: bg,
-              color: fg,
-              maxWidth: '140px',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap'
-            }}>
-              {row.original.current_status}
+            <span
+              style={{
+                display: 'inline-block',
+                padding: '2px 8px',
+                borderRadius: '6px',
+                fontSize: '11px',
+                fontWeight: 700,
+                background: spec.bg,
+                color: spec.fg,
+                letterSpacing: '0.2px'
+              }}
+            >
+              {spec.label}
             </span>
           );
         },
       },
-      // Inventors
+
+      // 5. Current Status
       {
-        accessorKey: 'inventors_summary',
-        header: 'Inventors',
-        size: 200,
-        cell: ({ row }) => (
-          <div
-            title={row.original.inventors_summary}
-            style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '12px', color: 'var(--muted)' }}
-          >
-            {row.original.inventors_summary || '—'}
-          </div>
-        ),
-      },
-      // PS Filing Date
-      {
-        accessorKey: 'ps_filing_date',
-        header: 'PS Date',
-        size: 110,
-        cell: ({ row }) => <span>{row.original.ps_filing_date || '—'}</span>,
-      },
-      // CS Filing Date
-      {
-        accessorKey: 'cs_filing_date',
-        header: 'CS Date',
-        size: 110,
-        cell: ({ row }) => <span>{row.original.cs_filing_date || '—'}</span>,
-      },
-      // CS Deadline
-      {
-        accessorKey: 'cs_deadline',
-        header: 'CS Deadline',
-        size: 120,
+        accessorKey: 'current_status',
+        header: 'Current Status',
+        size: 170,
         cell: ({ row }) => {
-          const deadline = row.original.cs_deadline;
-          if (!deadline) return <span>—</span>;
-          const isOverdue = new Date(deadline) < new Date() && !row.original.cs_filing_date;
+          const color = row.original.color_code_status;
+          let bg = 'rgba(16, 185, 129, 0.12)';
+          let fg = '#059669';
+          let dot = '#10B981';
+
+          if (color === 'PURPLE') { bg = 'rgba(139, 92, 246, 0.12)'; fg = '#7C3AED'; dot = '#8B5CF6'; }
+          else if (color === 'RED') { bg = 'rgba(239, 68, 68, 0.12)'; fg = '#DC2626'; dot = '#EF4444'; }
+          else if (color === 'YELLOW' || color === 'ORANGE') { bg = 'rgba(245, 158, 11, 0.12)'; fg = '#D97706'; dot = '#F59E0B'; }
+          else if (color === 'BLUE') { bg = 'rgba(59, 130, 246, 0.12)'; fg = '#2563EB'; dot = '#3B82F6'; }
+
           return (
-            <span style={{ color: isOverdue ? 'var(--bad-fg)' : 'inherit', fontWeight: isOverdue ? 700 : 500 }}>
-              {deadline}
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '2px 8px',
+                  borderRadius: '12px',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  background: bg,
+                  color: fg,
+                  maxWidth: '140px',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap'
+                }}
+                title={row.original.current_status}
+              >
+                {row.original.current_status || 'Under Drafting'}
+              </span>
+            </div>
           );
         },
       },
-      // Form 1 Status
-      {
-        accessorKey: 'f1_status',
-        header: 'Form 1 (POR)',
-        size: 120,
-        cell: ({ row }) => {
-          const st = row.original.f1_status;
-          const isDelayed = st === 'Delayed';
-          return (
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: isDelayed ? '#C23B2E' : (st === 'Within Deadline' ? '#4E9E56' : 'var(--muted)')
-            }}>
-              {st || 'Pending'}
-            </span>
-          );
-        },
-      },
-      // Form 26 Status
-      {
-        accessorKey: 'f26_status',
-        header: 'Form 26 (POA)',
-        size: 120,
-        cell: ({ row }) => {
-          const st = row.original.f26_status;
-          const isDelayed = st === 'Delayed';
-          return (
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: isDelayed ? '#C23B2E' : (st === 'Within Deadline' ? '#4E9E56' : 'var(--muted)')
-            }}>
-              {st || 'Pending'}
-            </span>
-          );
-        },
-      },
-      // FER Notice Date
-      {
-        accessorKey: 'fer_notice_date',
-        header: 'FER Date',
-        size: 110,
-        cell: ({ row }) => <span>{row.original.fer_notice_date || '—'}</span>,
-      },
-      // FER Reply Deadline
-      {
-        accessorKey: 'fer_reply_deadline',
-        header: 'FER Reply Deadline',
-        size: 130,
-        cell: ({ row }) => {
-          const deadline = row.original.fer_reply_deadline;
-          if (!deadline) return <span>—</span>;
-          const isOverdue = new Date(deadline) < new Date() && !row.original.fer_reply_filing_date;
-          return (
-            <span style={{ color: isOverdue ? 'var(--bad-fg)' : 'inherit', fontWeight: isOverdue ? 700 : 500 }}>
-              {deadline}
-            </span>
-          );
-        },
-      },
-      // Assigned To
+
+      // 6. Drafter Assigned
       {
         accessorKey: 'assigned_to',
-        header: 'Assigned To',
-        size: 130,
-        cell: ({ row }) => (
-          <span style={{ fontSize: '12px', fontWeight: 600 }}>
-            {row.original.assigned_to || 'Unassigned'}
-          </span>
-        ),
+        header: 'Drafter Assigned',
+        size: 150,
+        cell: ({ row }) => {
+          const drafter = row.original.assigned_to;
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div
+                style={{
+                  width: '22px',
+                  height: '22px',
+                  borderRadius: '50%',
+                  background: 'var(--accent-soft)',
+                  color: 'var(--accent)',
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}
+              >
+                {drafter ? drafter.slice(0, 2).toUpperCase() : '—'}
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
+                {drafter || 'Unassigned'}
+              </span>
+            </div>
+          );
+        },
       },
-      // Row Actions
+
+      // Actions Column (View, Master Timeline, Edit)
       {
         id: 'actions',
         header: 'Actions',
@@ -331,7 +425,7 @@ export default function MasterDataGrid({
                 display: 'flex',
                 alignItems: 'center',
               }}
-              title="View Details"
+              title="View Application Details"
             >
               <Eye size={13} />
             </button>
@@ -374,12 +468,14 @@ export default function MasterDataGrid({
         ),
       },
     ];
-  }, [onSelectRecord, onOpenTimeline, onOpenEdit]);
+  }, [onSelectRecord, onOpenTimeline, onOpenEdit, tags]);
 
   const table = useReactTable({
     data: filteredData,
     columns,
-    state: { sorting },
+    state: { sorting, rowSelection },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
@@ -391,9 +487,16 @@ export default function MasterDataGrid({
   const rowVirtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => 44,
+    estimateSize: () => 48,
     overscan: 15,
   });
+
+  const selectedRowsList = useMemo(() => {
+    return Object.keys(rowSelection)
+      .filter((k) => rowSelection[k])
+      .map((k) => rows[k]?.original)
+      .filter(Boolean);
+  }, [rowSelection, rows]);
 
   return (
     <div style={{
@@ -406,7 +509,7 @@ export default function MasterDataGrid({
       boxShadow: 'var(--shadow-card)',
       overflow: 'hidden'
     }}>
-      {/* View Presets Bar */}
+      {/* Top Presets & Controls Bar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -442,7 +545,7 @@ export default function MasterDataGrid({
           ))}
         </div>
 
-        {/* Action Buttons: Create, Import, Export */}
+        {/* Action Buttons: Create, Import, Export Report */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           {onOpenCreate && (
             <button
@@ -485,23 +588,26 @@ export default function MasterDataGrid({
             <Upload size={14} /> Smart Import
           </button>
 
+          {/* Export Report (Opens ExportReportModal for customizable export) */}
           <button
-            onClick={() => onExportExcel(filteredData, currentPreset)}
+            onClick={() => onOpenExportReport && onOpenExportReport(selectedRowsList.length > 0 ? selectedRowsList : filteredData)}
             style={{
               padding: '6px 14px',
               borderRadius: '6px',
               border: 'none',
-              background: 'var(--accent)',
+              background: 'linear-gradient(135deg, #059669, #047857)',
               color: '#fff',
               fontSize: '12px',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
             }}
+            title="Customizable Columns Export & Bulk Report"
           >
-            <Download size={14} /> Export Excel
+            <Download size={14} /> Export Report
           </button>
         </div>
       </div>
@@ -518,11 +624,11 @@ export default function MasterDataGrid({
         flexWrap: 'wrap'
       }}>
         {/* Global Search */}
-        <div style={{ position: 'relative', width: '320px' }}>
+        <div style={{ position: 'relative', width: '280px' }}>
           <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--muted)' }} />
           <input
             type="text"
-            placeholder="Search code, app no, inventor, title..."
+            placeholder="Search code, app no, drafter, title..."
             value={globalFilter}
             onChange={(e) => setGlobalFilter(e.target.value)}
             style={{
@@ -539,8 +645,8 @@ export default function MasterDataGrid({
           />
         </div>
 
-        {/* Dropdowns & Active KPI notice */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Dropdown Filters: Client, Tag, Status, and KPI notice */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {activeKpiFilter && (
             <div style={{
               display: 'flex',
@@ -563,9 +669,10 @@ export default function MasterDataGrid({
             </div>
           )}
 
+          {/* Client Filter Dropdown (Requirement 12) */}
           <select
-            value={maheFilter}
-            onChange={(e) => setMaheFilter(e.target.value)}
+            value={clientFilter}
+            onChange={(e) => setClientFilter(e.target.value)}
             style={{
               padding: '7px 10px',
               borderRadius: '6px',
@@ -573,14 +680,44 @@ export default function MasterDataGrid({
               background: 'var(--page)',
               color: 'var(--ink)',
               fontSize: '12px',
-              fontWeight: 600
+              fontWeight: 600,
+              maxWidth: '170px'
             }}
+            title="Filter by interconnected client (core.clients)"
           >
-            <option value="ALL">All Applicants</option>
-            <option value="MAHE">MAHE Only</option>
-            <option value="NON_MAHE">Non-MAHE Only</option>
+            <option value="ALL">All Clients ({clientOptions.length})</option>
+            {clientOptions.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
           </select>
 
+          {/* Tag Filter Dropdown (Requirement 10) */}
+          <select
+            value={tagFilter}
+            onChange={(e) => setTagFilter(e.target.value)}
+            style={{
+              padding: '7px 10px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: 'var(--page)',
+              color: 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 600,
+              maxWidth: '150px'
+            }}
+            title="Filter by Tag (Priority, Ticket Raised, Critical, Political...)"
+          >
+            <option value="ALL">All Tags</option>
+            <option value="Priority">Priority</option>
+            <option value="Ticket Raised">Ticket Raised</option>
+            <option value="Critical">Critical</option>
+            <option value="Political">Political</option>
+            {tags.filter((t) => !['priority', 'ticket raised', 'critical', 'political'].includes(t.name.toLowerCase())).map((t) => (
+              <option key={t.name} value={t.name}>{t.name}</option>
+            ))}
+          </select>
+
+          {/* Status Dropdown Filter */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -592,7 +729,7 @@ export default function MasterDataGrid({
               color: 'var(--ink)',
               fontSize: '12px',
               fontWeight: 600,
-              maxWidth: '180px'
+              maxWidth: '160px'
             }}
           >
             <option value="ALL">All Statuses</option>
@@ -606,6 +743,60 @@ export default function MasterDataGrid({
           </span>
         </div>
       </div>
+
+      {/* Bulk Selection Notification Bar */}
+      {selectedRowsList.length > 0 && (
+        <div
+          style={{
+            padding: '8px 18px',
+            background: 'rgba(37, 99, 235, 0.08)',
+            borderBottom: '1px solid rgba(37, 99, 235, 0.2)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#1D4ED8',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckSquare size={15} />
+            <span>{selectedRowsList.length} applications selected</span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button
+              onClick={() => onOpenExportReport && onOpenExportReport(selectedRowsList)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '5px',
+                border: 'none',
+                background: '#2563EB',
+                color: '#fff',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Export Selected ({selectedRowsList.length})
+            </button>
+            <button
+              onClick={() => setRowSelection({})}
+              style={{
+                padding: '4px 8px',
+                borderRadius: '5px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--muted)',
+                fontSize: '11px',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+            >
+              Clear Selection
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Virtualized Table Body */}
       <div
@@ -631,39 +822,38 @@ export default function MasterDataGrid({
             boxShadow: '0 1px 3px rgba(0,0,0,0.06)'
           }}>
             {table.getHeaderGroups().map((headerGroup) => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map((header, idx) => {
-                  const isPinned = idx < 3;
-                  return (
-                    <th
-                      key={header.id}
-                      onClick={header.column.getToggleSortingHandler()}
-                      style={{
-                        padding: '10px 14px',
-                        borderBottom: '1px solid var(--line)',
-                        borderRight: '1px solid var(--line)',
-                        fontWeight: 700,
-                        fontSize: '12px',
-                        color: 'var(--muted)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.4px',
-                        whiteSpace: 'nowrap',
-                        cursor: 'pointer',
-                        width: `${header.getSize()}px`,
-                        position: isPinned ? 'sticky' : 'static',
-                        left: isPinned ? (idx === 0 ? 0 : idx === 1 ? 110 : 260) : undefined,
-                        background: isPinned ? 'var(--page)' : undefined,
-                        zIndex: isPinned ? 20 : 10,
-                        boxShadow: idx === 2 ? 'var(--freeze-shadow)' : undefined
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
+              <tr key={headerGroup.id} style={{ display: 'flex', width: '100%' }}>
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    onClick={header.column.getToggleSortingHandler()}
+                    style={{
+                      padding: '10px 14px',
+                      borderBottom: '1px solid var(--line)',
+                      borderRight: '1px solid var(--line)',
+                      fontWeight: 700,
+                      fontSize: '12px',
+                      color: 'var(--muted)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.4px',
+                      whiteSpace: 'nowrap',
+                      cursor: header.id === 'select' || header.id === 'actions' ? 'default' : 'pointer',
+                      width: `${header.getSize()}px`,
+                      flexShrink: header.id === 'title' ? 1 : 0,
+                      flexGrow: header.id === 'title' ? 1 : 0,
+                      boxSizing: 'border-box',
+                      display: 'flex',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      {flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.id !== 'select' && header.id !== 'actions' && (
                         <ArrowUpDown size={12} color="var(--muted)" />
-                      </div>
-                    </th>
-                  );
-                })}
+                      )}
+                    </div>
+                  </th>
+                ))}
               </tr>
             ))}
           </thead>
@@ -672,7 +862,7 @@ export default function MasterDataGrid({
           <tbody>
             {rowVirtualizer.getVirtualItems().map((virtualRow) => {
               const row = rows[virtualRow.index];
-              const isSelected = selectedCode === row.original.project_code;
+              const isSelected = selectedCode === row.original.project_code || row.getIsSelected();
 
               return (
                 <tr
@@ -698,29 +888,24 @@ export default function MasterDataGrid({
                     if (!isSelected) e.currentTarget.style.background = virtualRow.index % 2 === 0 ? 'var(--surface)' : 'var(--page)';
                   }}
                 >
-                  {row.getVisibleCells().map((cell, idx) => {
-                    const isPinned = idx < 3;
-                    return (
-                      <td
-                        key={cell.id}
-                        style={{
-                          padding: '8px 14px',
-                          width: `${cell.column.getSize()}px`,
-                          display: 'flex',
-                          alignItems: 'center',
-                          borderRight: '1px solid var(--line)',
-                          position: isPinned ? 'sticky' : 'static',
-                          left: isPinned ? (idx === 0 ? 0 : idx === 1 ? 110 : 260) : undefined,
-                          background: isPinned ? (isSelected ? 'var(--accent-soft)' : (virtualRow.index % 2 === 0 ? 'var(--surface)' : 'var(--page)')) : undefined,
-                          zIndex: isPinned ? 5 : 1,
-                          boxShadow: idx === 2 ? 'var(--freeze-shadow)' : undefined,
-                          overflow: 'hidden'
-                        }}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    );
-                  })}
+                  {row.getVisibleCells().map((cell) => (
+                    <td
+                      key={cell.id}
+                      style={{
+                        padding: '8px 14px',
+                        width: `${cell.column.getSize()}px`,
+                        flexShrink: cell.column.id === 'title' ? 1 : 0,
+                        flexGrow: cell.column.id === 'title' ? 1 : 0,
+                        display: 'flex',
+                        alignItems: 'center',
+                        borderRight: '1px solid var(--line)',
+                        boxSizing: 'border-box',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
                 </tr>
               );
             })}

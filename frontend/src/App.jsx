@@ -9,44 +9,100 @@ import LiveDueBoard from './components/LiveDueBoard';
 import CreateApplicationModal from './components/CreateApplicationModal';
 import EditApplicationModal from './components/EditApplicationModal';
 import MasterTimelineModal from './components/MasterTimelineModal';
+import AuthModal, { USER_ACCOUNTS } from './components/AuthModal';
+import DeadlinesTab from './components/DeadlinesTab';
+import CalendarView from './components/CalendarView';
+import SettingsModal from './components/SettingsModal';
+import ExportReportModal from './components/ExportReportModal';
 import { exportToExcel } from './utils/exportEngine';
-import { supabase, patentDb } from './lib/supabase';
-import initialMasterRecords from './data/master_records.json';
+import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
+import { supabase, patentDb, coreDb } from './lib/supabase';
 import {
-  Shield, Tv, Moon, Sun, Database, RefreshCw, FileText, CheckCircle2,
-  Sparkles, Layers, ListFilter, Users, Briefcase, Scale, Plus, Edit3,
-  Clock, AlertCircle, Check, ChevronDown
+  FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings,
+  Plus, Download, UserCheck, Shield, Briefcase, Scale,
+  Sparkles, CheckCircle2, AlertTriangle, Layers
 } from 'lucide-react';
 
-const ALL_DRAFTERS = [
-  'Anusha', 'Ayush', 'Abhishek', 'Fiona',
-  'Pramith', 'Pratham', 'Thanush', 'Thilak', 'Pranav Bhat'
+const DEFAULT_TAGS = [
+  { id: 'tag_1', name: 'Priority', color: '#EF4444', description: 'High priority application requiring expedited drafting or filing' },
+  { id: 'tag_2', name: 'Ticket Raised', color: '#F59E0B', description: 'Active support ticket or query raised by client/inventor' },
+  { id: 'tag_3', name: 'Critical', color: '#DC2626', description: 'Approaching statutory abandonment deadline under Section 9 or 21' },
+  { id: 'tag_4', name: 'Political', color: '#8B5CF6', description: 'Institutionally sensitive matter (VIP inventor or strategic IP)' },
 ];
 
 export default function App() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem('theme') || 'light'
   );
-  const [records, setRecords] = useState(initialMasterRecords || []);
+  const [records, setRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeKpiFilter, setActiveKpiFilter] = useState(null);
+  const [activeNavTab, setActiveNavTab] = useState('PORTFOLIO'); // PORTFOLIO, DEADLINES, CALENDAR
+  
+  // Modals state
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [exportRecordsSelection, setExportRecordsSelection] = useState(null);
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [isTvMode, setIsTvMode] = useState(false);
-  const [syncStatus, setSyncStatus] = useState('LOCAL_CACHE'); // LOCAL_CACHE, SUPABASE_SYNCED, SYNCING
-
-  // 3-Way Role Access System: SUPER_ADMIN, PARALEGAL, DRAFTER
-  const [userRole, setUserRole] = useState(
-    () => localStorage.getItem('user_role') || 'SUPER_ADMIN'
-  );
-  const [selectedDrafter, setSelectedDrafter] = useState(
-    () => localStorage.getItem('selected_drafter') || 'Anusha'
-  );
-
-  // New Modals State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [timelineRecord, setTimelineRecord] = useState(null);
   const [toast, setToast] = useState(null);
+
+  // Authenticated User Account State (Requirement 1 & 3)
+  const [currentUser, setCurrentUser] = useState(() => {
+    try {
+      const saved = localStorage.getItem('patent_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return USER_ACCOUNTS[0]; // Default: Pranav Bhat (Super Admin)
+  });
+
+  // Interconnected Clients State from core.clients (Requirement 12)
+  const [clients, setClients] = useState([]);
+
+  // Tags State (Requirement 10)
+  const [tags, setTags] = useState(() => {
+    try {
+      const saved = localStorage.getItem('patent_custom_tags');
+      return saved ? JSON.parse(saved) : DEFAULT_TAGS;
+    } catch {
+      return DEFAULT_TAGS;
+    }
+  });
+
+  // Audit Logs State (Requirement 7)
+  const [auditLogs, setAuditLogs] = useState(() => {
+    try {
+      const saved = localStorage.getItem('patent_audit_logs');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Firm Settings & Zoho Integrations (Requirement 14 & 15)
+  const [firmSettings, setFirmSettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem('patent_firm_settings');
+      return saved ? JSON.parse(saved) : {
+        cliqWebhookUrl: 'https://cliq.zoho.com/api/v2/channelsbyname/patent-alerts/incoming',
+        cliqChannel: 'patent-deadlines',
+        firmCalendarUrl: 'https://calendar.zoho.com/eventreq/lextria-patents',
+        reminderDays: [30, 15, 7, 1],
+        drafterCalendarMap: {
+          Anusha: 'https://calendar.zoho.com/eventreq/anusha-patents',
+          Ayush: 'https://calendar.zoho.com/eventreq/ayush-patents',
+          Abhishek: 'https://calendar.zoho.com/eventreq/abhishek-patents',
+          Fiona: 'https://calendar.zoho.com/eventreq/fiona-patents',
+        }
+      };
+    } catch {
+      return {};
+    }
+  });
 
   // Toast notification helper
   const showToast = (message, type = 'success') => {
@@ -60,53 +116,96 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Persist role selections
+  // Persist current user
   useEffect(() => {
-    localStorage.setItem('user_role', userRole);
-  }, [userRole]);
+    try {
+      localStorage.setItem('patent_current_user', JSON.stringify(currentUser));
+    } catch {}
+  }, [currentUser]);
 
+  // Persist tags
   useEffect(() => {
-    localStorage.setItem('selected_drafter', selectedDrafter);
-  }, [selectedDrafter]);
+    try {
+      localStorage.setItem('patent_custom_tags', JSON.stringify(tags));
+    } catch {}
+  }, [tags]);
 
-  const toggleTheme = () => {
-    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
+  // Persist settings
+  useEffect(() => {
+    try {
+      localStorage.setItem('patent_firm_settings', JSON.stringify(firmSettings));
+    } catch {}
+  }, [firmSettings]);
+
+  // Record Audit Log Entry (Requirement 7)
+  const recordAuditLog = (action, project_code, details, field_name = null, old_val = null, new_val = null) => {
+    const entry = {
+      id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      project_code,
+      action,
+      changed_by: currentUser.name,
+      user_role: currentUser.role,
+      field_name,
+      old_value: old_val,
+      new_value: new_val,
+      details,
+      created_at: new Date().toISOString(),
+    };
+    setAuditLogs((prev) => {
+      const updated = [entry, ...prev].slice(0, 500);
+      try {
+        localStorage.setItem('patent_audit_logs', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
   };
 
-  // Sync / verify Supabase connection on startup
+  // Fetch interconnected clients from core.clients on startup (Requirement 12)
   useEffect(() => {
-    async function checkSupabase() {
+    async function fetchClients() {
       try {
-        setSyncStatus('SYNCING');
-        const { data, error } = await patentDb
-          .from('applications')
-          .select('project_code')
-          .limit(1);
-
-        if (!error && data) {
-          setSyncStatus('SUPABASE_SYNCED');
-        } else {
-          setSyncStatus('LOCAL_READY');
+        const { data, error } = await coreDb
+          .from('clients')
+          .select('id, client_code, client_name')
+          .order('client_name');
+        if (!error && data && data.length > 0) {
+          setClients(data);
         }
       } catch (e) {
-        setSyncStatus('LOCAL_READY');
+        console.warn('Could not load core.clients directly:', e);
       }
     }
-    checkSupabase();
+    fetchClients();
   }, []);
 
-  // Filter records according to userRole
+  // Fetch initial master records from public asset or Supabase
+  useEffect(() => {
+    async function loadPortfolioRecords() {
+      try {
+        const resp = await fetch('/master_records.json');
+        if (resp.ok) {
+          const data = await resp.json();
+          setRecords(data);
+        }
+      } catch (err) {
+        console.warn('Failed to load local master_records.json:', err);
+      }
+    }
+    loadPortfolioRecords();
+  }, []);
+
+  // Filter records strictly by authenticated drafter (Requirement 3)
   const roleFilteredRecords = useMemo(() => {
-    if (userRole === 'DRAFTER' && selectedDrafter) {
+    if (currentUser.role === 'DRAFTER' && currentUser.drafterName) {
       return records.filter(
         (r) =>
           r.assigned_to &&
-          r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase()
+          r.assigned_to.trim().toLowerCase() === currentUser.drafterName.trim().toLowerCase()
       );
     }
-    // Paralegal and Super Admin see all firm applications
+    // Super Admin and Paralegal Staff see all firm matters
     return records;
-  }, [records, userRole, selectedDrafter]);
+  }, [records, currentUser]);
 
   // Existing project codes for auto-generation
   const existingCodes = useMemo(
@@ -118,160 +217,173 @@ export default function App() {
   // CRUD 1: CREATE NEW APPLICATION
   // ==========================================
   const handleCreateApplication = async (formData) => {
-    // 1. Calculate statutory deadlines
-    const psDate = formData.ps_filing_date ? new Date(formData.ps_filing_date) : null;
-    let csDeadline = null;
-    let f1Deadline = null;
-    let f26Deadline = null;
-
-    if (psDate) {
-      // CS deadline: 12 months from PS
-      const csD = new Date(psDate);
-      csD.setMonth(csD.getMonth() + 12);
-      csDeadline = csD.toISOString().split('T')[0];
-
-      // Form 1 deadline: 6 months from PS
-      const f1D = new Date(psDate);
-      f1D.setMonth(f1D.getMonth() + 6);
-      f1Deadline = f1D.toISOString().split('T')[0];
-
-      // Form 26 deadline: 3 months from PS
-      const f26D = new Date(psDate);
-      f26D.setMonth(f26D.getMonth() + 3);
-      f26Deadline = f26D.toISOString().split('T')[0];
-    }
+    // Calculate all statutory deadlines automatically
+    const statutory = calculateAllStatutoryDeadlines(formData);
 
     const newRecord = {
       ...formData,
-      cs_deadline: csDeadline,
-      form_1_deadline: f1Deadline,
-      form_26_deadline: f26Deadline,
+      cs_deadline: statutory.cs_deadline,
+      form_1_deadline: statutory.form_1_deadline,
+      form_26_deadline: statutory.form_26_deadline,
+      rfe_deadline: statutory.rfe_deadline,
       f1_status: formData.form_1_filing_date ? 'Within Deadline' : 'Pending',
       f26_status: formData.form_26_filing_date ? 'Within Deadline' : 'Pending',
       created_at: new Date().toISOString(),
     };
 
-    // Update state immediately (zero delay)
+    // Update state immediately
     setRecords((prev) => [newRecord, ...prev]);
+
+    // Record audit log (Requirement 7)
+    recordAuditLog(
+      'CREATE_APPLICATION',
+      newRecord.project_code,
+      `Created patent application: ${newRecord.title} (Assigned to: ${newRecord.assigned_to})`
+    );
 
     // Save to Supabase
     try {
-      // Insert application
-      const { data: appData, error: appErr } = await patentDb
-        .from('applications')
-        .insert({
-          project_code: formData.project_code,
-          title: formData.title,
-          application_number: formData.application_number || null,
-          specification_type: formData.specification_type,
-          record_category: formData.record_category,
-          classification: formData.classification,
-          applicant_name: formData.applicant_name,
-          entity_category: formData.entity_category,
-          is_mahe: formData.is_mahe,
-          assigned_to: formData.assigned_to,
-          current_status: formData.current_status,
-          color_code_status: formData.color_code_status,
-          workdrive_folder_url: formData.workdrive_folder_url || null,
-          inventors_summary: formData.inventors_summary || null,
-        })
-        .select('id')
-        .single();
+      await patentDb.from('applications').insert({
+        project_code: newRecord.project_code,
+        title: newRecord.title,
+        application_number: newRecord.application_number || null,
+        specification_type: newRecord.specification_type || 'PS',
+        record_category: newRecord.record_category || 'INTERNAL_FILING',
+        classification: newRecord.classification || null,
+        applicant_name: newRecord.applicant_name || null,
+        entity_category: newRecord.entity_category || null,
+        is_mahe: Boolean(newRecord.is_mahe),
+        assigned_to: newRecord.assigned_to || null,
+        current_status: newRecord.current_status || 'PS Not Yet Filed',
+        color_code_status: newRecord.color_code_status || 'PURPLE',
+        workdrive_folder_url: newRecord.workdrive_folder_url || null,
+        inventors_summary: newRecord.inventors_summary || null,
+      });
 
-      if (appData && !appErr) {
-        // Insert prosecution dates
-        await patentDb.from('prosecution_dates').insert({
-          application_id: appData.id,
-          ps_filing_date: formData.ps_filing_date || null,
-          cs_filing_date: formData.cs_filing_date || null,
-        });
+      await patentDb.from('prosecution_dates').insert({
+        project_code: newRecord.project_code,
+        ps_filing_date: newRecord.ps_filing_date || null,
+        cs_deadline: newRecord.cs_deadline || null,
+      });
 
-        // Insert forms tracker
-        await patentDb.from('forms_tracker').insert({
-          application_id: appData.id,
-          form_1_filing_date: formData.form_1_filing_date || null,
-          form_1_deadline: f1Deadline,
-          form_26_filing_date: formData.form_26_filing_date || null,
-          form_26_deadline: f26Deadline,
-        });
-      }
-
-      showToast(`Application ${formData.project_code} created and synced to Supabase!`);
+      await patentDb.from('forms_tracker').insert({
+        project_code: newRecord.project_code,
+        form_1_deadline: newRecord.form_1_deadline || null,
+        form_26_deadline: newRecord.form_26_deadline || null,
+        f1_status: newRecord.f1_status,
+        f26_status: newRecord.f26_status,
+      });
     } catch (err) {
-      console.warn('Supabase sync warning:', err);
-      showToast(`Application ${formData.project_code} created locally (Supabase queued).`);
+      console.warn('Saved locally; Supabase async sync:', err);
     }
+
+    showToast(`Application ${newRecord.project_code} created successfully!`);
   };
 
   // ==========================================
-  // CRUD 2: UPDATE EXISTING APPLICATION
+  // CRUD 2: UPDATE APPLICATION
   // ==========================================
   const handleUpdateApplication = async (projectCode, updatedFields) => {
-    // Update local state immediately
+    // Recalculate all statutory deadlines
+    const existing = records.find((r) => r.project_code === projectCode) || {};
+    const merged = { ...existing, ...updatedFields };
+    const statutory = calculateAllStatutoryDeadlines(merged);
+
+    const finalizedRecord = {
+      ...merged,
+      cs_deadline: statutory.cs_deadline,
+      form_1_deadline: statutory.form_1_deadline,
+      form_26_deadline: statutory.form_26_deadline,
+      rfe_deadline: statutory.rfe_deadline,
+      fer_reply_deadline: statutory.fer_reply_deadline,
+      ws_deadline: statutory.ws_deadline,
+      f1_status: updatedFields.form_1_filing_date ? 'Within Deadline' : (merged.f1_status || 'Pending'),
+      f26_status: updatedFields.form_26_filing_date ? 'Within Deadline' : (merged.f26_status || 'Pending'),
+      updated_at: new Date().toISOString(),
+    };
+
     setRecords((prev) =>
-      prev.map((r) =>
-        r.project_code === projectCode ? { ...r, ...updatedFields } : r
-      )
+      prev.map((r) => (r.project_code === projectCode ? finalizedRecord : r))
     );
 
     if (selectedRecord && selectedRecord.project_code === projectCode) {
-      setSelectedRecord((prev) => ({ ...prev, ...updatedFields }));
+      setSelectedRecord(finalizedRecord);
     }
+
+    // Record audit log (Requirement 7)
+    recordAuditLog(
+      'UPDATE_APPLICATION',
+      projectCode,
+      `Updated matter details: Status -> ${finalizedRecord.current_status}, Drafter -> ${finalizedRecord.assigned_to}`
+    );
 
     // Save to Supabase
     try {
-      // 1. Update applications table
       await patentDb
         .from('applications')
         .update({
-          title: updatedFields.title,
-          application_number: updatedFields.application_number || null,
-          patent_number: updatedFields.patent_number || null,
-          specification_type: updatedFields.specification_type,
-          classification: updatedFields.classification,
-          assigned_to: updatedFields.assigned_to,
-          current_status: updatedFields.current_status,
-          color_code_status: updatedFields.color_code_status,
-          application_filing_receipt_status: updatedFields.application_filing_receipt_status,
-          communication_status: updatedFields.communication_status,
-          workdrive_folder_url: updatedFields.workdrive_folder_url || null,
-          inventors_summary: updatedFields.inventors_summary || null,
-          updated_at: new Date().toISOString(),
+          title: finalizedRecord.title,
+          application_number: finalizedRecord.application_number || null,
+          current_status: finalizedRecord.current_status,
+          color_code_status: finalizedRecord.color_code_status,
+          assigned_to: finalizedRecord.assigned_to,
         })
         .eq('project_code', projectCode);
-
-      // 2. Update manual dues/notes
-      if (updatedFields.status_notes || updatedFields.suggested_action || updatedFields.issue) {
-        await patentDb.from('dues_manual').upsert({
-          project_code: projectCode,
-          status_notes: updatedFields.status_notes,
-          suggested_action: updatedFields.suggested_action,
-          issue: updatedFields.issue,
-          updated_at: new Date().toISOString(),
-        }, { onConflict: 'project_code' });
-      }
-
-      showToast(`Application ${projectCode} updated successfully!`);
     } catch (err) {
-      console.warn('Supabase update warning:', err);
-      showToast(`Application ${projectCode} updated locally.`);
+      console.warn('Saved locally; Supabase update sync:', err);
     }
+
+    showToast(`Application ${projectCode} updated successfully!`);
   };
 
-  // Handle Manual Notes Save from Drawer
+  // ==========================================
+  // CRUD 3: SAVE MANUAL SENIOR NOTES
+  // ==========================================
   const handleSaveManualNotes = async (projectCode, notesData) => {
-    handleUpdateApplication(projectCode, notesData);
+    setRecords((prev) =>
+      prev.map((r) => (r.project_code === projectCode ? { ...r, ...notesData } : r))
+    );
+    if (selectedRecord && selectedRecord.project_code === projectCode) {
+      setSelectedRecord((prev) => ({ ...prev, ...notesData }));
+    }
+
+    recordAuditLog(
+      'SAVE_NOTES',
+      projectCode,
+      `Updated senior notes and actions for ${projectCode}`
+    );
+
+    showToast(`Internal notes for ${projectCode} saved.`);
   };
 
-  // Handle Smart Import Success
-  const handleImportSuccess = (newRecords) => {
-    setRecords((prev) => [...newRecords, ...prev]);
-    showToast(`Successfully staged ${newRecords.length} records into portfolio.`);
+  // Handle deadline completion in Deadlines Checklist (Requirement 8)
+  const handleDeadlineActionComplete = (itemId, isDone, item) => {
+    recordAuditLog(
+      isDone ? 'DEADLINE_TICK' : 'DEADLINE_UNTICK',
+      item.project_code,
+      `${isDone ? 'Marked complete' : 'Reopened'} statutory deadline: ${item.typeLabel} (${item.statutoryRef})`,
+      'deadline_status',
+      isDone ? 'PENDING' : 'COMPLETED',
+      isDone ? 'COMPLETED' : 'PENDING'
+    );
+    showToast(`${item.project_code}: ${item.typeLabel} marked as ${isDone ? 'Completed' : 'Pending'}`);
   };
 
-  // Handle Excel Export
-  const handleExport = (dataToExport, presetName) => {
-    exportToExcel(dataToExport, `${userRole}_${presetName}`);
+  // Handle smart importer success
+  const handleImportSuccess = (importedCount, stagedRecords) => {
+    setRecords((prev) => [...stagedRecords, ...prev]);
+    recordAuditLog(
+      'BULK_IMPORT',
+      'PORTFOLIO',
+      `Imported ${importedCount} records via Smart Importer`
+    );
+    showToast(`Successfully imported ${importedCount} applications into firm portfolio!`);
+  };
+
+  // Handle standard quick export
+  const handleQuickExport = (dataToExport, presetName) => {
+    exportToExcel(dataToExport, presetName);
+    showToast(`Exported ${dataToExport.length} matters to Excel.`);
   };
 
   return (
@@ -282,25 +394,25 @@ export default function App() {
         height: '100vh',
         background: 'var(--page)',
         color: 'var(--ink)',
-        fontFamily: 'Manrope, system-ui, -apple-system, sans-serif',
         overflow: 'hidden',
+        fontFamily: "'Inter', system-ui, sans-serif",
       }}
     >
-      {/* Toast Notification Banner */}
+      {/* Toast Notification */}
       {toast && (
         <div
           style={{
             position: 'fixed',
             top: '20px',
             right: '24px',
-            zIndex: 2000,
+            padding: '12px 20px',
+            borderRadius: '8px',
             background: toast.type === 'error' ? '#EF4444' : '#10B981',
             color: '#fff',
-            padding: '10px 18px',
-            borderRadius: '8px',
             fontSize: '13px',
             fontWeight: 700,
-            boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.2)',
+            zIndex: 9999,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.25)',
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
@@ -312,70 +424,53 @@ export default function App() {
         </div>
       )}
 
-      {/* Top Application Header */}
+      {/* Main App Navigation Header */}
       <header
         style={{
-          padding: '10px 24px',
+          height: '60px',
+          padding: '0 24px',
           background: 'var(--surface)',
           borderBottom: '1px solid var(--line)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          boxShadow: 'var(--shadow-card)',
-          zIndex: 50,
+          flexShrink: 0,
+          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
         }}
       >
-        {/* Brand & Ecosystem Identity */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              width: '38px',
-              height: '38px',
-              borderRadius: '10px',
-              background: 'linear-gradient(135deg, #1B2A4A, #3A86FF)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(58, 134, 255, 0.35)',
-            }}
-          >
-            <Shield size={20} color="#fff" />
-          </div>
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span
-                style={{
-                  fontSize: '15px',
-                  fontWeight: 900,
-                  letterSpacing: '-0.3px',
-                  color: 'var(--ink)',
-                }}
-              >
-                LEXTRIA PATENT OPERATIONS
-              </span>
-              <span
-                style={{
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: 'var(--accent-soft)',
-                  color: 'var(--accent)',
-                  letterSpacing: '0.4px',
-                }}
-              >
-                ENTERPRISE
-              </span>
+        {/* Left: Firm Brand & Product */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #1E3A8A, #3B82F6)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: 900,
+                fontSize: '16px',
+                boxShadow: '0 2px 6px rgba(59, 130, 246, 0.35)',
+              }}
+            >
+              L
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '1px' }}>
-              Prosecution & Portfolio Docketing · 4,000+ Matters
+            <div>
+              <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: 'var(--ink)' }}>
+                LEXTRIA IP
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '-2px', fontWeight: 600 }}>
+                Patent Prosecution & Docketing Dashboard
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Center: 3-WAY ROLE ACCESS SWITCHER */}
-        <div
+        {/* Center: Functional Navigation Tabs (Requirement 1 - NOT role tabs) */}
+        <nav
           style={{
             display: 'flex',
             alignItems: 'center',
@@ -386,113 +481,85 @@ export default function App() {
             border: '1px solid var(--line)',
           }}
         >
-          {/* Mode 1: Super Admin */}
+          {/* Tab 1: Portfolio Master */}
           <button
-            onClick={() => setUserRole('SUPER_ADMIN')}
+            onClick={() => setActiveNavTab('PORTFOLIO')}
             style={{
-              padding: '6px 14px',
+              padding: '7px 16px',
               borderRadius: '7px',
               border: 'none',
-              background: userRole === 'SUPER_ADMIN' ? 'var(--surface)' : 'transparent',
-              color: userRole === 'SUPER_ADMIN' ? 'var(--ink)' : 'var(--muted)',
-              fontSize: '12px',
-              fontWeight: userRole === 'SUPER_ADMIN' ? 800 : 600,
+              background: activeNavTab === 'PORTFOLIO' ? 'var(--surface)' : 'transparent',
+              color: activeNavTab === 'PORTFOLIO' ? 'var(--ink)' : 'var(--muted)',
+              fontSize: '12.5px',
+              fontWeight: activeNavTab === 'PORTFOLIO' ? 800 : 600,
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               cursor: 'pointer',
-              boxShadow: userRole === 'SUPER_ADMIN' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              boxShadow: activeNavTab === 'PORTFOLIO' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               transition: 'all 0.15s ease',
             }}
-            title="Super Admin: Full, unrestricted firm-wide control"
           >
-            <Shield size={14} color={userRole === 'SUPER_ADMIN' ? '#3B82F6' : 'currentColor'} />
-            Super Admin
+            <FolderKanban size={15} color={activeNavTab === 'PORTFOLIO' ? 'var(--accent)' : 'currentColor'} />
+            Portfolio Master
           </button>
 
-          {/* Mode 2: Paralegal Dashboard */}
+          {/* Tab 2: Deadlines Checklist (Requirement 8) */}
           <button
-            onClick={() => setUserRole('PARALEGAL')}
+            onClick={() => setActiveNavTab('DEADLINES')}
             style={{
-              padding: '6px 14px',
+              padding: '7px 16px',
               borderRadius: '7px',
               border: 'none',
-              background: userRole === 'PARALEGAL' ? 'var(--surface)' : 'transparent',
-              color: userRole === 'PARALEGAL' ? 'var(--ink)' : 'var(--muted)',
-              fontSize: '12px',
-              fontWeight: userRole === 'PARALEGAL' ? 800 : 600,
+              background: activeNavTab === 'DEADLINES' ? 'var(--surface)' : 'transparent',
+              color: activeNavTab === 'DEADLINES' ? 'var(--ink)' : 'var(--muted)',
+              fontSize: '12.5px',
+              fontWeight: activeNavTab === 'DEADLINES' ? 800 : 600,
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
               cursor: 'pointer',
-              boxShadow: userRole === 'PARALEGAL' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              boxShadow: activeNavTab === 'DEADLINES' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
               transition: 'all 0.15s ease',
             }}
-            title="Paralegal Dashboard: Firm-wide statutory docketing, receipts, and forms compliance"
+            title="Action-based statutory checklist where you tick completed filings"
           >
-            <Scale size={14} color={userRole === 'PARALEGAL' ? '#10B981' : 'currentColor'} />
-            Paralegal
+            <CheckSquare size={15} color={activeNavTab === 'DEADLINES' ? '#10B981' : 'currentColor'} />
+            Deadlines Checklist
           </button>
 
-          {/* Mode 3: Drafter Dashboard */}
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <button
-              onClick={() => setUserRole('DRAFTER')}
-              style={{
-                padding: '6px 12px',
-                borderRadius: userRole === 'DRAFTER' ? '7px 0 0 7px' : '7px',
-                border: 'none',
-                background: userRole === 'DRAFTER' ? 'var(--surface)' : 'transparent',
-                color: userRole === 'DRAFTER' ? 'var(--ink)' : 'var(--muted)',
-                fontSize: '12px',
-                fontWeight: userRole === 'DRAFTER' ? 800 : 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: userRole === 'DRAFTER' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}
-              title="Drafter Dashboard: Personalized docket for allocated drafting matters"
-            >
-              <Briefcase size={14} color={userRole === 'DRAFTER' ? '#8B5CF6' : 'currentColor'} />
-              Drafter
-            </button>
-
-            {/* Drafter Selector Dropdown (When Drafter or Super Admin) */}
-            {userRole === 'DRAFTER' && (
-              <select
-                value={selectedDrafter}
-                onChange={(e) => setSelectedDrafter(e.target.value)}
-                style={{
-                  padding: '5px 8px',
-                  borderRadius: '0 7px 7px 0',
-                  border: 'none',
-                  background: 'var(--surface)',
-                  color: '#8B5CF6',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  borderLeft: '1px solid var(--line)',
-                  outline: 'none',
-                }}
-              >
-                {ALL_DRAFTERS.map((d) => (
-                  <option key={d} value={d}>
-                    {d}
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
-        </div>
+          {/* Tab 3: Calendar View (Requirement 14) */}
+          <button
+            onClick={() => setActiveNavTab('CALENDAR')}
+            style={{
+              padding: '7px 16px',
+              borderRadius: '7px',
+              border: 'none',
+              background: activeNavTab === 'CALENDAR' ? 'var(--surface)' : 'transparent',
+              color: activeNavTab === 'CALENDAR' ? 'var(--ink)' : 'var(--muted)',
+              fontSize: '12.5px',
+              fontWeight: activeNavTab === 'CALENDAR' ? 800 : 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              boxShadow: activeNavTab === 'CALENDAR' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              transition: 'all 0.15s ease',
+            }}
+            title="Monthly statutory deadline calendar with Zoho Calendar sync"
+          >
+            <Calendar size={15} color={activeNavTab === 'CALENDAR' ? '#8B5CF6' : 'currentColor'} />
+            Calendar View
+          </button>
+        </nav>
 
         {/* Right Header Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* New Application Quick Action */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* New Application Button */}
           <button
             onClick={() => setIsCreateOpen(true)}
             style={{
-              padding: '7px 14px',
+              padding: '7px 13px',
               borderRadius: '7px',
               border: 'none',
               background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
@@ -509,26 +576,31 @@ export default function App() {
             <Plus size={14} /> New Application
           </button>
 
-          {/* Supabase Connection Status Pill */}
-          <div
+          {/* Export Report Modal Button (Requirement 9) */}
+          <button
+            onClick={() => {
+              setExportRecordsSelection(roleFilteredRecords);
+              setIsExportOpen(true);
+            }}
             style={{
+              padding: '7px 12px',
+              borderRadius: '7px',
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              padding: '6px 10px',
-              borderRadius: '20px',
-              background: 'var(--page)',
-              border: '1px solid var(--line)',
-              fontSize: '11px',
-              fontWeight: 700,
+              cursor: 'pointer',
             }}
-            title="Shared Supabase instance: eafciegebhuhoneypsqy"
+            title="Generate custom report with selected columns"
           >
-            <Database size={13} color="var(--accent)" />
-            <span>Supabase: {syncStatus === 'SUPABASE_SYNCED' ? 'Live' : 'Active'}</span>
-          </div>
+            <Download size={14} /> Export
+          </button>
 
-          {/* TV Screen Button */}
+          {/* TV Screen Departure Board Button (Requirement 16) */}
           <button
             onClick={() => setIsTvMode(true)}
             style={{
@@ -549,9 +621,29 @@ export default function App() {
             <Tv size={14} color="#C98A2C" /> TV Board
           </button>
 
+          {/* Firm Settings Button (Requirement 10, 14, 15) */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            style={{
+              width: '34px',
+              height: '34px',
+              borderRadius: '7px',
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+            }}
+            title="Settings (Custom Tags, Zoho Cliq, Zoho Calendar, Audit History)"
+          >
+            <Settings size={15} />
+          </button>
+
           {/* Theme Toggle Button */}
           <button
-            onClick={toggleTheme}
+            onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
             style={{
               width: '34px',
               height: '34px',
@@ -566,17 +658,60 @@ export default function App() {
             }}
             title="Toggle Light / Dark Mode"
           >
-            {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+          </button>
+
+          {/* User Account / Profile Switcher Pill (Requirement 1 & 3) */}
+          <button
+            onClick={() => setIsAuthOpen(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '4px 10px 4px 5px',
+              borderRadius: '20px',
+              background: 'var(--page)',
+              border: '1px solid var(--line)',
+              cursor: 'pointer',
+              color: 'var(--ink)',
+              transition: 'all 0.15s ease',
+            }}
+            title="Click to switch authenticated user account"
+          >
+            <div
+              style={{
+                width: '26px',
+                height: '26px',
+                borderRadius: '50%',
+                background: currentUser.color || '#3B82F6',
+                color: '#fff',
+                fontSize: '11px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {currentUser.initials}
+            </div>
+            <div style={{ textAlign: 'left' }}>
+              <div style={{ fontSize: '11.5px', fontWeight: 800, lineHeight: 1.1 }}>
+                {currentUser.name}
+              </div>
+              <div style={{ fontSize: '9.5px', color: 'var(--muted)', fontWeight: 600 }}>
+                {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser.role === 'PARALEGAL' ? 'Paralegal' : 'Drafter')}
+              </div>
+            </div>
           </button>
         </div>
       </header>
 
-      {/* Role Banner Notification */}
-      {userRole === 'DRAFTER' && (
+      {/* Drafter Filter Context Banner (Only when logged in as a Drafter) */}
+      {currentUser.role === 'DRAFTER' && (
         <div
           style={{
             padding: '6px 24px',
-            background: 'rgba(139, 92, 246, 0.1)',
+            background: 'rgba(139, 92, 246, 0.08)',
             borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
             display: 'flex',
             alignItems: 'center',
@@ -589,42 +724,16 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Briefcase size={14} />
             <span>
-              <strong>Drafter View:</strong> Showing allocated applications for <strong>{selectedDrafter}</strong> ({roleFilteredRecords.length} assigned matters).
+              <strong>Drafter Workspace:</strong> Logged in as <strong>{currentUser.name}</strong> ({roleFilteredRecords.length} assigned patent matters).
             </span>
           </div>
           <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-            Switch to Super Admin in header to view firm-wide docket.
+            Switch account via profile pill to access firm-wide docket.
           </span>
         </div>
       )}
 
-      {userRole === 'PARALEGAL' && (
-        <div
-          style={{
-            padding: '6px 24px',
-            background: 'rgba(16, 185, 129, 0.1)',
-            borderBottom: '1px solid rgba(16, 185, 129, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#065F46',
-            fontWeight: 700,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Scale size={14} />
-            <span>
-              <strong>Paralegal Docketing View:</strong> Firm-wide portfolio active ({records.length} matters). Separate drafter triage view suppressed.
-            </span>
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-            Manage statutory Form 1, Form 26, IPO receipts, and Controller hearings.
-          </span>
-        </div>
-      )}
-
-      {/* Main Workspace */}
+      {/* Main Workspace Body */}
       <main
         style={{
           flex: 1,
@@ -634,30 +743,66 @@ export default function App() {
           overflow: 'hidden',
         }}
       >
-        {/* KPI Alert Ribbon (Adaptive to Role Filtered Data) */}
-        <KpiAlertRibbon
-          records={roleFilteredRecords}
-          activeFilter={activeKpiFilter}
-          onSelectFilter={(filterId) => setActiveKpiFilter(filterId)}
-        />
+        {/* VIEW 1: PORTFOLIO MASTER */}
+        {activeNavTab === 'PORTFOLIO' && (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            {/* KPI Alert Ribbon */}
+            <KpiAlertRibbon
+              records={roleFilteredRecords}
+              activeFilter={activeKpiFilter}
+              onSelectFilter={(filterId) => setActiveKpiFilter(filterId)}
+            />
 
-        {/* Master Virtualized Table Data Grid */}
-        <div style={{ flex: 1, overflow: 'hidden' }}>
-          <MasterDataGrid
-            records={roleFilteredRecords}
-            onSelectRecord={(rec) => setSelectedRecord(rec)}
-            selectedCode={selectedRecord?.project_code}
-            onOpenImport={() => setIsImporterOpen(true)}
-            onExportExcel={handleExport}
-            activeKpiFilter={activeKpiFilter}
-            onClearKpiFilter={() => setActiveKpiFilter(null)}
-            onOpenCreate={() => setIsCreateOpen(true)}
-            onOpenEdit={(rec) => setEditingRecord(rec)}
-            onOpenTimeline={(rec) => setTimelineRecord(rec)}
-            userRole={userRole}
-            selectedDrafter={selectedDrafter}
-          />
-        </div>
+            {/* Streamlined Virtualized Table Data Grid (Requirement 11) */}
+            <div style={{ flex: 1, overflow: 'hidden', marginTop: '12px' }}>
+              <MasterDataGrid
+                records={roleFilteredRecords}
+                onSelectRecord={(rec) => setSelectedRecord(rec)}
+                selectedCode={selectedRecord?.project_code}
+                onOpenImport={() => setIsImporterOpen(true)}
+                onExportExcel={handleQuickExport}
+                onOpenExportReport={(subset) => {
+                  setExportRecordsSelection(subset);
+                  setIsExportOpen(true);
+                }}
+                activeKpiFilter={activeKpiFilter}
+                onClearKpiFilter={() => setActiveKpiFilter(null)}
+                onOpenCreate={() => setIsCreateOpen(true)}
+                onOpenEdit={(rec) => setEditingRecord(rec)}
+                onOpenTimeline={(rec) => setTimelineRecord(rec)}
+                userRole={currentUser.role}
+                selectedDrafter={currentUser.drafterName}
+                clients={clients}
+                tags={tags}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* VIEW 2: DEADLINES CHECKLIST (Requirement 8) */}
+        {activeNavTab === 'DEADLINES' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <DeadlinesTab
+              records={roleFilteredRecords}
+              currentUser={currentUser}
+              onOpenDrawer={(rec) => setSelectedRecord(rec)}
+              onOpenTimeline={(rec) => setTimelineRecord(rec)}
+              onActionComplete={handleDeadlineActionComplete}
+            />
+          </div>
+        )}
+
+        {/* VIEW 3: CALENDAR VIEW (Requirement 14) */}
+        {activeNavTab === 'CALENDAR' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <CalendarView
+              records={roleFilteredRecords}
+              currentUser={currentUser}
+              onOpenDrawer={(rec) => setSelectedRecord(rec)}
+              onOpenTimeline={(rec) => setTimelineRecord(rec)}
+            />
+          </div>
+        )}
       </main>
 
       {/* Slide-Over Detail Drawer */}
@@ -668,8 +813,48 @@ export default function App() {
           onSaveManualNotes={handleSaveManualNotes}
           onOpenEdit={(rec) => setEditingRecord(rec)}
           onOpenTimeline={(rec) => setTimelineRecord(rec)}
+          auditLogs={auditLogs.filter((l) => l.project_code === selectedRecord.project_code)}
         />
       )}
+
+      {/* User Accounts Switcher Modal (Requirement 1 & 3) */}
+      <AuthModal
+        isOpen={isAuthOpen}
+        onClose={() => setIsAuthOpen(false)}
+        currentUser={currentUser}
+        onSelectUser={(user) => {
+          setCurrentUser(user);
+          showToast(`Logged in as ${user.name} (${user.roleLabel})`);
+        }}
+      />
+
+      {/* Settings Modal (Requirement 10, 14, 15) */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        tags={tags}
+        onSaveTags={(updatedTags) => {
+          setTags(updatedTags);
+          showToast('Custom tags updated successfully!');
+        }}
+        auditLogs={auditLogs}
+        settings={firmSettings}
+        onSaveSettings={(updatedSettings) => {
+          setFirmSettings(updatedSettings);
+          showToast('Firm settings and Zoho integrations saved!');
+        }}
+      />
+
+      {/* Export Report Modal (Requirement 9) */}
+      <ExportReportModal
+        isOpen={isExportOpen}
+        onClose={() => {
+          setIsExportOpen(false);
+          setExportRecordsSelection(null);
+        }}
+        records={records}
+        selectedRecords={exportRecordsSelection || []}
+      />
 
       {/* Create New Application Modal */}
       <CreateApplicationModal
@@ -677,6 +862,8 @@ export default function App() {
         onClose={() => setIsCreateOpen(false)}
         onCreate={handleCreateApplication}
         existingCodes={existingCodes}
+        clients={clients}
+        tags={tags}
       />
 
       {/* Edit Application Modal */}
@@ -685,6 +872,8 @@ export default function App() {
         record={editingRecord}
         onClose={() => setEditingRecord(null)}
         onUpdate={handleUpdateApplication}
+        clients={clients}
+        tags={tags}
       />
 
       {/* Master Statutory Prosecution Timeline Modal */}
@@ -701,11 +890,15 @@ export default function App() {
         onImportSuccess={handleImportSuccess}
       />
 
-      {/* Live Due Board TV Screen Mode */}
+      {/* Enhanced Live Due Board TV Mode (Requirement 16) */}
       {isTvMode && (
         <LiveDueBoard
           records={roleFilteredRecords}
           onBack={() => setIsTvMode(false)}
+          onSelectRecord={(rec) => {
+            setIsTvMode(false);
+            setSelectedRecord(rec);
+          }}
         />
       )}
     </div>

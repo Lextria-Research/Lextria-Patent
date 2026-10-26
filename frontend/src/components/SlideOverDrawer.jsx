@@ -9,7 +9,8 @@ export default function SlideOverDrawer({
   onClose,
   onSaveManualNotes,
   onOpenEdit,
-  onOpenTimeline
+  onOpenTimeline,
+  auditLogs = []
 }) {
   if (!record) return null;
 
@@ -232,6 +233,7 @@ export default function SlideOverDrawer({
           { id: 'forms', label: 'Statutory Forms' },
           { id: 'inventors', label: 'Inventors' },
           { id: 'notes', label: 'Senior Notes & Action' },
+          { id: 'audit', label: 'History & Audit' },
         ].map((t) => (
           <button
             key={t.id}
@@ -585,6 +587,59 @@ export default function SlideOverDrawer({
                 </span>
               )}
             </div>
+          </div>
+        )}
+        {/* AUDIT & HISTORY TAB (Requirement 7) */}
+        {activeTab === 'audit' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '10px', borderBottom: '1px solid var(--line)' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}>Audit History for {record.project_code}</h4>
+                <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted)' }}>Chronological record of who modified what and when</p>
+              </div>
+              <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: 'var(--page)', border: '1px solid var(--line)' }}>
+                {auditLogs.length} events
+              </span>
+            </div>
+
+            {auditLogs.length === 0 ? (
+              <div style={{ padding: '36px', textAlign: 'center', color: 'var(--muted)', background: 'var(--page)', borderRadius: '8px' }}>
+                <Clock size={28} style={{ opacity: 0.5, marginBottom: '8px' }} />
+                <div style={{ fontWeight: 600, fontSize: '13px' }}>No direct audit entries recorded yet for this matter.</div>
+                <div style={{ fontSize: '11px', marginTop: '4px' }}>Edits, deadline ticks, and status changes will appear here automatically.</div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {auditLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    style={{
+                      padding: '12px',
+                      borderRadius: '8px',
+                      background: 'var(--page)',
+                      border: '1px solid var(--line)',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontWeight: 800, color: 'var(--accent)' }}>
+                        {log.action}
+                      </span>
+                      <span style={{ color: 'var(--muted)', fontSize: '11px' }}>
+                        {new Date(log.created_at).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </span>
+                    </div>
+                    <div style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                      {log.details}
+                    </div>
+                    <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <User size={11} />
+                      <span>Changed by: <strong>{log.changed_by}</strong> ({log.user_role})</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
