@@ -1,0 +1,18 @@
+[
+  {
+    "id": "cq_00001",
+    "project_code": "AR805",
+    "category": "INVENTOR_QUERY",
+    "query_text": "CS Draft sent to inventor for confirmation on 02/05/2026 with comments, asking for additional data.",
+    "query_status": "OPEN",
+    "created_by": "Pratham"
+  },
+  {
+    "id": "cq_00002",
+    "project_code": "AR990",
+    "category": "INVENTOR_QUERY",
+    "query_text": "Deepak sir review completed on 01/07/2026, Kiran sir review done / Sent for filing",
+    "query_status": "OPEN",
+    "created_by": "Deepak,Kiran"
+  }
+]

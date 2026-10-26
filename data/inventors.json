@@ -1,0 +1,1694 @@
+[
+  {
+    "id": "inv_00001",
+    "full_name": "Madala chaitanya sai",
+    "email": "vishnu.nair@manipal.edu",
+    "phone": "8722633300",
+    "institution_department": "MIT",
+    "designation": "student",
+    "address": "Department of Aeronautical and Automobile\nEngineering, Manipal Institute of Technology,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00002",
+    "full_name": "Vishnu G Nair",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor",
+    "address": "Department of Aeronautical and Automobile\nEngineering, Manipal Institute of Technology,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00003",
+    "full_name": "Srinivas G",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor",
+    "address": "Department of Aeronautical and Automobile\nEngineering, Manipal Institute of Technology,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00004",
+    "full_name": "Rangan Viveganandan",
+    "email": "",
+    "phone": "",
+    "institution_department": "-",
+    "designation": "-",
+    "address": "101, Princess Kirthi, Dr VS Acharya Road,\nManipal, Karnataka, India - 576104"
+  },
+  {
+    "id": "inv_00005",
+    "full_name": "sherin Cyrila Arulmaran",
+    "email": null,
+    "phone": null,
+    "institution_department": "-",
+    "designation": null,
+    "address": "701C, Nido- The Bridge, 50-54 Union Street,\nShieldfield, NewCastle Upon Tyne, United\nKingdom -NE2 1AH"
+  },
+  {
+    "id": "inv_00006",
+    "full_name": "Meghana Kasturi",
+    "email": "kirthanashri.sv@manipal.edu",
+    "phone": "8053732239",
+    "institution_department": "MCBR",
+    "designation": "researcher and PhD scholar",
+    "address": "Manipal Centre for Biotherapeutics Research,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00007",
+    "full_name": "Vidhi Mathur",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCBR",
+    "designation": "prominent PhD Scholar and Researcher",
+    "address": "Manipal Centre for Biotherapeutics Research,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00008",
+    "full_name": "Raviraja NS",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCBR",
+    "designation": "Professor",
+    "address": "Manipal Centre for Biotherapeutics Research,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00009",
+    "full_name": "Varadharajan S",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor in Civil Engineering and Deputy Director of the Intellectual Property Rights",
+    "address": "Manipal Centre for Biotherapeutics Research,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00010",
+    "full_name": "S.V. Kirthanashri",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCBR",
+    "designation": "Associate Professor",
+    "address": "Manipal Institute of Technology, Manipal Academy\nof Higher Education, Manipal,576104, Karnataka,\nIndia"
+  },
+  {
+    "id": "inv_00011",
+    "full_name": "Mrunmayi Gadre",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCBR",
+    "designation": "Research Fellow and PhD Scholar",
+    "address": "Manipal Centre for Biotherapeutics Research,\nManipal Academy of Higher Education,\nManipal,576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00012",
+    "full_name": "DR. Ajeetkumar Patil",
+    "email": "ajeetkumar.p@manipal.edu",
+    "phone": "",
+    "institution_department": "MIAP",
+    "designation": "Associate professor,\nResearch scholar\nAdditional professor and head",
+    "address": "Associate Professor, Department\nof Atomic & Molecular Physics,\nManipal Academy of Higher\nEducation, Manipal, 576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00013",
+    "full_name": "Anusha Pillai",
+    "email": null,
+    "phone": null,
+    "institution_department": "MAHE",
+    "designation": null,
+    "address": "Department of Atomic &\nMolecular Physics, Manipal\nAcademy of Higher Education,\nManipal, 576104, Karnataka,\nIndia"
+  },
+  {
+    "id": "inv_00014",
+    "full_name": "DR. Saritha Kamath U",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCHP",
+    "designation": null,
+    "address": "Additional Professor & Head\nDepartment of Medical\nLaboratory Technology\nManipal College of Health\nProfessions Manipal Academy of\nHigher Education, Manipal,\n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00015",
+    "full_name": "Arjun Santhosh",
+    "email": "arjun.santhosh@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Assistant professor",
+    "address": "Department of Mechanical and Industrial \nEngineering, Manipal Institute of Technology, \nManipal Academy of Higher Education, Manipal - \n576104, Karnataka, India,\nDepartment of Aeronautical and Automobile \nEngineering, Manipal Institute of Technology, \nManipal Academy of Higher Education, Manipal - \n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00016",
+    "full_name": "Pranav Sudheer",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Student",
+    "address": null
+  },
+  {
+    "id": "inv_00017",
+    "full_name": "Nandini K. K",
+    "email": "nandini.kk@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Research Scholar (PhD Student)",
+    "address": "Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104\n Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104\n Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104\nDepartment of Electrical and Electronics Engineering,\nNational Institute of Technology, Karnataka, India-575025"
+  },
+  {
+    "id": "inv_00018",
+    "full_name": "Dr. Jayalakshmi N. S",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00019",
+    "full_name": "Dr. Vinay Kumar Jadoun",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00020",
+    "full_name": "Dr. Dattatraya N. Gaonkar",
+    "email": null,
+    "phone": null,
+    "institution_department": "NATIONAL INSTITUTE OF TECHNOLOGY",
+    "designation": "Associate Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00021",
+    "full_name": "Anubhav Kumar Pandey",
+    "email": "anubhav.pandey@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Assistant Professor",
+    "address": "Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104 \n Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104 \n Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104"
+  },
+  {
+    "id": "inv_00022",
+    "full_name": "Swathi Tejaswini Pralhad Bedekar",
+    "email": "swathibhat1295@gmail.com",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "D.No. 1-105-3, Shri Nivasa near Vishnumurthy \ntemple, Thekkibettu, Vamanjoor, Mangalore \n575028\n202 B, Palace Orchid, Raman Mala, Opp. Polo \nGround, Kolhapur, Maharashtra-416003"
+  },
+  {
+    "id": "inv_00023",
+    "full_name": "Divya Rao",
+    "email": "divya.r@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Information and \nCommunication Technology",
+    "designation": "Associste professor",
+    "address": "Department of Information and \nCommunication Technology, \nManipal Institute of \nTechnology, Manipal Academy \nof Higher Education, Manipal\n576104, Karnataka, India \nDepartment of Information and \nCommunication Technology, \nManipal Institute of \nTechnology, Manipal Academy \nof Higher Education, Manipal\n576104, Karnataka, India \nDepartment of Information and \nCommunication Technology, \nManipal Institute of \nTechnology, Manipal Academy \nof Higher Education, Manipal\n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00024",
+    "full_name": "Kankshi Banker",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Information and \nCommunication Technology",
+    "designation": "Student",
+    "address": null
+  },
+  {
+    "id": "inv_00025",
+    "full_name": "Jinay Patel Kulin",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Information and \nCommunication Technology",
+    "designation": "Student",
+    "address": null
+  },
+  {
+    "id": "inv_00026",
+    "full_name": "Jayalakshmi N. S",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Professor",
+    "address": "Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104"
+  },
+  {
+    "id": "inv_00027",
+    "full_name": "Vinay Kumar Jadoun",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor",
+    "address": "Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104"
+  },
+  {
+    "id": "inv_00028",
+    "full_name": "Dattatraya N. Gaonkar",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Associate Professor",
+    "address": "Department of Electrical and Electronics Engineering,\nManipal Institute of Technology, Manipal Academy of\nHigher Education Manipal, India-576104"
+  },
+  {
+    "id": "inv_00029",
+    "full_name": "Jayalakshmi N. S.",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Professor",
+    "address": "Department of Electrical and Electronics\nEngineering, Manipal Institute of Technology,\nManipal Academy of Higher Education, Manipal,\nKarnataka - 576104 India"
+  },
+  {
+    "id": "inv_00030",
+    "full_name": "Akshaya MR",
+    "email": "akshaya.nair@manipal.edu",
+    "phone": "",
+    "institution_department": "MSAP",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor - Senior \nScale,  \nDepartment of Design,  \nManipal School of Architecture & \nPlanning, MAHE, Manipal, \nKarnataka, India."
+  },
+  {
+    "id": "inv_00031",
+    "full_name": "Antony Charles",
+    "email": null,
+    "phone": null,
+    "institution_department": "Bhoomi Object (Small business and independent brand)",
+    "designation": "Interior & Furniture Designer",
+    "address": "Interior & Furniture Designer,  \nBhoomi Objects, \nTrivandrum,  \nKerala, India."
+  },
+  {
+    "id": "inv_00032",
+    "full_name": "Kapileswar Rana",
+    "email": "",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Final Year B.Tech Student",
+    "address": "Final Year B.Tech Student, \nDepartment of Aeronautical \nand Automobile Engineering, \nManipal Institute of \nTechnology, Manipal Academy \nof Higher Education, Manipal, \n576104, Karnataka, India."
+  },
+  {
+    "id": "inv_00033",
+    "full_name": "Pavanya M",
+    "email": null,
+    "phone": null,
+    "institution_department": "MMMC",
+    "designation": "Second Year PhD research scholar",
+    "address": "Second Year PhD research scholar  \nDepartment of Obstetrics \nand Gynaecology  \nMelaka Manipal Medical \nCollege ( MMMC-Manipal \nCampus), \nManipal Academy of \nHigher Education, \nManipal-576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00034",
+    "full_name": "Anish Ponnachan Cherian",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCPS",
+    "designation": "Second Year M.Pharm. \nPharmaceutics Student",
+    "address": "Second Year M.Pharm. \nPharmaceutics Student, \nDepartment Of Pharmaceutics, \nManipal College Of \nPharmaceutical Sciences, \nManipal Academy of Higher \nEducation, Manipal-576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00035",
+    "full_name": "Prima Yangzi Mishra",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCBR",
+    "designation": "st Year MSc (by Research) in Biotherapeutics Student",
+    "address": "1st Year MSc (by Research) in Biotherapeutics Student. \nManipal Centre for \nBiotherapeutics Research.  \nManipal Academy of Higher \nEducation, Manipal,576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00036",
+    "full_name": "SK Rhaber Hussain",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Final year B.Tech student",
+    "address": "Final year B.Tech student, \nDepartment of Biomedical \nEngineering, Manipal \nAcademy of Higher \nEducation, Manipal, \n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00037",
+    "full_name": "BHARATHI R.B",
+    "email": "bharathi.rb@manipal.edu",
+    "phone": "9845399435",
+    "institution_department": "MIT Manipal",
+    "designation": "Associate Professor",
+    "address": "Dept of E&E, MIT Manipal,\nMAHE 576104\nDept of E&E, MIT Manipal,\nMAHE 576104\nDept of E&E, MIT Manipal,\nMAHE 576104\nDept of E&E, MIT Manipal,\nMAHE 576104"
+  },
+  {
+    "id": "inv_00038",
+    "full_name": "VIJAYALAXMI",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT Manipal",
+    "designation": "Additional Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00039",
+    "full_name": "AARON DONALD PINTO",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT Manipal",
+    "designation": "Undergraduate Student (B.Tech)",
+    "address": null
+  },
+  {
+    "id": "inv_00040",
+    "full_name": "B.SANKEERTHAN RAO",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT Manipal",
+    "designation": "Postgraduate Student (M.Tech)",
+    "address": null
+  },
+  {
+    "id": "inv_00041",
+    "full_name": "Santhosha Rao",
+    "email": "santhosha.rao@manipal.edu",
+    "phone": "",
+    "institution_department": "MIT Manipal",
+    "designation": "Additional Professor",
+    "address": "Department of Information and\nCommunication Technology,\nManipal Institute of Technology,\nManipal Academy of Higher\nEducation, Manipal -"
+  },
+  {
+    "id": "inv_00042",
+    "full_name": "Maskibail Prerana Rao",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT Manipal",
+    "designation": "Student",
+    "address": "Department of Information and\nCommunication Technology,\nManipal Institute of Technology,\nManipal Academy of Higher\nEducation, Manipal -"
+  },
+  {
+    "id": "inv_00043",
+    "full_name": "M Prerana Rao",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Student",
+    "address": "Department of Information and\nCommunication Technology,\nManipal Institute of Technology,\nManipal Academy of Higher\nEducation, Manipal India."
+  },
+  {
+    "id": "inv_00044",
+    "full_name": "VEENA NK",
+    "email": "shibu.c@manipal.edu",
+    "phone": "",
+    "institution_department": "MCHP",
+    "designation": "ASSISTANT PROFESSOR",
+    "address": "ASSISTANT PROFESSOR\nSELECTION GRADE\nDEPARTMENT OF RENAL\nREPLACEMENT THERAPY &\nDIALYSIS TECHNOLOGY,\nMANIPAL COLLEGE OF\nHEALTH PROFESSIONS\n,MANIPAL ACADEMY OF\nHIGHER EDUCATION\n(MAHE), MANIPAL,\nKARNATAKA-576104 INDIA."
+  },
+  {
+    "id": "inv_00045",
+    "full_name": "RAVINDRA PRABHU A",
+    "email": null,
+    "phone": null,
+    "institution_department": "KMC",
+    "designation": "PROFESSOR",
+    "address": "PROFESSOR\nDEPARTMENT OF\nNEPHROLOGY\nKASTURBA MEDICAL\nCOLLEGE (KMC), MANIPAL\nACADEMY OF HIGHER\nEDUCATION (MAHE),\nMANIPAL, KARNATAKA-\n576104 INDIA."
+  },
+  {
+    "id": "inv_00046",
+    "full_name": "G ARUN MAIYA",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCHP",
+    "designation": "CHIEF OF CENTRE FOR\nDIABETIC FOOT CARE &\nRESEARCH (CDFCR) & DEAN\n-MCHP\nPROFESSOR",
+    "address": "CHIEF OF CENTRE FOR\nDIABETIC FOOT CARE &\nRESEARCH (CDFCR) & DEAN\n-MCHP\nPROFESSOR\nDEPARTMENT OF\nPHYSIOTHERAPY\nMANIPAL COLLEGE OF\nHEALTH PROFESSIONS\n(MCHP), MANIPAL MANIPAL\nACADEMY OF HIGHER\nEDUCATION (MAHE),\nMANIPAL, KARNATAKA-\n576104 INDIA."
+  },
+  {
+    "id": "inv_00047",
+    "full_name": "INDU RAMACHANDRA RAO",
+    "email": null,
+    "phone": null,
+    "institution_department": "KMC",
+    "designation": "ASSOCIATE PROFESSOR",
+    "address": "ASSOCIATE PROFESSOR\nDEPARTMENT OF\nNEPHROLOGY\nKASTURBA MEDICAL\nCOLLEGE (KMC), MANIPAL\nMANIPAL ACADEMY OF\nHIGHER EDUCATION\n(MAHE), MANIPAL,\nKARNATAKA-576104 INDIA."
+  },
+  {
+    "id": "inv_00048",
+    "full_name": "ANUPAMA PAVITHRAN",
+    "email": null,
+    "phone": null,
+    "institution_department": "MSAP",
+    "designation": "ASSOCIATE PROFESSOR",
+    "address": "ASSISTANT PROFESSOR\nMANIPAL SCHOOL OF\nARCHITECTURE AND\nPLANNING, MANIPAL\nACADEMY OF HIGHER\nEDUCATION (MAHE),\nMANIPAL, KARNATAKA-\n576104 INDIA."
+  },
+  {
+    "id": "inv_00049",
+    "full_name": "SHIBU CHAMEETTACHAL",
+    "email": null,
+    "phone": null,
+    "institution_department": "KMC",
+    "designation": null,
+    "address": "KASTURBA MEDICAL\nCOLLEGE, MANIPAL,\nKARNATAKA INDIA-576104"
+  },
+  {
+    "id": "inv_00050",
+    "full_name": "NAJATHULLA BHAGAVATHI CHALIL",
+    "email": null,
+    "phone": null,
+    "institution_department": "BHAGAVATHI CHALIL\nHOUSE\nVATTOLIBAZAR POST\nBALUSSERY, KOZHIKODE\nPIN - 673612",
+    "designation": null,
+    "address": "BHAGAVATHI CHALIL\nHOUSE\nVATTOLIBAZAR POST\nBALUSSERY, KOZHIKODE\nPIN - 673612"
+  },
+  {
+    "id": "inv_00051",
+    "full_name": "Nikhileshwar V",
+    "email": "nikhileshwar.dampmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Research Scholar( currently  as Pixel Characterization Engineer)",
+    "address": "Department of Atomic and\nMolecular Physics. AB 5, LG -1\nMIT Engineering campus, Eshwar\nNagar, Manipal, Udupi,\nKarnataka-576104, India."
+  },
+  {
+    "id": "inv_00052",
+    "full_name": "Namdev Dhas",
+    "email": "namdevdhas89@gmail.com",
+    "phone": "",
+    "institution_department": "MCOPS",
+    "designation": "Associate Professor",
+    "address": "Associate Professor,\nDepartment of\nPharmaceutics, MCOPS,\nManipal Academy of Higher\nEducation, Manipal,\nKarnataka-"
+  },
+  {
+    "id": "inv_00053",
+    "full_name": "Ashutosh Gupta",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Research scholar",
+    "address": "Research scholar,\nDepartment of\nPharmaceutical Quality\nAssurance, MCOPS,\nManipal Academy of Higher\nEducation, Manipal,\nKarnataka-"
+  },
+  {
+    "id": "inv_00054",
+    "full_name": "Rachana S P",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Research scholar",
+    "address": "Research scholar,\nDepartment of\nPharmaceutics, MCOPS,\nManipal Academy of Higher\nEducation, Manipal,\nKarnataka-"
+  },
+  {
+    "id": "inv_00055",
+    "full_name": "Sudheer Moorkoth",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Professor and Head",
+    "address": "Professor and Head,\nDepartment of\nPharmaceutical Quality\nAssurance, MCOPS,\nManipal Academy of Higher\nEducation, Manipal,\nKarnataka-"
+  },
+  {
+    "id": "inv_00056",
+    "full_name": "Pooja Mallya",
+    "email": "pooja.mallya@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MCOPS",
+    "designation": "Research Scholar( currently as Assistant professor)",
+    "address": "Research Scholar,\nDepartment of Pharmaceutics,\nManipal College of\nPharmaceutical Sciences, Manipal\nAcademy of Higher Education,\nManipal- 576104, Karnataka,\nIndia"
+  },
+  {
+    "id": "inv_00057",
+    "full_name": "Dani Laxman Yarlagadda",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Ph.D. Research Scholar( currently as Postdoctoral Fellow)",
+    "address": "Department of Pharmaceutical\nQuality Assurance,\nManipal College of\nPharmaceutical Sciences,\nManipal Academy of Higher\nEducation, Manipal- 576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00058",
+    "full_name": "Shaila Angela Lewis",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Professor & Head",
+    "address": "Department of Pharmaceutics,\nManipal College of\nPharmaceutical Sciences,\nManipal Academy of Higher\nEducation, Manipal- 576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00059",
+    "full_name": "Pratyasha Sharma",
+    "email": "pratyasha2405@gmail.com",
+    "phone": "",
+    "institution_department": "MCOPS",
+    "designation": "PhD Scholar",
+    "address": "PhD Scholar,\nDepartment of Pharmacology,\nManipal College of\nPharmaceutical Science,\nManipal Academy of Higher\nEducation, Karnataka, Manipal -"
+  },
+  {
+    "id": "inv_00060",
+    "full_name": "Madhavan Nampoothiri G",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Associate professor",
+    "address": "Associate professor,\nDepartment of Pharmacology,\nManipal College of\nPharmaceutical Science,\nManipal Academy of Higher\nEducation, Karnataka, Manipal -"
+  },
+  {
+    "id": "inv_00061",
+    "full_name": "Jayesh Mudgal",
+    "email": null,
+    "phone": null,
+    "institution_department": "MCOPS",
+    "designation": "Associate professor",
+    "address": "Associate professor,\nDepartment of Pharmacology,\nManipal College of\nPharmaceutical Science,\nManipal Academy of Higher\nEducation, Karnataka, Manipal -"
+  },
+  {
+    "id": "inv_00062",
+    "full_name": "HARIPERUMAL N",
+    "email": "hariperumal.mitmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "MIT",
+    "designation": "Research Scholar",
+    "address": "Research Scholar office,\nAcademic Block 2, Department of\nCivil Engineering, Manipal\nInstitute of Technology Manipal\nAcademy of Higher Education,\nManipal, 576104, Karnataka,\nIndia"
+  },
+  {
+    "id": "inv_00063",
+    "full_name": "S. VARADHARAJAN",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Assistant Professor (Senior Scale)",
+    "address": "Assistant Professor (Senior Scale),\nAcademic Block 2, Department of\nCivil Engineering, Manipal\nInstitute of Technology, MAHE,\nManipal, KA, IN \u2013"
+  },
+  {
+    "id": "inv_00064",
+    "full_name": "PURUSHOTHAM G. SARVADE",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Professor & HOD",
+    "address": "Professor &;HOD, Academic Block\n2, Department of Civil\nEngineering, Manipal Institute of\nTechnology, MAHE, Manipal, KA,\nIN \u2013"
+  },
+  {
+    "id": "inv_00065",
+    "full_name": "SNIGDHA MISHRA",
+    "email": "snigdha.mishra@manipal.edu",
+    "phone": "",
+    "institution_department": "DBMS",
+    "designation": "Research Associate / Ph.D. Scholar ( currently as Assistant Professor / PhD Researcher)",
+    "address": "Research Associate,  \nDivision of Anatomy, Department \nof Basic Medical Sciences, \nMAHE, Manipal-576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00066",
+    "full_name": "SHYAMASUNDER BHAT N",
+    "email": null,
+    "phone": null,
+    "institution_department": "KMC",
+    "designation": "Professor and Unit Head",
+    "address": "Professor and Unit Head, \nDepartment of Orthopaedics, \nKasturba Medical College, \nManipal, MAHE-576104"
+  },
+  {
+    "id": "inv_00067",
+    "full_name": "NOEL VEIGAS",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Research Scholar",
+    "address": "Department of Data Science and \nComputer Applications, MIT, \nMAHE, Manipal-576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00068",
+    "full_name": "RITESH V KAMATH",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Research Scholar",
+    "address": "Department of Data Science and \nComputer Applications, MIT, \nMAHE, Manipal-576104, \nKarnataka, India ."
+  },
+  {
+    "id": "inv_00069",
+    "full_name": "ANISH KRISHNA SHERIGAR",
+    "email": null,
+    "phone": null,
+    "institution_department": "MIT",
+    "designation": "Research Scholar",
+    "address": "Department of Data Science and \nComputer Applications, MIT, \nMAHE, Manipal-576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00070",
+    "full_name": "Chehak Nayyar",
+    "email": "chaharkhushi2003@gmail.com",
+    "phone": "",
+    "institution_department": "Dept. of Periodontology,\nManipal College of Dental\nSciences, MPL",
+    "designation": "Junior Resident / PG Scholar",
+    "address": "Dept. of Periodontology,\nManipal College of Dental\nSciences, Manipal, Karnataka576104"
+  },
+  {
+    "id": "inv_00071",
+    "full_name": "Khushi Chahar",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Dental\nSciences, MPL",
+    "designation": "Junior Resident / PG Scholar",
+    "address": "Manipal College of Dental\nSciences Manipal, Karnataka576104"
+  },
+  {
+    "id": "inv_00072",
+    "full_name": "Karthik S",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of\nProsthodontics, Manipal\nCollege of Dental Sciences, MPL",
+    "designation": "Associate Professor",
+    "address": "Associate Professor, Dept. of\nProsthodontics, Manipal\nCollege of Dental Sciences,\nManipal, Karnataka-576104"
+  },
+  {
+    "id": "inv_00073",
+    "full_name": "Radhika Kapoor",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Dental\nSciences , MPL",
+    "designation": "Junior Resident / PG Scholar",
+    "address": "Manipal College of Dental\nSciences ,Manipal, Karnataka576104"
+  },
+  {
+    "id": "inv_00074",
+    "full_name": "Dasharathraj Kodu Shetty",
+    "email": "raja.shetty@manipal.edu",
+    "phone": "",
+    "institution_department": "Dept of data Science and computer applications, Manipal institute of Technology, MPL",
+    "designation": "Associate professor",
+    "address": "Associate professor, Dept of data Science and computer applications, Manipal institute of Technology, MAHE, Manipal, Karnataka -576104"
+  },
+  {
+    "id": "inv_00075",
+    "full_name": "U. Dinesh Acharya",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computeer Science and Engineering, Manipal Institute of technology, MPL",
+    "designation": "Professor",
+    "address": "Department of Computeer Science and Engineering, Manipal Institute of technology, MAHE, Manipal, Karnataka, India -576104"
+  },
+  {
+    "id": "inv_00076",
+    "full_name": "Jayaraj Mymbilly Balakrishnan",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Emergency Medicine, KMC, MPL",
+    "designation": "Professor & Head",
+    "address": "professor and Head, Department of Emergency Medicine, KMC, Manipal, Karnataka, India"
+  },
+  {
+    "id": "inv_00077",
+    "full_name": "Arka Basumatary",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nAUTOMOBILE\nENGINEEIRNG, MANIPAL\nINSTITUTE OF\nTECHNOLOGY, MPL",
+    "designation": "Professor & Head",
+    "address": "SCHOLAR, DEPARTMENT OF\nAUTOMOBILE\nENGINEEIRNG, MANIPAL\nINSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL - 576104,\nKARNATAKA INDIA"
+  },
+  {
+    "id": "inv_00078",
+    "full_name": "Shreepathy Ranga Bhatta B",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nHUMANITIES AND\nMANAGEMENT, MIT, MPL",
+    "designation": "Dr. TMA Pai Research Scholar",
+    "address": "DR. TMA PAI RESEARCH\nSCHOLAR, DEPARTMENT OF\nHUMANITIES AND\nMANAGEMENT, MIT, MAHE\nMANIPAL, KARNATAKA-576104"
+  },
+  {
+    "id": "inv_00079",
+    "full_name": "Anmol Kapoor",
+    "email": "",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "Junior Resident, Dept of\nOphthalmology, KMC, Manipal,\nMAHE, Manipal, KA, IN-576104 \n\nAssociate Professor, Dept of \nOphthalmology, KMC, Manipal, \nMAHE, Manipal, KA, IN-576104 \n\nProfessor and Head of Unit-1, \nDept of Ophthalmology, KMC, \nManipal, MAHE, Manipal, KA, \nIN-576104 \n\nProfessor and Head of \nDepartment, Dean of Manipal \nCollege of Pharmaceutical \nSciences, Department of \nPharmaceutics, MCOPS, MAHE, \nManipal, KA, IN-576104\n\nProfessor and Head of \nDepartment, \nDepartment of Pharmaceutical \nBiotechnology, MCOPS, MAHE, \nManipal, KA, IN-576104\n\nPhD student researcher, \nDepartment of Pharmaceutics, \nMCOPS, MAHE, Manipal KA, \nIN-576104"
+  },
+  {
+    "id": "inv_00080",
+    "full_name": "Manali Hazarika",
+    "email": null,
+    "phone": null,
+    "institution_department": null,
+    "designation": null,
+    "address": null
+  },
+  {
+    "id": "inv_00081",
+    "full_name": "Sulatha V Bhandary",
+    "email": null,
+    "phone": null,
+    "institution_department": null,
+    "designation": null,
+    "address": null
+  },
+  {
+    "id": "inv_00082",
+    "full_name": "Srinivas Mutalik",
+    "email": null,
+    "phone": null,
+    "institution_department": null,
+    "designation": null,
+    "address": null
+  },
+  {
+    "id": "inv_00083",
+    "full_name": "Raghu Chandrashekhar H",
+    "email": null,
+    "phone": null,
+    "institution_department": null,
+    "designation": null,
+    "address": null
+  },
+  {
+    "id": "inv_00084",
+    "full_name": "Rahul Pokale",
+    "email": null,
+    "phone": null,
+    "institution_department": null,
+    "designation": null,
+    "address": null
+  },
+  {
+    "id": "inv_00085",
+    "full_name": "NA",
+    "email": "",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00086",
+    "full_name": "Mahananda R Prabhu",
+    "email": "mahananda.mcopsmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Manipal College of Pharmaceutical\nSciences, MPL",
+    "designation": "Research Scholar",
+    "address": "Manipal College of Pharmaceutical\nSciences, Madhav Nagar, Manipal,\nKarnataka 576104;"
+  },
+  {
+    "id": "inv_00087",
+    "full_name": "Srinivas Hebbar",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Pharmaceutical\nSciences, MPL",
+    "designation": "Assistant Professor",
+    "address": "Manipal College of Pharmaceutical\nSciences, Madhav Nagar, Manipal,\nKarnataka 576104;"
+  },
+  {
+    "id": "inv_00088",
+    "full_name": "Dinesh Upadhya",
+    "email": null,
+    "phone": null,
+    "institution_department": "Centre for Molecular Neurosciences,\nKMC, MPL",
+    "designation": "Assistant Professor",
+    "address": "Centre for Molecular Neurosciences,\nKMC, Manipal Karnataka 576104;"
+  },
+  {
+    "id": "inv_00089",
+    "full_name": "Anup Naha",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Pharmaceutical\nSciences, MPL",
+    "designation": "Professor",
+    "address": "Manipal College of Pharmaceutical\nSciences, Madhav Nagar, Manipal,\nKarnataka 576104"
+  },
+  {
+    "id": "inv_00090",
+    "full_name": "Shirley Lewis Salins",
+    "email": "nagaraj.kamath@manipal.edu",
+    "phone": "",
+    "institution_department": "Radiotherapy and Oncology,\nKMC, MPL",
+    "designation": "Associate Professor & Head",
+    "address": "Associate Professor and Head,\nRadiotherapy and Oncology,\nKMC,\u00a0MAHE,\u00a0Manipal, 576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00091",
+    "full_name": "Nagaraj Kamath",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of Media\nTechnology,\nMIT,\u00a0MPL",
+    "designation": "Assistant Professor (Selection Grade)",
+    "address": "Asst. Professor, Dept. of Media\nTechnology,\nMIT,\u00a0MAHE,\u00a0Manipal, 576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00092",
+    "full_name": "Sudha D Kamath",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of Physics,\nMIT,\u00a0MPL",
+    "designation": "Professor",
+    "address": "Professor, Dept. of Physics,\nMIT,\u00a0MAHE,\u00a0Manipal, 576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00093",
+    "full_name": "Shailendra Kumar Tiwari",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department\nof ECE, MIT, MPL",
+    "designation": "Associate Professor",
+    "address": "Associate Professor, Department\nof ECE, MIT,\u00a0MAHE,\u00a0Manipal,\n576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00094",
+    "full_name": "Sandhya Parasnath Dubey",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department\nof ECE, MIT, MPL",
+    "designation": "Associate Professor",
+    "address": "Assistant Professor, Department\nof DSCA, MIT,\u00a0MAHE,\u00a0Manipal,\n576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00095",
+    "full_name": "Srinivas Shenoy H",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of Mechanical and\nIndustrial Engineering,\nMIT, MPL",
+    "designation": "Assistant Professor (Senior Scale)",
+    "address": "Asst. Professor, Senior Scale,\nDept. of Mechanical and\nIndustrial Engineering,\nMIT,\u00a0MAHE,\u00a0Manipal, 576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00096",
+    "full_name": "Aldrin Rolwin Lewis",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Radiotherapy, KMC, MPL",
+    "designation": "Radiation Therapy Technologist",
+    "address": "Radiation Therapy Technologist,\nKMC,\u00a0MAHE,\u00a0Manipal, 576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00097",
+    "full_name": "Kiran R",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of\nPhysics, MIT, MPL",
+    "designation": "Research Scholar",
+    "address": "Research Scholar, Dept. of\nPhysics, MIT,\u00a0MAHE,\u00a0Manipal,\n576104,\nKarnataka, India;"
+  },
+  {
+    "id": "inv_00098",
+    "full_name": "Tejas",
+    "email": null,
+    "phone": null,
+    "institution_department": "Dept. of\nPhysics, MIT, MPL",
+    "designation": "Research Scholar",
+    "address": "Research Scholar, Dept. of\nPhysics, MIT,\u00a0MAHE,\u00a0Manipal,\n576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00099",
+    "full_name": "Kshama Vishwakarma",
+    "email": "kshama.v@manipal.edu",
+    "phone": "",
+    "institution_department": "Welcomgroup Graduate School of Hotel Administration, MAHE, MPL",
+    "designation": "Associate Professor & Coordinator",
+    "address": "Welcomgroup Graduate School of Hotel Administration, MAHE, Manipal, 576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00100",
+    "full_name": "Asha Kamath",
+    "email": null,
+    "phone": null,
+    "institution_department": "Prasanna School of Public Health, \nMAHE, MPL",
+    "designation": "Associate Director (PSPH) & Professor & Head (Data Science)",
+    "address": "Prasanna School of Public Health, \nMAHE, Manipal, 576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00101",
+    "full_name": "Sudheer Moorkoth",
+    "email": "ashutosh.gupta@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department\nof Pharmaceutical Quality\nAssurance, MCOPS, MPL",
+    "designation": "Professor and Head",
+    "address": "Professor and Head, Department\nof Pharmaceutical Quality\nAssurance, MCOPS, Manipal,\nKA, IN-576104;"
+  },
+  {
+    "id": "inv_00102",
+    "full_name": "Arya Raveendran",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department\nof Pharmaceutical Quality\nAssurance, MCOPS, MPL",
+    "designation": "Research scholar",
+    "address": "Research scholar, Department of\nPharmaceutical Quality\nAssurance, MCOPS, Manipal,\nKA, IN-576104;"
+  },
+  {
+    "id": "inv_00103",
+    "full_name": "Leslie E Lewis",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Pediatrics,\nKasturba Medical College, MPL",
+    "designation": "Professor",
+    "address": "Department of Pediatrics,\nKasturba Medical College,\nManipal, KA, IN-576104;"
+  },
+  {
+    "id": "inv_00104",
+    "full_name": "Krishnananda Prabhu",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biochemistry,\nKasturba Medical College, MPL",
+    "designation": "Professor",
+    "address": "Department of Biochemistry,\nKasturba Medical College,\nManipal, KA, IN-576104"
+  },
+  {
+    "id": "inv_00105",
+    "full_name": "Parveez Shariff B. G",
+    "email": "parveez1shariff@gmail.com",
+    "phone": "",
+    "institution_department": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, MPL",
+    "designation": "Research Scholar ( currently as Assistant Professor )",
+    "address": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, Manipal Academy\nof Higher\u00a0Education, Manipal\n576104, India"
+  },
+  {
+    "id": "inv_00106",
+    "full_name": "Tanweer Ali",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, MPL",
+    "designation": "Assistant Professor (Senior Scale)\t( currently as Additional Professor)",
+    "address": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, Manipal Academy\nof Higher\u00a0Education, Manipal\n576104, India"
+  },
+  {
+    "id": "inv_00107",
+    "full_name": "Pallavi R. Mane",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, MPL",
+    "designation": "Professor",
+    "address": "Department of Electronics and\nCommunication Engineering,\nManipal Institute of\nTechnology, Manipal Academy\nof Higher\u00a0Education, Manipal\n576104, India"
+  },
+  {
+    "id": "inv_00108",
+    "full_name": "Sameena Pathan",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Information and\nCommunication Technology,\nManipal Institute of\nTechnology, MPL",
+    "designation": "Assistant Professor (Senior Scale)",
+    "address": "Department of Information and\nCommunication Technology,\nManipal Institute of\nTechnology, Manipal Academy\nof Higher\u00a0Education, Manipal\n576104, India"
+  },
+  {
+    "id": "inv_00109",
+    "full_name": "PARVEEZ SHARIFF B.G",
+    "email": "parveez1shariff@gmail.com",
+    "phone": "",
+    "institution_department": "DEPARTMENT OF\nELECTRONICS AND\nCOMMUNICATION\nENGINEERING, MIT, MPL",
+    "designation": "Research Scholar ( currently as Assistant Professor)",
+    "address": "DEPARTMENT OF\nELECTRONICS AND\nCOMMUNICATION\nENGINEERING, MIT,\nMANIPAL, KARNATAKA,\nINDIA \u2013"
+  },
+  {
+    "id": "inv_00110",
+    "full_name": "TANWEER",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nELECTRONICS AND\nCOMMUNICATION\nENGINEERING, MIT, MPL",
+    "designation": "Assistant Professor (Senior Scale)  ( currently As Additional Professor)",
+    "address": "DEPARTMENT OF\nELECTRONICS AND\nCOMMUNICATION\nENGINEERING, MIT,\nMANIPAL, KARNATAKA,\nINDIA \u2013"
+  },
+  {
+    "id": "inv_00111",
+    "full_name": "S VARADHARAJAN",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nCIVIL ENGINEERING,\nMANIPAL INSTITUTE OF\nTECHNOLOGY",
+    "designation": "Assistant Professor (Senior Scale)  ( currently as Associate Professor)",
+    "address": "ASSISTANT PROFESSOR\n(SENIOR SCALE), ACADEMIC\nBLOCK 2, DEPARTMENT OF\nCIVIL ENGINEERING,\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL, KARNATAKA,\nINDIA-"
+  },
+  {
+    "id": "inv_00112",
+    "full_name": "Vinod C Nayak",
+    "email": "Jahid.kmcmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Forensic Medicine & Toxicology, Kasturba Medical College, MPL",
+    "designation": "Professor",
+    "address": "Professor, Department of Forensic Medicine & Toxicology, Kasturba Medical College, Manipal Academy of Higher Education, Manipal, KA, IN-576104"
+  },
+  {
+    "id": "inv_00113",
+    "full_name": "Mohd Jahid Riyaz Ahmad Khan",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Forensic Medicine & Toxicology, Kasturba Medical College, MPL",
+    "designation": "PhD Scholar",
+    "address": "PhD Scholar, Department of Forensic Medicine & Toxicology, Kasturba Medical College, Manipal Academy of Higher Education, Manipal KA, IN-576104"
+  },
+  {
+    "id": "inv_00114",
+    "full_name": "Aditi Pratap Swain",
+    "email": "aditipratapswain2002@gmail.com",
+    "phone": "",
+    "institution_department": "Department of \nSciences, Manipal \nInstitute of \nTechnology, MPL",
+    "designation": "Research Scholar",
+    "address": "Department of \nSciences, Manipal \nInstitute of \nTechnology, Manipal \nAcademy of Higher \nEducation, Manipal \n576104, Karnataka, \nIndia"
+  },
+  {
+    "id": "inv_00115",
+    "full_name": "Vignesh Balaji E",
+    "email": "vignesh.e1@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Pharmacology,\nManipal College of\nPharmaceutical Sciences, MPL",
+    "designation": "PhD Research Scholar",
+    "address": "PhD Research Scholar,\nDepartment of Pharmacology,\nManipal College of\nPharmaceutical Sciences, Manipal\nAcademy of Higher Education,\nManipal 576104, Karnataka,\nIndia.;"
+  },
+  {
+    "id": "inv_00116",
+    "full_name": "K. Sreedhara Ranganath Pai",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of\nPharmacology, Manipal College\nof Pharmaceutical Sciences, MPL",
+    "designation": "Professor",
+    "address": "Professor, Department of\nPharmacology, Manipal College\nof Pharmaceutical Sciences,\nManipal Academy of Higher\nEducation, Manipal 576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00117",
+    "full_name": "Archi Rai",
+    "email": "raiarchi2610@gmail.com",
+    "phone": "",
+    "institution_department": "Manipal College of Dental \nSciences, MPL",
+    "designation": "Intern",
+    "address": "Intern,  \nManipal College of Dental \nSciences, Manipal Academy of \nHigher Education, Manipal, \n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00118",
+    "full_name": "Tanvi Rao",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Plastic Surgery, \nKasturba Medical College, MPL",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor,  \nDepartment of Plastic Surgery, \nKasturba Medical College, \nManipal Academy of Higher \nEducation, Manipal, 576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00119",
+    "full_name": "Joseph Thomas",
+    "email": null,
+    "phone": null,
+    "institution_department": "Plastic Surgery, Kasturba Medical \nCollege, MPL",
+    "designation": "Head of Department",
+    "address": "Head of Department, \n Plastic Surgery, Kasturba Medical \nCollege, Manipal Academy of \nHigher Education, Manipal, \n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00120",
+    "full_name": "Pradeep S",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department \nof Prosthodontics, Manipal \nCollege of Dental Sciences, MPL",
+    "designation": "Professor and Head",
+    "address": "Professor and Head, Department \nof Prosthodontics, Manipal \nCollege of Dental Sciences, \nManipal Academy of Higher \nEducation, Manipal, 576104, \nKarnataka, India"
+  },
+  {
+    "id": "inv_00121",
+    "full_name": "N. HARIPERUMAL",
+    "email": "hariperumal.mitmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department\nof Civil Engineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Research Scholar office",
+    "address": "Research Scholar office,\nAcademic Block 2, Department\nof Civil Engineering, Manipal\nInstitute of Technology, MAHE,\nManipal, Karnataka, India \u2013"
+  },
+  {
+    "id": "inv_00122",
+    "full_name": "Jayita Saha",
+    "email": "jayita.saha@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": "Associate Professor",
+    "address": "Associate Professor,\nDepartment of Computer Science\nand Engineering, Manipal\nInstitute of Technology\nBengaluru, Manipal Academy of\nHigher Education, Manipal, India-\n560063"
+  },
+  {
+    "id": "inv_00123",
+    "full_name": "Snigdha Sen",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Information\nTechnology, Manipal Institute of\nTechnology, BLR",
+    "designation": "Assistant Professor (Senior\nScale)",
+    "address": "Assistant Professor (Senior\nScale),\nDepartment of Information\nTechnology, Manipal Institute of\nTechnology Bengaluru, Manipal\nAcademy of Higher Education,\nManipal, India-560063"
+  },
+  {
+    "id": "inv_00124",
+    "full_name": "Prabhsimar Singh Dhingra",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": null,
+    "address": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology\nBengaluru, Manipal Academy of\nHigher Education, Manipal, India-\n560063"
+  },
+  {
+    "id": "inv_00125",
+    "full_name": "Somyajeet Arukh",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": null,
+    "address": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology\nBengaluru, Manipal Academy of\nHigher Education, Manipal, India-\n560063"
+  },
+  {
+    "id": "inv_00126",
+    "full_name": "Venkata Sriya Kamarsu",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": null,
+    "address": "Bristlecone, 3rd Floor, Crescent 4,\nPrestige Shantiniketan, Gate : 2,\nWhitefield Road, Thigalarapalya,\nHoodi, Bengaluru, Karnataka\n560048"
+  },
+  {
+    "id": "inv_00127",
+    "full_name": "Amrin Bushra Taj",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": null,
+    "address": "Product Engineer,\nEdgeverve -Infosys\nSurvey\u00a0No. 210 ISB Road,\nLingampally Road, Manikonda,\nHyderabad, Telangana 500032"
+  },
+  {
+    "id": "inv_00128",
+    "full_name": "Anagha Lellapalli",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, BLR",
+    "designation": null,
+    "address": "IFIM Business School\nAcademy Block, IFIM Business\nSchool, Electronics City Phase 1,\nElectronic City, Bengaluru,\nKarnataka 560100"
+  },
+  {
+    "id": "inv_00129",
+    "full_name": "N. HARIPERUMAL",
+    "email": "varadharajan.s@manipal.edu\nhariperumal.mitmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of\nCivil Engineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Research Scholar office",
+    "address": "Research Scholar office,\nAcademic Block 2, Department of\nCivil Engineering, Manipal\nInstitute of Technology, MAHE,\nManipal, KA, IN \u2013"
+  },
+  {
+    "id": "inv_00130",
+    "full_name": "Swathi Bora",
+    "email": "swathiborra21@gmail.com",
+    "phone": "",
+    "institution_department": "Department of Biotherapeutics Research",
+    "designation": "Office Associate",
+    "address": "Manipal Academy of Higher \nEducation, Madhav Nagar, \nManipal, Karnataka- 576104"
+  },
+  {
+    "id": "inv_00131",
+    "full_name": "S V Kirthanashri",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biotherapeutic Research",
+    "designation": "Associate Professor",
+    "address": "Manipal Academy of Higher \nEducation, Madhav Nagar, \nManipal, Karnataka- 576104"
+  },
+  {
+    "id": "inv_00132",
+    "full_name": "Vaibhavi Shinde",
+    "email": null,
+    "phone": null,
+    "institution_department": "Kore Additive Manufacturing & Medical Reconstruction, Mumbai",
+    "designation": "Biomedical Engineer / Clinical Researcher",
+    "address": "Kore Additive Manufacturing and \nMedical Reconstruction, Mumbai- \n410210"
+  },
+  {
+    "id": "inv_00133",
+    "full_name": "Chaitanya Doshi",
+    "email": null,
+    "phone": null,
+    "institution_department": "Kore Additive Manufacturing & Medical Reconstruction, Mumbai",
+    "designation": "Founder & Managing Director",
+    "address": "Kore Additive Manufacturing and \nMedical Reconstruction, Mumbai- \n410210"
+  },
+  {
+    "id": "inv_00134",
+    "full_name": "Ravindra Doshi",
+    "email": null,
+    "phone": null,
+    "institution_department": "Kore Additive Manufacturing & Medical Reconstruction, Mumbai",
+    "designation": "Director / Senior Consultant",
+    "address": "Kore Additive Manufacturing and \nMedical Reconstruction, Mumbai- \n410210"
+  },
+  {
+    "id": "inv_00135",
+    "full_name": "Shriya Pradhan",
+    "email": null,
+    "phone": null,
+    "institution_department": "Kore Additive Manufacturing & Medical Reconstruction, Mumbai",
+    "designation": "Design Engineer / Research Associate",
+    "address": "Kore Additive Manufacturing and \nMedical Reconstruction, Mumbai- \n410210"
+  },
+  {
+    "id": "inv_00136",
+    "full_name": "Pramod K",
+    "email": "pramod.kn@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor (Selection\nGrade)\nDepartment of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00137",
+    "full_name": "Mathew Peter",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor\nDepartment of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00138",
+    "full_name": "Jeevan M",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Associate Professor",
+    "address": "Associate Professor\nDepartment of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00139",
+    "full_name": "Manikandan N",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Physiotherapy, Manipal College of Health\nProfessions",
+    "designation": "Additional Professor",
+    "address": "Additional Professor,\u00a0\nDepartment of Physiotherapy,\u00a0\nChairperson, Institutional\nResearch Committee,\nManipal College of Health\nProfessions, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00140",
+    "full_name": "Sahana Kulkarni",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Student",
+    "address": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00141",
+    "full_name": "Ananya Sharma",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Student",
+    "address": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104;"
+  },
+  {
+    "id": "inv_00142",
+    "full_name": "Niranjan D B",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology",
+    "designation": "Student",
+    "address": "Department of Biomedical\nEngineering, Manipal Institute of\nTechnology, Manipal Academy of\nHigher Education, Manipal,\nKarnataka, India-576104"
+  },
+  {
+    "id": "inv_00143",
+    "full_name": "E P Praghna",
+    "email": "praghnakapudaiee@gmail.com\nvaradharajan.s@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Civil Engineering, Manipal Institute of Technology",
+    "designation": "Student",
+    "address": "Research Scholar, Department of Civil Engineering, Manipal Institute of Technology, Manipal Academy of Higher Education, Manipal, KA, IN \u2013"
+  },
+  {
+    "id": "inv_00144",
+    "full_name": "Bharath M",
+    "email": null,
+    "phone": null,
+    "institution_department": "Sustainability Department, RITES Limited",
+    "designation": "Assistant Manager",
+    "address": ";\n\n Assistant Manager, Sustainability Department, RITES Limited, India; \n\nAssistant Professor (Senior Scale), Department of Civil Engineering, Manipal Institute of Technology, Manipal Academy of Higher Education, Manipal, KA, IN \u2013"
+  },
+  {
+    "id": "inv_00145",
+    "full_name": "Bharath Ram Sayiram",
+    "email": "bharath1.mitmpl2022@learner.manipal.edu\ndarren1.mitmpl2022@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Aeronautical and\nAutomobile Engineering, Manipal Institute of Technology",
+    "designation": "Student",
+    "address": "Department of Aeronautical and\nAutomobile Engineering\u00a0\nManipal Institute of Technology,\nManipal 576104, Karnataka, India;"
+  },
+  {
+    "id": "inv_00146",
+    "full_name": "U Chirag Shet",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Aeronautical and\nAutomobile Engineering, Manipal Institute of Technology",
+    "designation": "Assistant Professor",
+    "address": "Department of Aeronautical and\nAutomobile Engineering\u00a0\nManipal Institute of Technology,\nManipal 576104, Karnataka, India;"
+  },
+  {
+    "id": "inv_00147",
+    "full_name": "Darren Aviv Dmello",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Aeronautical and\nAutomobile Engineering, Manipal Institute of Technology",
+    "designation": "Student",
+    "address": "Department of Aeronautical and\nAutomobile Engineering\u00a0\nManipal Institute of Technology,\nManipal 576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00148",
+    "full_name": "Spoorthi Singh",
+    "email": "spoorthi.shekar@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Mechatronics, Manipal\nInstitute of Technology",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor (Sr-Scale),\nMechatronics Dept., Manipal\nInstitute of Technology [MIT-\nMAHE], Manipal-Udupi-\nKarnataka-India, 576104;"
+  },
+  {
+    "id": "inv_00149",
+    "full_name": "Ramya S Moorthy",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Mechatronics, Manipal\nInstitute of Technology",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor, Mechatronics\nDept., Manipal Institute of\nTechnology [MIT-MAHE],\nManipal-Udupi-Karnataka-India,\n576104;"
+  },
+  {
+    "id": "inv_00150",
+    "full_name": "Uttam Varma P",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Mechatronics, Manipal\nInstitute of Technology",
+    "designation": "Student",
+    "address": "Student, Mechatronics Dept.,\nManipal Institute of Technology\n[MIT-MAHE], Manipal-Udupi-\nKarnataka-India, 576104"
+  },
+  {
+    "id": "inv_00151",
+    "full_name": "NA",
+    "email": "palla.mslsmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00152",
+    "full_name": "N. Vasudev Ballal",
+    "email": "vasudev.ballal@manipal.edu",
+    "phone": "",
+    "institution_department": "Manipal College of Dental \nSciences, MPL",
+    "designation": "Professor",
+    "address": "Manipal College of Dental \nSciences, Manipal Academy of \nHigher Education, Manipal- \n576104, Karnataka, India, \nManipal College of Dental \nSciences, Manipal Academy of \nHigher Education, Manipal- \n576104, Karnataka, India ,\nManipal College of Dental \nSciences, Manipal Academy of \nHigher Education, Manipal- \n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00153",
+    "full_name": "Jothi Varghese",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Dental \nSciences, MPL",
+    "designation": "Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00154",
+    "full_name": "Rajkumar Narkedamalli",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Dental \nSciences, MPL",
+    "designation": "Professor",
+    "address": null
+  },
+  {
+    "id": "inv_00155",
+    "full_name": "NA",
+    "email": "ashwini.t1@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00156",
+    "full_name": "NA",
+    "email": "pramod.martha@manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00157",
+    "full_name": "SHREENIDHI JOGI",
+    "email": "shreenidhijogi@gmail.com",
+    "phone": "",
+    "institution_department": "MANIPAL COLLEGE OF\nNURSING, MPL",
+    "designation": "Student",
+    "address": "PHD SCHOLAR\nMANIPAL COLLEGE OF\nNURSING, MAHE, MADHAV\nNAGAR, MANIPAL, UDUPI \u2013"
+  },
+  {
+    "id": "inv_00158",
+    "full_name": "ELSA SANATOMBI DEVI",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF MEDICAL\nSURGICAL NURSING\nMANIPAL COLLEGE OF\nNURSING, MPL",
+    "designation": "Professor",
+    "address": "PROFESSOR\nDEPARTMENT OF MEDICAL\nSURGICAL NURSING\nMANIPAL COLLEGE OF\nNURSING, MAHE, MADHAV\nNAGAR, MANIPAL, UDUPI \u2013\n576104"
+  },
+  {
+    "id": "inv_00159",
+    "full_name": "VISHAL SHANBHAG",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF CRITICAL\nCARE MEDICINE\nKASTURBA MEDICAL\nCOLLEGE, MPL",
+    "designation": "ASSOCIATE PROFESSOR",
+    "address": "ASSOCIATE PROFESSOR\nDEPARTMENT OF CRITICAL\nCARE MEDICINE\nKASTURBA MEDICAL\nCOLLEGE, MAHE,\nMADHAV NAGAR, MANIPAL,\nUDUPI \u2013 576104"
+  },
+  {
+    "id": "inv_00160",
+    "full_name": "AJITHA SHENOY",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF MEDICAL\nSURGICAL NURSING\nMANIPAL COLLEGE OF\nNURSING, MPL",
+    "designation": "PROFESSOR",
+    "address": "PROFESSOR\nDEPARTMENT OF\nINFORMATION &\nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL, UDUPI \u2013 576104"
+  },
+  {
+    "id": "inv_00161",
+    "full_name": "LAKSHAY CHAUHAN",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nINFORMATION \nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MPL",
+    "designation": "Student",
+    "address": "DEPARTMENT OF\nINFORMATION \nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL, UDUPI \u2013 576104"
+  },
+  {
+    "id": "inv_00162",
+    "full_name": "SIDDHARTHA CHHAUDA",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nINFORMATION &amp;\nSIDDHARTHA CHHAUDA\nCOMMUNICATION\nTECHNOLOGY, MPL",
+    "designation": "Assistant Professor",
+    "address": "DEPARTMENT OF\nINFORMATION \nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL, UDUPI \u2013 576104"
+  },
+  {
+    "id": "inv_00163",
+    "full_name": "UTKARSH DUBEY",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nINFORMATION AND\nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MPL",
+    "designation": "Student",
+    "address": "DEPARTMENT OF\nINFORMATION AND\nCOMMUNICATION\nTECHNOLOGY\nMANIPAL INSTITUTE OF\nTECHNOLOGY, MAHE,\nMANIPAL, UDUPI \u2013 576104"
+  },
+  {
+    "id": "inv_00164",
+    "full_name": "NA",
+    "email": "debadrita.mslsmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00165",
+    "full_name": "ANNE D SOUZA",
+    "email": "anne.dsouza@manipal.edu",
+    "phone": "",
+    "institution_department": "DEPARTMENT OF ANATOMY,\nKASTURBA MEDICAL\nCOLLEGE, MPL",
+    "designation": "ASSOCIATE PROFESSOR",
+    "address": "ASSOCIATE PROFESSOR,\nDEPARTMENT OF ANATOMY,\nKASTURBA MEDICAL\nCOLLEGE, MANIPAL,\nMANIPAL ACADEMY OF\nHIGHER EDUCATION,\nMANIPAL, KARNATAKA,\nINDIA-576104"
+  },
+  {
+    "id": "inv_00166",
+    "full_name": "SWATHI PRABHU",
+    "email": null,
+    "phone": null,
+    "institution_department": "DEPARTMENT OF\nPATHOLOGY, KASTURBA\nMEDICAL COLLEGE, MPL",
+    "designation": "ASSISTANT PROFESSOR",
+    "address": "ASSISTANT PROFESSOR,\nDEPARTMENT OF\nPATHOLOGY, KASTURBA\nMEDICAL COLLEGE,\nMANIPAL, MANIPAL\nACADEMY OF HIGHER\nEDUCATION, MANIPAL,\nKARNATAKA, INDIA-576104"
+  },
+  {
+    "id": "inv_00167",
+    "full_name": "NA",
+    "email": "jain.vaibhav@manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00168",
+    "full_name": "NA",
+    "email": "atanu.das@manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00169",
+    "full_name": "NA",
+    "email": "aman.mitmpl2022@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00170",
+    "full_name": "RADHIKA GARG",
+    "email": "radhika.garg@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Manipal College of Dental\nSciences, MPL",
+    "designation": "Student",
+    "address": "Manipal College of Dental\nSciences, Manipal Academy of\nHigher Education, Manipal-\n576104, Karnataka, India."
+  },
+  {
+    "id": "inv_00171",
+    "full_name": "SCIYA VIJ",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal College of Dental\nSciences, MPL",
+    "designation": "Student",
+    "address": "Manipal College of Dental\nSciences, Manipal Academy of\nHigher Education, Manipal-\n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00172",
+    "full_name": "ANUPAM SINGH",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Oral and\nMaxillofacial Surgery, KMC, MPL",
+    "designation": "Assistant Professor",
+    "address": "Assistant Professor,\nDepartment of Oral and\nMaxillofacial Surgery, KMC,\nMAHE, Manipal, Karnataka\nIndia-576104"
+  },
+  {
+    "id": "inv_00173",
+    "full_name": "NA",
+    "email": "geetha.mcopsmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00174",
+    "full_name": "Sudheendra Prabhu K",
+    "email": "srinivas.g@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Aeronautical and\nAutomobile engineering,\nManipal Institute of technology",
+    "designation": "Student",
+    "address": "Department of Aeronautical and\nAutomobile engineering,\nManipal Institute of technology,\nManipal, Karnataka, India-\n576104;"
+  },
+  {
+    "id": "inv_00175",
+    "full_name": "Shiran Shetty",
+    "email": "santanu.kmcmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Gastroenterology\n& Hepatology,\nKasturba Medical College, MPL",
+    "designation": "Professor & Unit Head",
+    "address": "Professor & Unit Head,\nDepartment of Gastroenterology\n& Hepatology,\nKasturba Medical College,\nManipal, MAHE, Manipal-\n576104, Karnataka, India;"
+  },
+  {
+    "id": "inv_00176",
+    "full_name": "Balaji Musunuri",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department\nof Gastroenterology &\nHepatology, \nKasturba Medical College, MPL",
+    "designation": "Associate Professor",
+    "address": "Associate Professor, Department\nof Gastroenterology &\nHepatology,\nKasturba Medical College,\nManipal, MAHE, Manipal-\n576104, Karnataka, India;"
+  },
+  {
+    "id": "inv_00177",
+    "full_name": "Santanu Mishra",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of\nGastroenterology & Hepatology,\nKasturba Medical College, MPL",
+    "designation": "Student",
+    "address": "PhD Scholar, Department of\nGastroenterology & Hepatology,\nKasturba Medical College,\nManipal, MAHE, Manipal\n-576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00178",
+    "full_name": "NA",
+    "email": "ujan.mitmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": null,
+    "designation": null,
+    "address": "NA"
+  },
+  {
+    "id": "inv_00179",
+    "full_name": "Karan Sanjay",
+    "email": "vigneshvijaysekhar5@gmail.com",
+    "phone": "9154402167",
+    "institution_department": "Department of\nBiotechnology, Manipal\nInstitute of Technology, MPL",
+    "designation": "Student",
+    "address": "Department of\nBiotechnology, Manipal\nInstitute of Technology,\nMAHE, Manipal,\nKarnataka, India-576104"
+  },
+  {
+    "id": "inv_00180",
+    "full_name": "Lavanya Dalmia",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Student",
+    "address": "Department of Biomedical\nEngineering, Manipal\nInstitute of Technology,\nMAHE, Manipal,\nKarnataka, India-576104"
+  },
+  {
+    "id": "inv_00181",
+    "full_name": "Vignesh Vijaysekhar",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Biomedical\nEngineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Student",
+    "address": "Department of Biomedical\nEngineering, Manipal\nInstitute of Technology,\nMAHE, Manipal,\nKarnataka, India-576104"
+  },
+  {
+    "id": "inv_00182",
+    "full_name": "Muhammad Zaid Hassan",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer\nScience Engineering (AI\n& ML), Manipal Institute\nof Technology, MPL",
+    "designation": "Student",
+    "address": "Department of Computer\nScience Engineering (AI\n& ML), Manipal Institute\nof Technology, MAHE,\nManipal, Karnataka, India-\n576104"
+  },
+  {
+    "id": "inv_00183",
+    "full_name": "Ritu Raval",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of\nBiotechnology, Manipal\nInstitute of Technology, MPL",
+    "designation": "Professor",
+    "address": "Professor, \nDepartment of\nBiotechnology, Manipal\nInstitute of Technology,\nMAHE, Manipal,\nKarnataka, India-576104"
+  },
+  {
+    "id": "inv_00184",
+    "full_name": "Arun Mayya",
+    "email": "mayya.arun@manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Conservative\nDentistry and Endodontics,\nManipal College of Dental\nSciences, MPL",
+    "designation": "Senior Lecturer",
+    "address": "Department of Conservative\nDentistry and Endodontics,\nManipal College of Dental\nSciences, Manipal Academy of\nHigher Education, Manipal-\n576104, Karnataka, India."
+  },
+  {
+    "id": "inv_00185",
+    "full_name": "Raviraja N. Seetharam",
+    "email": null,
+    "phone": null,
+    "institution_department": "Manipal Centre for\nBiotherapeutics Research, MPL",
+    "designation": "Chief Operating Officer (COO)",
+    "address": "Manipal Centre for\nBiotherapeutics Research,\nManipal Academy of Higher\nEducation, Manipal-576104,\nKarnataka, India"
+  },
+  {
+    "id": "inv_00186",
+    "full_name": "Shashi Rashmi Acharya",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Conservative\nDentistry and Endodontics,\nManipal College of Dental\nSciences, MPL",
+    "designation": "Professor",
+    "address": "Department of Conservative\nDentistry and Endodontics,\nManipal College of Dental\nSciences, Manipal Academy of\nHigher Education, Manipal-\n576104, Karnataka, India"
+  },
+  {
+    "id": "inv_00187",
+    "full_name": "Padavinangady Nakul Bhat",
+    "email": "nakul1.mitmpl2023@learner.manipal.edu",
+    "phone": "",
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Student",
+    "address": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, Manipal\nAcademy of Higher Education,\nManipal -"
+  },
+  {
+    "id": "inv_00188",
+    "full_name": "Manoj T",
+    "email": null,
+    "phone": null,
+    "institution_department": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, MPL",
+    "designation": "Assistant Professor",
+    "address": "Department of Computer Science\nand Engineering, Manipal\nInstitute of Technology, Manipal\nAcademy of Higher Education,\nManipal - 576104"
+  }
+]

@@ -1,0 +1,3727 @@
+:root {
+  --ink: #0B0909;
+  --muted: #8a8378;
+  --page: #FAF1E6;
+  --surface: #FDFAF6;
+  --line: #EFE6D6;
+  --line-strong: #C5C1C1;
+  --accent: #3A86FF;
+  --accent-hover: #2C6FDB;
+  --accent-soft: rgba(58, 134, 255, 0.12);
+
+  --ok-fg: #4E9E56;
+  --ok-soft: rgba(78, 158, 86, 0.12);
+  --warn-fg: #C98A2C;
+  --warn-soft: rgba(201, 138, 44, 0.12);
+  --bad-fg: #C23B2E;
+  --bad-soft: rgba(194, 59, 46, 0.10);
+  --bad-soft-row: rgba(194, 59, 46, 0.05);
+  /* Opaque equivalents of --bad-soft(-row) for sticky cells — a translucent
+     background there lets scrolled-away columns show through underneath. */
+  --bad-soft-row-opaque: #FAF0EC;
+  --bad-soft-opaque: #F7E7E2;
+
+  --on-color: #fff;
+
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow-card: 0 1px 2px rgba(11, 9, 9, 0.04), 0 6px 16px rgba(11, 9, 9, 0.06);
+  --freeze-shadow: 4px 0 8px -4px rgba(11, 9, 9, 0.18);
+  --freeze-shadow-left: -4px 0 8px -4px rgba(11, 9, 9, 0.18);
+  --glass-bg: rgba(253, 250, 246, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.5);
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+}
+
+[data-theme="dark"] {
+  --ink: #F2EDE4;
+  --muted: #A89D8C;
+  --page: #1A1611;
+  --surface: #221D16;
+  --line: #3D3527;
+  --line-strong: #4F4632;
+  --accent: #5B9DFF;
+  --accent-hover: #7BB4FF;
+  --accent-soft: rgba(91, 157, 255, 0.18);
+
+  --ok-fg: #5FBE6B;
+  --ok-soft: rgba(95, 190, 107, 0.18);
+  --warn-fg: #E0A550;
+  --warn-soft: rgba(224, 165, 80, 0.18);
+  --bad-fg: #E5645A;
+  --bad-soft: rgba(229, 100, 90, 0.16);
+  --bad-soft-row: rgba(229, 100, 90, 0.08);
+  --bad-soft-row-opaque: #322319;
+  --bad-soft-opaque: #412821;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.35), 0 6px 18px rgba(0, 0, 0, 0.4);
+  --freeze-shadow: 4px 0 10px -4px rgba(0, 0, 0, 0.5);
+  --freeze-shadow-left: -4px 0 10px -4px rgba(0, 0, 0, 0.5);
+  --glass-bg: rgba(34, 29, 22, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+#root { min-height: 100vh; }
+
+/* ---------- App shell ---------- */
+
+.app-header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  padding: 0 var(--sp-5);
+}
+
+.app-header-inner {
+  width: 100%;
+}
+
+.app-title {
+  font-size: 23px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  margin: 0;
+  padding: 22px 0 16px;
+  color: var(--ink);
+  text-align: center;
+}
+
+.header-row {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.tabs {
+  grid-column: 2;
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-6);
+}
+
+/* The tab bar is centred while the sync status and theme toggle sit at the
+   far right, so on narrower screens the gaps between tabs have to shrink or
+   the two collide (measured: at 1280px the widest sync message touches the
+   tabs with the full 32px gap). Wide screens keep the original spacing. */
+@media (max-width: 1500px) {
+  .tabs { gap: var(--sp-5); }
+}
+
+@media (max-width: 1320px) {
+  .tabs { gap: var(--sp-4); }
+}
+
+.header-actions {
+  grid-column: 3;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: none;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.theme-toggle:hover { background: var(--page); border-color: var(--accent); }
+
+.theme-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Surfaces sheetCache's sync status (see SheetStatus.jsx) so a failed or
+   stale Google Sheets refresh is visible instead of silently looking like
+   a legitimately empty result. */
+.sheet-status {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.sheet-status-bad {
+  color: var(--bad-fg);
+  font-weight: 600;
+}
+
+.tab {
+  position: relative;
+  background: none;
+  border: none;
+  padding: 0 0 14px;
+  margin: 0;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.tab::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.tab:hover { color: var(--ink); }
+
+.tab.is-active {
+  color: var(--ink);
+}
+
+.tab.is-active::after {
+  background: var(--accent);
+}
+
+.app-main {
+  width: 100%;
+  padding: var(--sp-5);
+}
+
+/* ---------- Page heading ---------- */
+
+.page-head {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: baseline;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.page-title {
+  grid-column: 2;
+  justify-self: center;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink);
+  text-align: center;
+}
+
+.page-meta {
+  grid-column: 3;
+  justify-self: end;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0;
+}
+
+/* ---------- Toolbar ---------- */
+
+.toolbar {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-4);
+}
+
+.field { display: flex; flex-direction: column; gap: var(--sp-1); }
+
+.field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.filter-total {
+  display: flex;
+  align-items: flex-end;
+  padding-bottom: 8px;
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.input,
+.select {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  font: inherit;
+  color: var(--ink);
+  outline: none;
+}
+
+.input { width: 340px; max-width: 100%; }
+
+.input::placeholder { color: var(--muted); }
+
+.search-wrap { position: relative; display: flex; }
+.search-wrap .input { padding-right: 28px; }
+
+.search-clear {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: 50%;
+  font-size: 15px;
+  line-height: 1;
+  padding: 0;
+}
+
+.search-clear:hover { color: var(--ink); background: var(--line); }
+
+.input:focus,
+.select:focus,
+.tab:focus-visible,
+.btn:focus-visible,
+.summary-card:focus-visible,
+.link-btn:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.tab:focus-visible,
+.link-btn:focus-visible,
+.summary-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Summary cards ---------- */
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+
+.summary-card {
+  /* Glassmorphism-lite: translucent + blurred instead of the flat
+     surface color used elsewhere, as a contained trial before deciding
+     whether to extend it to other cards. */
+  background: var(--glass-bg);
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--sp-3) var(--sp-4);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.summary-card:hover { border-color: var(--line-strong); }
+
+.summary-card.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.summary-card.is-static { cursor: default; }
+.summary-card.is-static:hover { border-color: var(--line); }
+
+.summary-number {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.summary-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ---------- F9/F18 check sections ---------- */
+
+.f9f18-section {
+  margin-bottom: var(--sp-5);
+}
+
+.f9f18-section-title {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: var(--sp-3);
+}
+
+.f9f18-count {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ---------- Table ---------- */
+
+.table-wrap {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  overflow: auto;
+  max-height: 68vh;
+}
+
+table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13.5px;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--page);
+  color: var(--muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-size: 11px;
+  text-align: center;
+  padding: 9px var(--sp-3);
+  border-bottom: 1px solid var(--line-strong);
+  white-space: nowrap;
+}
+
+tbody td {
+  padding: 8px var(--sp-3);
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+  color: var(--ink);
+  text-align: center;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:hover td { background: var(--page); }
+
+.col-code { width: 84px; white-space: nowrap; }
+.col-appno { width: 118px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-type { width: 84px; white-space: nowrap; }
+.col-lr-status { width: 190px; }
+.col-date { width: 90px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.col-status { width: 100px; }
+.col-owner { width: 116px; white-space: nowrap; }
+
+.cell-title { color: var(--ink); font-weight: 500; }
+
+/* LR records table: same grid-line treatment as the Due dashboard table,
+   columns/widths unchanged. */
+.records-table th,
+.records-table td {
+  border-right: 1px solid var(--line);
+}
+.records-table th:last-child,
+.records-table td:last-child { border-right: none; }
+.records-table .col-title { text-align: left; }
+
+/* Overdue table: percentage widths so columns stretch to fill the
+   container on wide screens instead of leaving space unused. min-width
+   keeps narrow-screen columns readable by handing off to the .table-wrap
+   horizontal scroll rather than squishing them further. View-only — no
+   edit column. */
+.due-table { min-width: 1100px; }
+.due-table th,
+.due-table td {
+  border-right: 1px solid var(--line);
+}
+.due-table th:last-child,
+.due-table td:last-child { border-right: none; }
+
+/* col-code widened from 4.8% to fit the "Abandoned" pill under the code
+   (see .code-cell-stack) without truncating; col-title gives up the same
+   2.2% since it already wraps/truncates long text gracefully on its own. */
+.due-table .col-code  { width: 7%; }
+.due-table .col-appno { width: 10.2%; }
+.due-table .col-title { width: 17.2%; }
+.due-table .col-applicant { width: 12%; }
+.due-table .col-type  { width: 5.6%; }
+.due-table .col-date  { width: 8.5%; }
+.due-table .col-postdate { width: 14%; text-align: left; }
+.due-table th.col-postdate { white-space: normal; line-height: 1.3; }
+.due-table .col-status { width: 5.6%; }
+.due-table .col-owner { width: 9.2%; }
+.due-table .col-forms { width: 10.7%; }
+
+/* Granted patents table: same grid-line/percentage-width treatment,
+   view-only (sheet-derived, no manual fields to edit). Date-ish headers
+   ("Publication date", "Next renewal", ...) are too long to fit one line
+   at these widths, so their header cells wrap instead of clipping. */
+.granted-table { min-width: 1450px; }
+.granted-table th,
+.granted-table td {
+  border-right: 1px solid var(--line);
+}
+.granted-table th:last-child,
+.granted-table td:last-child { border-right: none; }
+
+/* These 13 columns' widths add up to 100% exactly — they previously summed
+   to 117.5%, which is what made the table misaligned (table-layout: fixed
+   renders each column at its literal percentage of the table box, so an
+   over-100% total skews every column's actual rendered width away from
+   what its number says). */
+.granted-table .col-code  { width: 5%; white-space: nowrap; }
+.granted-table .col-mahe { width: 7.5%; }
+.granted-table .col-appno { width: 9%; }
+.granted-table .col-title { width: 16%; text-align: left; }
+.granted-table .col-applicant { width: 9%; text-align: left; }
+.granted-table .col-ps,
+.granted-table .col-cs,
+.granted-table .col-pubdate,
+.granted-table .col-grant,
+.granted-table .col-renewal,
+.granted-table .col-next-renewal { width: 6.5%; }
+.granted-table .col-pubno { width: 6.5%; }
+.granted-table .col-owner { width: 8%; }
+
+.granted-table th.col-ps,
+.granted-table th.col-cs,
+.granted-table th.col-pubdate,
+.granted-table th.col-pubno,
+.granted-table th.col-grant,
+.granted-table th.col-renewal,
+.granted-table th.col-next-renewal,
+.granted-table th.col-mahe {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* Frozen Code column so it stays visible while scrolling right to reach
+   Assigned to — same treatment as the Due dashboard table. Sticky cells
+   need an opaque background — a translucent one lets scrolled-away columns
+   show through. */
+.granted-table th.col-code,
+.granted-table td.col-code {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: var(--freeze-shadow);
+}
+.granted-table thead th.col-code { z-index: 2; background: var(--page); }
+.granted-table tbody tr:hover td.col-code { background: var(--page); }
+.granted-table tbody tr.is-overdue td.col-code { background: var(--bad-soft-row-opaque); }
+.granted-table tbody tr.is-overdue:hover td.col-code { background: var(--bad-soft-opaque); }
+
+/* Published patents table: same grid-line/percentage-width treatment,
+   view-only (sheet-derived, no manual fields to edit). */
+.published-table { min-width: 1500px; }
+.published-table th,
+.published-table td {
+  border-right: 1px solid var(--line);
+}
+.published-table th:last-child,
+.published-table td:last-child { border-right: none; }
+
+.published-table .col-code { width: 5%; white-space: nowrap; }
+.published-table .col-mahe { width: 8%; }
+.published-table .col-institution { width: 16%; text-align: left; }
+.published-table .col-title { width: 17%; text-align: left; }
+.published-table .col-applicant { width: 10%; text-align: left; }
+.published-table .col-appno { width: 9%; }
+.published-table .col-dof { width: 7%; }
+.published-table .col-classification { width: 9%; }
+.published-table .col-pubdate { width: 8%; }
+.published-table .col-pubno { width: 7%; }
+.published-table .col-form18 { width: 6%; }
+
+.published-table th.col-institution,
+.published-table th.col-classification,
+.published-table th.col-appno,
+.published-table th.col-pubdate,
+.published-table th.col-form18,
+.published-table th.col-mahe {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* Frozen Code column so it stays visible while scrolling right to reach
+   Form 18 filed — same treatment as the Due dashboard table. Sticky cells
+   need an opaque background — a translucent one lets scrolled-away columns
+   show through. */
+.published-table th.col-code,
+.published-table td.col-code {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: var(--freeze-shadow);
+}
+.published-table thead th.col-code { z-index: 2; background: var(--page); }
+.published-table tbody tr:hover td.col-code { background: var(--page); }
+.published-table tbody tr.is-abandoned td.col-code { background: var(--bad-soft-row-opaque); }
+.published-table tbody tr.is-abandoned:hover td.col-code { background: var(--bad-soft-opaque); }
+
+/* Patent filed table: same grid-line/percentage-width treatment,
+   view-only (sheet-derived, no manual fields to edit). */
+.patent-filed-table { min-width: 1450px; }
+.patent-filed-table th,
+.patent-filed-table td {
+  border-right: 1px solid var(--line);
+}
+.patent-filed-table th:last-child,
+.patent-filed-table td:last-child { border-right: none; }
+
+.patent-filed-table .col-code { width: 5.5%; white-space: nowrap; }
+.patent-filed-table .col-mahe { width: 8.5%; }
+.patent-filed-table .col-institution { width: 17%; text-align: left; }
+.patent-filed-table .col-title { width: 19%; text-align: left; }
+.patent-filed-table .col-applicant { width: 10.5%; text-align: left; }
+.patent-filed-table .col-appno { width: 9.5%; }
+.patent-filed-table .col-dof { width: 7.5%; }
+.patent-filed-table .col-classification { width: 10%; }
+.patent-filed-table .col-pubstatus { width: 8.5%; }
+.patent-filed-table .col-pubdate { width: 8%; }
+
+/* F9/F18 pending table: same grid-line/percentage-width treatment,
+   view-only (sheet-derived, no manual fields to edit). Title gets the
+   biggest share since it's the field readers scan first. */
+.f9f18-table { min-width: 1300px; }
+.f9f18-table th,
+.f9f18-table td {
+  border-right: 1px solid var(--line);
+}
+.f9f18-table th:last-child,
+.f9f18-table td:last-child { border-right: none; }
+
+.f9f18-table .col-code { width: 6%; white-space: nowrap; }
+.f9f18-table .col-appno { width: 10%; }
+.f9f18-table .col-title { width: 24%; text-align: left; }
+.f9f18-table .col-owner { width: 9%; }
+.f9f18-table .col-cs,
+.f9f18-table .col-pubdate,
+.f9f18-table .col-f9,
+.f9f18-table .col-f18 { width: 10%; }
+.f9f18-table .col-rfe { width: 11%; }
+
+.f9f18-table th.col-cs,
+.f9f18-table th.col-pubdate,
+.f9f18-table th.col-f9,
+.f9f18-table th.col-f18,
+.f9f18-table th.col-rfe {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.patent-filed-table th.col-institution,
+.patent-filed-table th.col-classification,
+.patent-filed-table th.col-appno,
+.patent-filed-table th.col-pubdate,
+.patent-filed-table th.col-pubstatus,
+.patent-filed-table th.col-mahe {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* Abandoned patents table: same grid-line/percentage-width treatment,
+   view-only (sheet-derived). Deliberately the narrowest of the patent
+   tables — seven columns, so the sparse/verbose fields (inventors,
+   publication, per-form dates) live in the export and the detail view
+   instead. Status is the sheet's own STATUS text, left-aligned and allowed
+   to wrap like Title rather than clipped. */
+.abandoned-table { min-width: 1150px; }
+.abandoned-table th,
+.abandoned-table td {
+  border-right: 1px solid var(--line);
+}
+.abandoned-table th:last-child,
+.abandoned-table td:last-child { border-right: none; }
+
+.abandoned-table .col-code { width: 6.5%; white-space: nowrap; }
+.abandoned-table .col-mahe { width: 10%; }
+.abandoned-table .col-appno { width: 12%; }
+.abandoned-table .col-title { width: 29%; text-align: left; }
+.abandoned-table .col-status { width: 21%; text-align: left; }
+.abandoned-table .col-dof { width: 9.5%; }
+.abandoned-table .col-owner { width: 12%; }
+
+.abandoned-table th.col-mahe,
+.abandoned-table th.col-appno {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+/* ---------- F1/F26 delayed or pending ---------- */
+
+.f1f26-table { min-width: 1150px; }
+.f1f26-table th,
+.f1f26-table td {
+  border-right: 1px solid var(--line);
+}
+.f1f26-table th:last-child,
+.f1f26-table td:last-child { border-right: none; }
+
+.f1f26-table .col-code { width: 7%; white-space: nowrap; }
+.f1f26-table .col-appno { width: 12%; }
+.f1f26-table .col-owner { width: 12%; }
+.f1f26-table .col-status { width: 20%; text-align: left; }
+.f1f26-table .col-form { width: 11%; white-space: nowrap; }
+.f1f26-table .col-days { width: 8%; font-variant-numeric: tabular-nums; }
+.f1f26-table .col-verdict { width: 11%; }
+
+.f1f26-table th.col-appno,
+.f1f26-table th.col-days {
+  white-space: normal;
+  line-height: 1.3;
+}
+
+.f1f26-table tbody td { vertical-align: middle; }
+
+.verdict {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.verdict-can { color: var(--ok-fg); background: var(--ok-soft); }
+.verdict-cannot { color: var(--bad-fg); background: var(--bad-soft); }
+.verdict-unknown { color: var(--muted); background: var(--line); }
+
+/* ---------- Due dashboard table (premium/spreadsheet-style) ----------
+   Deliberately separate from .due-table (Overdue's, above): more columns,
+   fixed comfortable widths instead of 100%-fit, full grid lines, and a
+   frozen Code column since horizontal scroll is expected here. */
+
+.due-dashboard-table {
+  width: auto;
+  min-width: 2000px;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+.due-dashboard-table th,
+.due-dashboard-table td {
+  border-right: 1px solid var(--line);
+}
+.due-dashboard-table th:last-child,
+.due-dashboard-table td:last-child { border-right: none; }
+
+.due-dashboard-table .col-code { width: 90px; }
+.due-dashboard-table .col-appno { width: 130px; }
+.due-dashboard-table .col-title { width: 420px; text-align: left; }
+.due-dashboard-table .col-applicant { width: 160px; text-align: left; }
+.due-dashboard-table .col-type { width: 90px; }
+.due-dashboard-table .col-date { width: 90px; }
+.due-dashboard-table .col-postdate { width: 130px; }
+.due-dashboard-table .col-status { width: 90px; }
+.due-dashboard-table .col-owner { width: 110px; }
+.due-dashboard-table .col-notes { width: 190px; text-align: left; }
+.due-dashboard-table .col-issue { width: 480px; text-align: left; }
+.due-dashboard-table .col-checklist { width: 110px; font-variant-numeric: tabular-nums; }
+.due-dashboard-table .col-action { width: 210px; text-align: left; }
+.due-dashboard-table .col-forms { width: 150px; }
+
+/* Section divider: separates the editable workflow columns from the
+   trailing F1/F26 reference column. */
+.due-dashboard-table .section-start { border-left: 2px solid var(--line-strong); }
+
+/* Frozen Code column (left) and Edit column (right) so both stay visible
+   regardless of horizontal scroll position. Sticky cells need an opaque
+   background — a translucent one lets scrolled-away columns show through. */
+.due-dashboard-table th.col-code,
+.due-dashboard-table td.col-code {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: var(--freeze-shadow);
+}
+.due-dashboard-table thead th.col-code { z-index: 2; background: var(--page); }
+.due-dashboard-table tbody tr:hover td.col-code { background: var(--page); }
+.due-dashboard-table tbody tr.is-overdue td.col-code { background: var(--bad-soft-row-opaque); }
+.due-dashboard-table tbody tr.is-overdue:hover td.col-code { background: var(--bad-soft-opaque); }
+
+/* Inline cell editing (Due dashboard, desktop only): double-click one of
+   the editable cells below to turn it into an input in place. */
+.is-editable-cell { cursor: text; }
+.is-editable-cell:hover { background: var(--page); }
+
+.due-dashboard-table td.is-cell-editing { padding: 4px 6px; }
+
+.cell-input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.status-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.select-sm { padding: 3px 6px; font-size: 12px; }
+
+.status-inline-select { max-width: 96px; }
+
+.btn-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--radius);
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.btn-icon:hover { background: var(--page); border-color: var(--accent); }
+
+.cell-trunc {
+  display: block;
+  white-space: normal;
+  overflow-wrap: break-word;
+  max-width: 100%;
+  line-height: 1.4;
+}
+
+/* ---------- Application number: click to copy ---------- */
+
+.appno-value {
+  cursor: pointer;
+  border-bottom: 1px dotted transparent;
+}
+.appno-value:hover { border-bottom-color: var(--muted); }
+.appno-value.is-copied { color: var(--ok-fg); font-weight: 700; border-bottom-color: transparent; }
+
+/* ---------- Assignee ---------- */
+
+.assignee-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.assignee-empty { color: var(--muted); }
+
+/* ---------- Buttons ---------- */
+
+.link-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--accent);
+  cursor: pointer;
+}
+
+.link-btn:hover { text-decoration: underline; }
+
+.btn {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.btn:hover:not(:disabled) { background: var(--page); }
+
+/* Toggle-style buttons (e.g. "Show/Hide abandoned") — same look as an
+   active .summary-card, so a pressed state reads consistently app-wide. */
+.btn.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.btn:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+  background: var(--surface);
+  opacity: 0.6;
+}
+
+.btn-sm { padding: 4px 10px; font-size: 12px; }
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-color);
+}
+.btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
+
+/* Live Due Board button: orange like the TV board, soft glow pulse and a
+   blinking live dot so it reads as the "go live" action. */
+.btn.due-soon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 700;
+  color: #1b1208;
+  background: linear-gradient(135deg, #ffa05a, #ff7a1a);
+  border-color: #ff7a1a;
+  animation: live-btn-glow 2.4s ease-out infinite;
+}
+.btn.due-soon-btn::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #1b1208;
+  animation: live-btn-dot 1.2s ease-in-out infinite;
+}
+.btn.due-soon-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ffb070, #ff8a2e);
+  animation-play-state: paused;
+}
+@keyframes live-btn-glow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 122, 26, 0.55); }
+  70%, 100% { box-shadow: 0 0 0 12px rgba(255, 122, 26, 0); }
+}
+@keyframes live-btn-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+/* ---------- Status badge ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+  text-transform: capitalize;
+}
+
+.badge-completed { color: var(--ok-fg); }
+.badge-pending { color: var(--warn-fg); }
+.badge-overdue { color: var(--bad-fg); }
+
+/* ---------- Pagination ---------- */
+
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-top: var(--sp-4);
+}
+
+.pagination-info {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- States ---------- */
+
+.state {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: var(--sp-6);
+  text-align: center;
+  color: var(--muted);
+}
+
+.state-title {
+  color: var(--ink);
+  font-weight: 700;
+  margin: 0 0 var(--sp-1);
+}
+
+.state p { margin: 0; }
+
+.refreshing {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 var(--sp-3);
+}
+
+.error {
+  background: var(--bad-soft);
+  border: 1px solid var(--bad-fg);
+  color: var(--bad-fg);
+  border-radius: var(--radius);
+  padding: var(--sp-3) var(--sp-4);
+}
+
+/* ---------- Data issues ---------- */
+
+.issues {
+  margin-top: var(--sp-6);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--warn-soft);
+  padding: var(--sp-4);
+}
+
+.issues-title {
+  font-size: 15px;
+  font-weight: 700;
+  margin: 0 0 var(--sp-1);
+  color: var(--warn-fg);
+}
+
+.issues-note {
+  margin: 0 0 var(--sp-3);
+  color: var(--ink);
+}
+
+.issues .table-wrap { max-height: none; box-shadow: none; }
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+}
+
+/* ---------- Detail view ---------- */
+
+.detail-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+.detail-code {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--ink);
+}
+
+/* Multiple fields per row instead of one long stacked list — cuts down
+   scrolling on records with many fields. Every field is the same size;
+   long values simply wrap within their box rather than spanning columns.
+   Each field is its own bordered box rather than a shared divider line,
+   since border tricks based on row position don't hold up once rows vary
+   in height. 3 columns on wide screens, 2 on medium ones (so long values
+   don't get squeezed), 1 on mobile (see the 720px media query below). */
+.detail-card {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--sp-3);
+}
+
+@media (min-width: 1200px) {
+  .detail-card {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px var(--sp-4);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+.detail-key {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.detail-value {
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detail-value:empty::after {
+  content: "—";
+  color: var(--line-strong);
+}
+
+@media (max-width: 720px) {
+  .detail-card { grid-template-columns: 1fr; }
+  .input { width: 100%; }
+  .page-head { grid-template-columns: 1fr; justify-items: center; }
+  .page-title { grid-column: 1; }
+  .page-meta { grid-column: 1; justify-self: center; }
+
+  /* Below phone width, the three results tables (LR records, Due
+     dashboard, Overdue) become stacked cards instead of a wide grid —
+     same markup, no separate mobile component. Each td with a
+     data-label becomes a label: value row; the Code cell (no label)
+     is the card's title, the Edit cell (no label) its footer action. */
+  .records-table,
+  .due-dashboard-table,
+  .due-table,
+  .granted-table,
+  .published-table,
+  .patent-filed-table,
+  .f1f26-table,
+
+  .f9f18-table {
+    width: 100% !important;
+    min-width: 0 !important;
+    table-layout: auto;
+  }
+
+  .table-wrap:has(.records-table, .due-dashboard-table, .due-table, .granted-table, .published-table, .patent-filed-table, .f9f18-table, .f1f26-table) {
+    max-height: none;
+    overflow: visible;
+    background: none;
+    border: none;
+    box-shadow: none;
+  }
+
+  .records-table thead,
+  .due-dashboard-table thead,
+  .due-table thead,
+  .granted-table thead,
+  .published-table thead,
+  .patent-filed-table thead,
+  .f1f26-table thead,
+
+  .f9f18-table thead {
+    display: none;
+  }
+
+  .records-table tbody tr,
+  .due-dashboard-table tbody tr,
+  .due-table tbody tr,
+  .granted-table tbody tr,
+  .published-table tbody tr,
+  .patent-filed-table tbody tr,
+  .f1f26-table tbody tr,
+
+  .f9f18-table tbody tr {
+    display: block;
+    margin-bottom: var(--sp-4);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+  }
+
+  .records-table tbody tr:last-child,
+  .due-dashboard-table tbody tr:last-child,
+  .due-table tbody tr:last-child,
+  .granted-table tbody tr:last-child,
+  .published-table tbody tr:last-child,
+  .patent-filed-table tbody tr:last-child,
+  .f1f26-table tbody tr:last-child,
+
+  .f9f18-table tbody tr:last-child {
+    margin-bottom: 0;
+  }
+
+  .records-table tbody td,
+  .due-dashboard-table tbody td,
+  .due-table tbody td,
+  .granted-table tbody td,
+  .published-table tbody td,
+  .patent-filed-table tbody td,
+  .f1f26-table tbody td,
+
+  .f9f18-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--sp-3);
+    width: 100% !important;
+    max-width: none !important;
+    text-align: right;
+    padding: 8px var(--sp-3);
+    border: none;
+    border-bottom: 1px solid var(--line);
+    border-left: none !important;
+    position: static !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .records-table tbody td:last-child,
+  .due-dashboard-table tbody td:last-child,
+  .due-table tbody td:last-child,
+  .granted-table tbody td:last-child,
+  .published-table tbody td:last-child,
+  .patent-filed-table tbody td:last-child,
+  .f1f26-table tbody td:last-child,
+
+  .f9f18-table tbody td:last-child {
+    border-bottom: none;
+  }
+
+  .records-table tbody td[data-label]::before,
+  .due-dashboard-table tbody td[data-label]::before,
+  .due-table tbody td[data-label]::before,
+  .granted-table tbody td[data-label]::before,
+  .published-table tbody td[data-label]::before,
+  .patent-filed-table tbody td[data-label]::before,
+  .f1f26-table tbody td[data-label]::before,
+
+  .f9f18-table tbody td[data-label]::before {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    flex: 1 1 auto;
+    text-align: left;
+  }
+
+  /* Long free-text fields stack label-above-value instead of a tight row. */
+  .records-table tbody td.col-title,
+  .due-dashboard-table tbody td.col-title,
+  .due-dashboard-table tbody td.col-applicant,
+  .due-dashboard-table tbody td.col-notes,
+  .due-dashboard-table tbody td.col-issue,
+  .due-dashboard-table tbody td.col-action,
+  .due-table tbody td.col-title,
+  .due-table tbody td.col-applicant,
+  .granted-table tbody td.col-title,
+  .granted-table tbody td.col-applicant,
+  .published-table tbody td.col-title,
+  .published-table tbody td.col-applicant,
+  .published-table tbody td.col-institution,
+  .patent-filed-table tbody td.col-title,
+  .patent-filed-table tbody td.col-applicant,
+  .patent-filed-table tbody td.col-institution,
+  .f1f26-table tbody td.col-title,
+
+  .f9f18-table tbody td.col-title {
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+    gap: 2px;
+  }
+
+  .records-table .cell-trunc,
+  .due-dashboard-table .cell-trunc,
+  .due-table .cell-trunc,
+  .granted-table .cell-trunc,
+  .published-table .cell-trunc,
+  .patent-filed-table .cell-trunc,
+  .f1f26-table .cell-trunc,
+
+  .f9f18-table .cell-trunc {
+    -webkit-line-clamp: unset;
+  }
+
+  /* Code cell: no label, acts as the card's title. */
+  .records-table tbody td.col-code,
+  .due-dashboard-table tbody td.col-code,
+  .due-table tbody td.col-code,
+  .granted-table tbody td.col-code,
+  .published-table tbody td.col-code,
+  .patent-filed-table tbody td.col-code,
+  .f1f26-table tbody td.col-code,
+
+  .f9f18-table tbody td.col-code {
+    background: var(--page) !important;
+    font-size: 15px;
+    justify-content: flex-start;
+  }
+
+  /* Edit cell: no label, full-width footer action. */
+  .due-dashboard-table tbody td.frozen-edit {
+    justify-content: center;
+    border-top: 1px solid var(--line);
+  }
+  .due-dashboard-table tbody .btn-icon {
+    width: 100%;
+    height: 32px;
+  }
+}
+
+/* ---------- Action list: section buttons ---------- */
+
+.action-sections {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-5);
+}
+
+.action-section-btn {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 7px 16px;
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+.action-section-btn:hover { color: var(--ink); border-color: var(--line-strong); }
+
+.action-section-btn.is-active {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.action-section-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Due soon (top of the Due dashboard) ---------- */
+
+/* Due dashboard header: the Due soon button sits right after the title
+   (start of the third grid column), the dues count stays at the far right. */
+.page-head-side {
+  grid-column: 3;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+}
+
+@media (max-width: 720px) {
+  .page-head-side { grid-column: 1; justify-content: center; }
+}
+
+.due-soon-back { margin-bottom: var(--sp-4); }
+
+.due-soon-title {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  margin: 0 0 2px;
+  color: var(--ink);
+}
+
+.due-soon-note {
+  margin: 0 0 var(--sp-4);
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.due-soon-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 160px));
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-4);
+}
+
+/* The two cards are tabs: the selected one takes the shared .is-active
+   highlight. "Due today" keeps a yellow number so it reads as the urgent one. */
+.due-soon-cards .summary-card { width: 100%; height: 100%; }
+.due-soon-today .summary-number { color: var(--warn-fg); }
+
+.due-soon-empty {
+  margin: 0;
+  color: var(--muted);
+}
+
+.due-soon-table { min-width: 560px; }
+.due-soon-table th,
+.due-soon-table td { border-right: 1px solid var(--line); }
+
+/* Live Due Tracker — the office-TV screen. Scoped custom properties so it
+   can use literal TV-spec hex values in dark mode without shifting any
+   other page's theme; light mode reuses the app's own tokens as-is, per
+   spec ("Light mode: use the app's existing light theme"). --ldt-scale is
+   the A-/A+ multiplier every font-size below is built from. */
+.live-due-tracker {
+  --ldt-page: var(--page);
+  --ldt-panel: var(--surface);
+  --ldt-thead: var(--page);
+  --ldt-border: var(--line);
+  --ldt-header-border: var(--line);
+  --ldt-text: var(--ink);
+  --ldt-text-secondary: var(--muted);
+  --ldt-text-tertiary: var(--muted);
+  --ldt-card-label: var(--ink);
+  --ldt-code: var(--accent);
+  --ldt-status: var(--accent-hover);
+  --ldt-today: var(--accent);
+  --ldt-today-card-bg: var(--accent-soft);
+  --ldt-today-card-border: var(--accent);
+  --ldt-next7: #8A63D2;
+  --ldt-overdue: var(--bad-fg);
+  --ldt-overdue-card-bg: var(--bad-soft);
+  --ldt-overdue-card-border: var(--bad-fg);
+  --ldt-overdue-label: var(--bad-fg);
+  --ldt-completed: var(--ok-fg);
+  --ldt-btn-bg: var(--surface);
+  --ldt-btn-border: var(--line);
+  --ldt-active-ring: var(--ink);
+  --ldt-logo-border: var(--line-strong);
+  --ldt-logo-bg: var(--surface);
+  --ldt-scale: 1;
+
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: var(--ldt-page);
+  color: var(--ldt-text);
+  border-radius: var(--radius-lg);
+  padding: 18px 0 16px;
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+}
+
+/* TV/large-monitor sizing only (JS-measured height, see LiveDueTracker.jsx):
+   the whole screen is clipped to the viewport, so only .ldt-grid and
+   .ldt-recent-scroll below can scroll — no page-level scroll. On a shorter
+   (laptop) window this class isn't applied and the page scrolls normally. */
+.live-due-tracker.is-tv-fit { overflow: hidden; }
+
+/* Colour/Mono: greys out every status/tag colour by overriding the same
+   custom properties the rest of the screen already reads its colours from
+   — card values/backgrounds/borders, the Status column and the Next 7
+   days bar all update automatically. The one thing not on these variables
+   is the Assignee name tag (its colour is per-name, set inline by the
+   shared Assignee component used across the whole app), so that's
+   desaturated with a filter instead, scoped to this screen only. */
+.live-due-tracker.is-mono {
+  --ldt-code: var(--ldt-text);
+  --ldt-status: var(--ldt-text-secondary);
+  --ldt-today: var(--ldt-text);
+  --ldt-today-card-bg: var(--ldt-panel);
+  --ldt-today-card-border: var(--ldt-border);
+  --ldt-next7: var(--ldt-text);
+  --ldt-overdue: var(--ldt-text);
+  --ldt-overdue-card-bg: var(--ldt-panel);
+  --ldt-overdue-card-border: var(--ldt-border);
+  --ldt-overdue-label: var(--ldt-text-secondary);
+  --ldt-completed: var(--ldt-text);
+}
+.live-due-tracker.is-mono .assignee-pill { filter: grayscale(1); }
+
+[data-theme="dark"] .live-due-tracker {
+  --ldt-page: #1d1a17;
+  --ldt-panel: #211d1a;
+  --ldt-thead: #1b1815;
+  --ldt-border: #3a342d;
+  --ldt-header-border: #332e28;
+  --ldt-text: #efe9e1;
+  --ldt-text-secondary: #b7ada0;
+  --ldt-text-tertiary: #d3c9bc;
+  --ldt-card-label: #e4dccf;
+  --ldt-code: #6cb0ff;
+  --ldt-status: #a9d0fb;
+  --ldt-today: #5aa2f0;
+  --ldt-today-card-bg: #252a33;
+  --ldt-today-card-border: #4a7fd0;
+  --ldt-next7: #b79cff;
+  --ldt-overdue: #f06a5a;
+  --ldt-overdue-card-bg: #2f1f1c;
+  --ldt-overdue-card-border: #e0604f;
+  --ldt-overdue-label: #f2c2ba;
+  --ldt-completed: #5cbf6e;
+  --ldt-btn-bg: #2b2621;
+  --ldt-btn-border: #4a4239;
+  --ldt-active-ring: #ffffff;
+  --ldt-logo-border: #3d4f73;
+  --ldt-logo-bg: #22304a;
+}
+
+/* ---------- Header ---------- */
+.ldt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 16px 40px;
+  border-bottom: 1px solid var(--ldt-header-border);
+}
+.ldt-header-left { display: flex; align-items: center; }
+.live-due-tracker .brand-icon {
+  width: 44px;
+  height: 44px;
+  border: 2px solid var(--ldt-logo-border);
+  background: var(--ldt-logo-bg);
+  box-shadow: none;
+}
+.live-due-tracker .brand-text { font-size: 27px; font-weight: 800; }
+.live-due-tracker .brand-text-accent { color: var(--ldt-today); }
+.ldt-page-name {
+  font-size: calc(18px * var(--ldt-scale));
+  font-weight: 700;
+  color: var(--ldt-text);
+  margin-left: 16px;
+  padding-bottom: 4px;
+  border-bottom: 3px solid var(--ldt-today);
+}
+.ldt-header-right { display: flex; align-items: center; gap: var(--sp-4); }
+.ldt-header-clock { text-align: right; }
+.ldt-clock {
+  font-size: calc(35px * var(--ldt-scale));
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  color: var(--ldt-text);
+}
+.ldt-date { font-size: calc(14px * var(--ldt-scale)); color: var(--ldt-text-secondary); }
+
+.ldt-sync-error {
+  margin: 0 40px;
+  color: var(--ldt-overdue);
+  font-size: calc(13px * var(--ldt-scale));
+}
+
+/* Shared look for every button on this screen (Full screen, Refresh now,
+   A-/A+, Light/Dark, Colour/Mono) — .ldt-btn-lg is only Full screen's
+   slightly taller/bigger variant. */
+.ldt-btn {
+  height: 40px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ldt-btn-bg);
+  color: var(--ldt-text);
+  border: 1px solid var(--ldt-btn-border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: calc(14px * var(--ldt-scale));
+  font-weight: 700;
+  cursor: pointer;
+}
+.ldt-btn:disabled { opacity: 0.5; cursor: default; }
+.ldt-btn-lg { height: 46px; padding: 0 18px; border-radius: 9px; font-size: calc(15px * var(--ldt-scale)); }
+
+/* ---------- Count cards ---------- */
+.ldt-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 0 40px;
+}
+.ldt-card {
+  background: var(--ldt-panel);
+  border: 2px solid var(--ldt-border);
+  border-radius: 11px;
+  padding: 12px 22px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+/* Adds to the card's own coloured border rather than replacing it. */
+.ldt-card.is-active { box-shadow: 0 0 0 2px var(--ldt-active-ring) inset; }
+.ldt-card-label { font-size: calc(20px * var(--ldt-scale)); color: var(--ldt-card-label); font-weight: 800; }
+.ldt-card-value {
+  font-size: calc(51px * var(--ldt-scale));
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.ldt-card-today { background: var(--ldt-today-card-bg); border-color: var(--ldt-today-card-border); }
+.ldt-card-today .ldt-card-value { color: var(--ldt-today); }
+.ldt-card-next7 .ldt-card-value { color: var(--ldt-next7); }
+.ldt-card-overdue { background: var(--ldt-overdue-card-bg); border-color: var(--ldt-overdue-card-border); }
+.ldt-card-overdue .ldt-card-label { color: var(--ldt-overdue-label); }
+.ldt-card-overdue .ldt-card-value { color: var(--ldt-overdue); }
+.ldt-card-completed .ldt-card-value { color: var(--ldt-completed); }
+
+/* ---------- Body: main table (left) + Next 7 days / Recently completed (right) ---------- */
+.ldt-body {
+  display: flex;
+  gap: 16px;
+  min-height: 0;
+  flex: 1;
+  padding: 0 40px;
+}
+.ldt-table-panel {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid var(--ldt-border);
+  border-radius: 12px;
+  background: var(--ldt-panel);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ldt-panel-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: 14px 22px 10px;
+}
+.ldt-panel-head h3 { margin: 0; font-size: calc(26px * var(--ldt-scale)); font-weight: 800; }
+.ldt-count { font-size: calc(17px * var(--ldt-scale)); font-weight: 700; color: var(--ldt-text-secondary); }
+
+/* The main table is built from plain grid rows, not a <table> — this
+   screen needs exact pixel/fr column widths (grid-template-columns), and
+   applying a grid/flex display to real <tr>/<td> elements breaks their
+   table-cell layout (learned that the hard way with the line-clamp cells
+   below). One shared row template keeps the header and every data row
+   perfectly aligned. */
+.ldt-grid { flex: 1; min-height: 0; overflow-y: auto; }
+.ldt-grid-row {
+  display: grid;
+  /* Title and Inventor are the two columns that matter most, so they get
+     the most (and equal) room; Status/Type/Assigned are fixed-width and
+     trimmed down from their first pass to make space for that. */
+  grid-template-columns: 130px minmax(0, 1.15fr) minmax(0, 1.15fr) 170px 100px 160px;
+  column-gap: 16px;
+  align-items: center;
+}
+.ldt-grid-row.is-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--ldt-thead);
+  border-top: 1px solid var(--ldt-border);
+  border-bottom: 1px solid var(--ldt-border);
+  padding: 10px 22px;
+  font-size: calc(14px * var(--ldt-scale));
+  font-weight: 800;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: #c4baad;
+}
+.ldt-grid-row.is-data {
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--ldt-border);
+}
+/* Plain dark rows, thin divider lines only — no tint on hover either. */
+.ldt-grid-row.is-data:hover { background: var(--ldt-panel); }
+
+.ldt-cell-code .link-btn {
+  font-size: calc(26px * var(--ldt-scale));
+  font-weight: 800;
+  color: var(--ldt-code);
+}
+/* Title only — clamped to 2 lines, never the grid cell itself (the
+   -webkit-line-clamp hack needs display:-webkit-box, and putting that on
+   a table <td>, this cell's previous shape, broke its layout entirely; a
+   plain div doesn't have that problem, but the span stays anyway). */
+.ldt-clamp2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  line-height: 1.3;
+  white-space: pre-line;
+}
+.ldt-cell-title .ldt-clamp2 { font-size: calc(17px * var(--ldt-scale)); font-weight: 700; color: var(--ldt-text); }
+/* Inventor: shown in full, never clamped — the row just grows taller for
+   a long inventor list instead of cutting names off. The sheet gives one
+   inventor's full name per line ("Name One\nName Two\n..."); pre-line
+   keeps those as real line breaks instead of collapsing them into one run
+   of text that then wraps word-by-word wherever it runs out of room. */
+.ldt-inventor-full {
+  display: block;
+  font-size: calc(14px * var(--ldt-scale));
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ldt-text-tertiary);
+  white-space: pre-line;
+}
+.ldt-cell-status { font-size: calc(16px * var(--ldt-scale)); font-weight: 700; color: var(--ldt-status); }
+.ldt-cell-type { font-size: calc(15px * var(--ldt-scale)); font-weight: 800; color: var(--ldt-card-label); }
+.live-due-tracker .assignee-pill {
+  padding: 4px 11px;
+  border-radius: 7px;
+  font-size: calc(14px * var(--ldt-scale));
+  font-weight: 800;
+  color: #fff !important;
+}
+
+.ldt-empty { color: var(--ldt-text-secondary); text-align: center; padding: var(--sp-4); margin: 0; }
+
+/* ---------- Right column: Next 7 days + Recently completed ---------- */
+.ldt-right-col {
+  width: 460px;
+  flex: 0 0 460px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+}
+.ldt-next7-panel, .ldt-recent-panel {
+  background: var(--ldt-panel);
+  border: 1px solid var(--ldt-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  overflow: hidden;
+}
+.ldt-next7-panel h3 { margin: 0 0 12px; font-size: calc(22px * var(--ldt-scale)); font-weight: 800; color: var(--ldt-next7); }
+.ldt-next7-rows { display: flex; flex-direction: column; gap: 10px; }
+.ldt-next7-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 12px;
+}
+.ldt-next7-label { font-size: calc(15px * var(--ldt-scale)); font-weight: 700; color: var(--ldt-text-tertiary); }
+.ldt-bar-track { height: 18px; background: var(--ldt-btn-bg); border-radius: 5px; overflow: hidden; }
+.ldt-bar-fill { height: 100%; min-width: 6%; background: var(--ldt-next7); border-radius: 5px; transition: width 0.2s ease; }
+.ldt-next7-count { font-size: calc(17px * var(--ldt-scale)); font-weight: 800; text-align: right; font-variant-numeric: tabular-nums; }
+
+.ldt-recent-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ldt-recent-panel h3 {
+  margin: 0 0 8px;
+  font-size: calc(22px * var(--ldt-scale));
+  font-weight: 800;
+  color: var(--ldt-completed);
+}
+.ldt-recent-suffix { font-size: calc(14px * var(--ldt-scale)); font-weight: 600; color: var(--ldt-text-secondary); }
+.ldt-recent-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+.ldt-recent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding-top: 9px;
+  margin-top: 9px;
+  border-top: 1px solid var(--ldt-header-border);
+}
+.ldt-recent-row:first-child { margin-top: 0; border-top: none; padding-top: 0; }
+.ldt-recent-left { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ldt-check-icon { flex-shrink: 0; }
+.ldt-recent-code { font-size: calc(19px * var(--ldt-scale)); font-weight: 800; color: var(--ldt-code); }
+.ldt-recent-type { font-size: calc(14px * var(--ldt-scale)); font-weight: 700; color: var(--ldt-text-secondary); }
+.ldt-recent-panel .assignee-pill { padding: 3px 10px; border-radius: 6px; font-size: calc(13px * var(--ldt-scale)); }
+
+/* ---------- Footer ---------- */
+.ldt-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: 0 40px;
+}
+.ldt-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(15px * var(--ldt-scale));
+  font-weight: 600;
+  color: var(--ldt-text-secondary);
+}
+.ldt-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--ldt-completed);
+  box-shadow: 0 0 0 3px var(--ok-soft);
+}
+.ldt-footer-actions { display: flex; align-items: center; gap: 8px; }
+
+/* ========== TV departure board (full-screen / TV-fit mode only) ==========
+   Scoped entirely under .is-tv-fit so the normal windowed Live Due Tracker
+   view (laptop width, not shown on an actual TV) is completely untouched —
+   it keeps using the --ldt-* tokens above. These --tv-* tokens hook into
+   the SAME existing [data-theme] attribute/Light toggle; there is no
+   second theme system. */
+.live-due-tracker.is-tv-fit {
+  --tv-bg: #11100f;
+  --tv-surface: #1a1816;
+  --tv-card: #171513;
+  --tv-table-bg: #141210;
+  --tv-row-alt: #181614;
+  --tv-row-tomorrow: #2a1c12;
+  --tv-border: #2a2622;
+  --tv-row-divider: #221f1c;
+  --tv-text: #f3efe8;
+  --tv-text-secondary: #c4bdb2;
+  --tv-muted: #9b958c;
+  --tv-accent: #ff8a3d;
+  --tv-on-accent: #160b03;
+  --tv-code-color: var(--tv-accent);
+  --tv-flap-top: #262320;
+  --tv-flap-bottom: #1f1c1a;
+  --tv-flap-seam: #070605;
+  --tv-flap-digit: #f6f1ea;
+  --tv-led-track: #2a2723;
+  --tv-led-normal: #6a625a;
+  --tv-led-busy: var(--tv-accent);
+  --tv-status-positive: #4ade80;
+  --tv-status-in-progress: #ffd166;
+  --tv-status-neutral: #f3efe8;
+  --tv-status-overdue: #ff5c5c;
+  --tv-status-filed: #4ade80;
+  --tv-kpi-today: var(--tv-text);
+  --tv-kpi-overdue: var(--tv-status-overdue);
+  --tv-kpi-next7: var(--tv-accent);
+  --tv-kpi-filed: var(--tv-status-filed);
+
+  position: relative;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+}
+
+[data-theme="light"] .live-due-tracker.is-tv-fit {
+  --tv-bg: #f4f2ee;
+  --tv-surface: #ffffff;
+  --tv-card: #ffffff;
+  --tv-table-bg: #ffffff;
+  --tv-row-alt: #faf8f4;
+  --tv-row-tomorrow: #fff1e6;
+  --tv-border: #e2ddd4;
+  --tv-row-divider: #ece8e0;
+  --tv-text: #17150f;
+  --tv-text-secondary: #45413a;
+  --tv-muted: #6b665e;
+  --tv-accent: #ff7a1a;
+  --tv-on-accent: #17150f;
+  --tv-code-color: #b4530a;
+  --tv-table-header-bg: #17150f;
+  --tv-table-header-label: #ff8a3d;
+  --tv-ticker-label-bg: #17150f;
+  --tv-ticker-label-text: #ff8a3d;
+  --tv-flap-top: #1d1b19;
+  --tv-flap-bottom: #171513;
+  --tv-flap-seam: #000000;
+  --tv-flap-digit: #f6f1ea;
+  --tv-kpi-today: #f6f1ea;
+  --tv-kpi-overdue: #ff5c5c;
+  --tv-kpi-next7: #ff8a3d;
+  --tv-kpi-filed: #4ade80;
+  --tv-led-track: #ebe7df;
+  --tv-led-normal: #a39d93;
+  --tv-led-busy: #ff7a1a;
+  --tv-status-positive: #15803d;
+  --tv-status-in-progress: #a16207;
+  --tv-status-neutral: #17150f;
+  --tv-status-overdue: #c62828;
+  --tv-status-filed: #15803d;
+}
+
+/* Mono: same idea as the legacy .is-mono block above (desaturate every
+   status/accent colour to a neutral text colour) rewritten against the
+   --tv-* tokens. Flap-tile digit colours use --tv-flap-digit specifically
+   (not --tv-text-secondary) because the tiles stay dark in both themes —
+   a light-theme secondary-text colour would be unreadable on them. */
+.live-due-tracker.is-tv-fit.is-mono {
+  --tv-accent: var(--tv-text);
+  --tv-code-color: var(--tv-text);
+  --tv-status-positive: var(--tv-text-secondary);
+  --tv-status-in-progress: var(--tv-text-secondary);
+  --tv-status-neutral: var(--tv-text-secondary);
+  --tv-status-overdue: var(--tv-text-secondary);
+  --tv-status-filed: var(--tv-text-secondary);
+  --tv-led-busy: var(--tv-led-normal);
+  --tv-kpi-today: var(--tv-flap-digit);
+  --tv-kpi-overdue: var(--tv-flap-digit);
+  --tv-kpi-next7: var(--tv-flap-digit);
+  --tv-kpi-filed: var(--tv-flap-digit);
+  --tv-table-header-label: var(--tv-text-secondary);
+  --tv-ticker-label-text: var(--tv-text-secondary);
+}
+.live-due-tracker.is-tv-fit.is-mono .assignee-pill { filter: grayscale(1); }
+
+.live-due-tracker.is-tv-fit {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  gap: 0;
+  background: var(--tv-bg);
+  color: var(--tv-text);
+  border-radius: 0;
+}
+
+/* ---- Header ---- */
+.tv-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex: 0 0 auto;
+  background: var(--tv-surface);
+  border-bottom: 4px solid var(--tv-accent);
+  padding: calc(14px * var(--ldt-scale)) calc(40px * var(--ldt-scale));
+}
+.tv-header-left { display: flex; align-items: center; gap: 18px; min-width: 0; }
+.tv-header-icon {
+  width: calc(64px * var(--ldt-scale));
+  height: calc(64px * var(--ldt-scale));
+  flex-shrink: 0;
+  border-radius: 12px;
+  background: var(--tv-accent);
+  color: var(--tv-on-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tv-header-icon svg { width: 46%; height: 46%; }
+.tv-title-block { min-width: 0; }
+.tv-title {
+  margin: 0;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 700;
+  font-size: calc(54px * var(--ldt-scale));
+  letter-spacing: 4px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--tv-accent);
+}
+[data-theme="light"] .live-due-tracker.is-tv-fit .tv-title { color: var(--tv-text); }
+.tv-subtitle {
+  font-size: calc(16px * var(--ldt-scale));
+  letter-spacing: 4px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-weight: 600;
+  margin-top: 3px;
+}
+.tv-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--tv-border);
+  background: var(--tv-card);
+  font-size: calc(14px * var(--ldt-scale));
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.tv-live-ring { position: relative; width: 10px; height: 10px; border-radius: 50%; background: var(--tv-status-positive); flex-shrink: 0; }
+.tv-live-ring::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--tv-status-positive);
+  animation: tv-live-pulse 1.8s ease-out infinite;
+}
+@keyframes tv-live-pulse {
+  0% { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.tv-header-right { display: flex; align-items: center; gap: 22px; flex-shrink: 0; }
+.tv-clock { display: flex; align-items: center; gap: 6px; }
+.tv-clock-colon {
+  font-family: 'Oswald', 'Saira Condensed', sans-serif;
+  font-weight: 600;
+  font-size: calc(40px * var(--ldt-scale));
+  color: var(--tv-flap-digit);
+  animation: tv-colon-blink 2s steps(1, end) infinite;
+}
+[data-theme="light"] .live-due-tracker.is-tv-fit .tv-clock-colon { color: var(--tv-text); }
+@keyframes tv-colon-blink { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0.35; } }
+.tv-date-block { text-align: right; }
+.tv-date {
+  font-size: calc(18px * var(--ldt-scale));
+  letter-spacing: 2.5px;
+  font-weight: 600;
+  color: var(--tv-text-secondary);
+}
+.tv-synced { font-size: calc(13px * var(--ldt-scale)); color: var(--tv-muted); margin-top: 2px; }
+
+.tv-sync-error {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 8px calc(40px * var(--ldt-scale));
+  background: var(--tv-row-tomorrow);
+  color: var(--tv-status-overdue);
+  font-size: calc(14px * var(--ldt-scale));
+}
+
+/* ---- Split-flap tiles (clock + KPI numbers) ---- */
+.tv-flap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(to bottom, var(--tv-flap-top) 0%, var(--tv-flap-top) 50%, var(--tv-flap-bottom) 50%, var(--tv-flap-bottom) 100%);
+  color: var(--tv-flap-digit);
+  font-family: 'Oswald', 'Saira Condensed', sans-serif;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  perspective: 400px;
+}
+.tv-flap::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 2px;
+  margin-top: -1px;
+  background: var(--tv-flap-seam);
+}
+.tv-flap-clock { width: calc(42px * var(--ldt-scale)); height: calc(60px * var(--ldt-scale)); font-size: calc(42px * var(--ldt-scale)); }
+.tv-flap-kpi { width: calc(38px * var(--ldt-scale)); height: calc(56px * var(--ldt-scale)); font-size: calc(40px * var(--ldt-scale)); }
+.tv-flap-face { position: relative; z-index: 1; }
+.tv-flap.is-flipping .tv-flap-face { animation: tv-flap-flip 0.45s ease-in-out; }
+@keyframes tv-flap-flip {
+  0% { transform: rotateX(0deg); filter: brightness(1); }
+  50% { transform: rotateX(-88deg); filter: brightness(0.55); }
+  100% { transform: rotateX(0deg); filter: brightness(1); }
+}
+
+/* ---- Body: main table (left) + KPIs / Next 7 days (right) ---- */
+.tv-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  gap: calc(22px * var(--ldt-scale));
+  padding: calc(18px * var(--ldt-scale)) calc(24px * var(--ldt-scale));
+}
+
+.tv-table-card {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--tv-card);
+  border: 1px solid var(--tv-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.tv-table-head, .tv-row {
+  display: grid;
+  grid-template-columns:
+    calc(130px * var(--ldt-scale)) calc(130px * var(--ldt-scale)) calc(105px * var(--ldt-scale))
+    minmax(0, 1.55fr) minmax(0, 1fr)
+    calc(128px * var(--ldt-scale)) calc(168px * var(--ldt-scale));
+  column-gap: calc(12px * var(--ldt-scale));
+  align-items: center;
+  padding: 0 calc(16px * var(--ldt-scale));
+}
+.tv-table-head {
+  flex: 0 0 auto;
+  height: 52px;
+  background: var(--tv-table-header-bg, transparent);
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 600;
+  font-size: calc(19px * var(--ldt-scale));
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--tv-table-header-label, var(--tv-accent));
+  border-bottom: 1px solid var(--tv-border);
+}
+.tv-table-body { flex: 1 1 auto; min-height: 0; overflow: hidden; background: var(--tv-table-bg); display: flex; flex-direction: column; }
+.tv-row {
+  flex: 1 1 0;
+  min-height: 0;
+  padding-top: calc(8px * var(--ldt-scale));
+  padding-bottom: calc(8px * var(--ldt-scale));
+  font-family: 'Saira', Arial, sans-serif;
+  font-weight: 600;
+  font-size: calc(22px * var(--ldt-scale));
+  border-bottom: 1px solid var(--tv-row-divider);
+  animation: tv-row-in 0.6s ease both;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.tv-row:nth-child(even) { background: var(--tv-row-alt); }
+.tv-row.is-tomorrow { background: var(--tv-row-tomorrow); position: relative; overflow: hidden; }
+.tv-row.is-tomorrow::after {
+  content: '';
+  position: absolute;
+  top: 0; bottom: 0; left: -40%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.12), transparent);
+  animation: tv-sweep 5s linear infinite;
+}
+.tv-row.is-filler { opacity: 0.35; animation: none; }
+@keyframes tv-row-in {
+  from { opacity: 0; transform: translateY(16px) rotateX(-40deg); }
+  to { opacity: 1; transform: translateY(0) rotateX(0deg); }
+}
+@keyframes tv-sweep {
+  from { left: -40%; }
+  to { left: 100%; }
+}
+
+.tv-cell-due { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 6px; color: var(--tv-text-secondary); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tv-tag {
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-size: calc(12px * var(--ldt-scale));
+  letter-spacing: 1.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 5px;
+  color: var(--tv-on-accent);
+  flex-shrink: 0;
+}
+.tv-tag-overdue { background: var(--tv-status-overdue); }
+.tv-tag-today, .tv-tag-tomorrow { background: var(--tv-accent); }
+.tv-cell-code { font-weight: 800; color: var(--tv-code-color); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tv-cell-type { color: var(--tv-text-secondary); min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tv-cell-title, .tv-cell-inventor {
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 600;
+  font-size: calc(24px * var(--ldt-scale));
+  line-height: 1.2;
+  color: var(--tv-text);
+  min-width: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+}
+.tv-cell-inventor { color: var(--tv-text-secondary); font-size: calc(22px * var(--ldt-scale)); }
+.tv-cell-assigned { min-width: 0; overflow: hidden; }
+.live-due-tracker.is-tv-fit .tv-cell-assigned .assignee-pill { font-family: 'Manrope', sans-serif; font-size: calc(15px * var(--ldt-scale)); padding: 4px 12px; }
+.tv-cell-status { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.tv-status-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; background: currentColor; box-shadow: 0 0 8px currentColor; }
+[data-theme="light"] .live-due-tracker.is-tv-fit .tv-status-dot { box-shadow: none; }
+.tv-status-positive { color: var(--tv-status-positive); }
+.tv-status-in-progress { color: var(--tv-status-in-progress); }
+.tv-status-overdue { color: var(--tv-status-overdue); }
+.tv-status-neutral { color: var(--tv-status-neutral); }
+.tv-status-filed { color: var(--tv-status-filed); }
+
+.tv-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(14px * var(--ldt-scale));
+  text-align: center;
+  padding: 40px;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  color: var(--tv-text);
+}
+.tv-empty-icon {
+  width: calc(112px * var(--ldt-scale));
+  height: calc(112px * var(--ldt-scale));
+  padding: calc(22px * var(--ldt-scale));
+  border-radius: 50%;
+  color: var(--tv-status-positive);
+  background: radial-gradient(circle at 35% 30%, color-mix(in srgb, currentColor 22%, transparent), color-mix(in srgb, currentColor 6%, transparent));
+  border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+  box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 40%, transparent), 0 14px 34px -12px color-mix(in srgb, currentColor 55%, transparent);
+  animation: tv-empty-float 6s ease-in-out infinite, tv-empty-ring 3.2s ease-out infinite;
+}
+.tv-empty-state.is-overdue .tv-empty-icon, .tv-empty-state.is-completed .tv-empty-icon, .tv-empty-state.is-next7 .tv-empty-icon { color: var(--tv-accent); }
+.tv-empty-title { font-size: calc(54px * var(--ldt-scale)); font-weight: 700; letter-spacing: 3px; text-transform: uppercase; line-height: 1.1; }
+.tv-empty-sub { font-size: calc(26px * var(--ldt-scale)); letter-spacing: 1.5px; color: var(--tv-muted); font-weight: 500; }
+.tv-empty-next {
+  margin-top: calc(10px * var(--ldt-scale));
+  font-size: calc(28px * var(--ldt-scale));
+  letter-spacing: 1.5px;
+  color: var(--tv-text-secondary);
+  font-weight: 500;
+}
+.tv-empty-next b { color: var(--tv-accent); font-weight: 700; }
+.tv-empty-btn {
+  margin-top: calc(6px * var(--ldt-scale));
+  font: inherit;
+  font-size: calc(24px * var(--ldt-scale));
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: calc(12px * var(--ldt-scale)) calc(30px * var(--ldt-scale));
+  border-radius: 999px;
+  border: 0;
+  cursor: pointer;
+  color: var(--tv-on-accent);
+  background: linear-gradient(135deg, #ffa25c, var(--tv-accent));
+  box-shadow: 0 10px 28px -10px var(--tv-accent), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.tv-empty-btn:hover { transform: translateY(-2px) scale(1.03); box-shadow: 0 14px 34px -8px var(--tv-accent), inset 0 1px 0 rgba(255, 255, 255, 0.35); }
+.tv-empty-btn:focus-visible { outline: 2px solid var(--tv-text); outline-offset: 3px; }
+.tv-empty-countdown { width: calc(260px * var(--ldt-scale)); height: 4px; border-radius: 2px; background: var(--tv-border); overflow: hidden; }
+.tv-empty-countdown span { display: block; height: 100%; width: 100%; background: var(--tv-accent); transform-origin: left; animation: tv-empty-countdown 10s linear forwards; }
+@keyframes tv-empty-float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes tv-empty-ring {
+  0% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 40%, transparent), 0 14px 34px -12px color-mix(in srgb, currentColor 55%, transparent); }
+  70%, 100% { box-shadow: 0 0 0 calc(34px * var(--ldt-scale)) transparent, 0 14px 34px -12px color-mix(in srgb, currentColor 55%, transparent); }
+}
+@keyframes tv-empty-countdown { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+
+.tv-table-footer { flex: 0 0 auto; padding: 12px 20px 14px; }
+.tv-progress-track { height: 4px; border-radius: 2px; background: var(--tv-border); overflow: hidden; margin-bottom: 12px; }
+.tv-progress-fill { height: 100%; background: var(--tv-accent); width: 0%; animation: tv-progress 12s linear forwards; }
+@keyframes tv-progress { from { width: 0%; } to { width: 100%; } }
+.tv-table-footer-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.tv-showing, .tv-page-label {
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-size: calc(16px * var(--ldt-scale));
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-weight: 600;
+}
+.tv-page-info { display: flex; align-items: center; gap: 16px; }
+.tv-page-dots { display: flex; align-items: center; gap: 6px; }
+.tv-page-dot { width: 12px; height: 6px; border-radius: 3px; background: var(--tv-border); transition: width 0.4s ease, background-color 0.4s ease; }
+.tv-page-dot.is-active { width: 36px; background: var(--tv-accent); }
+
+/* ---- Side panel: KPIs + Next 7 days ---- */
+.tv-side { width: calc(400px * var(--ldt-scale)); flex: 0 0 calc(400px * var(--ldt-scale)); display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+.tv-kpis { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; flex: 0 0 auto; }
+.tv-kpi-card {
+  background: var(--tv-surface);
+  border: 1px solid var(--tv-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.tv-kpi-card:hover { border-color: var(--tv-accent); }
+.tv-kpi-card:focus-visible { outline: 2px solid var(--tv-accent); outline-offset: 2px; }
+.tv-kpi-card.is-active { border-color: var(--tv-accent); box-shadow: 0 0 0 2px var(--tv-accent); }
+.tv-kpi-label {
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-size: calc(16px * var(--ldt-scale));
+  letter-spacing: 1.5px;
+  white-space: nowrap;
+  text-transform: uppercase;
+  color: var(--tv-muted);
+  font-weight: 600;
+}
+.tv-kpi-number { display: flex; gap: 4px; }
+.tv-kpi-number.is-today .tv-flap { color: var(--tv-kpi-today); }
+.tv-kpi-number.is-overdue .tv-flap { color: var(--tv-kpi-overdue); }
+.tv-kpi-number.is-next7 .tv-flap { color: var(--tv-kpi-next7); }
+.tv-kpi-number.is-filed .tv-flap { color: var(--tv-kpi-filed); }
+
+.tv-next7-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--tv-surface);
+  border: 1px solid var(--tv-border);
+  border-radius: 12px;
+  padding: 14px 18px;
+  overflow: hidden;
+}
+.tv-next7-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 700;
+  font-size: calc(23px * var(--ldt-scale));
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.tv-next7-sub { font-size: calc(16px * var(--ldt-scale)); letter-spacing: 2px; color: var(--tv-muted); font-weight: 600; }
+.tv-next7-rows { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; flex: 1 1 auto; overflow: hidden; min-height: 0; }
+.tv-next7-row { display: grid; grid-template-columns: calc(112px * var(--ldt-scale)) 1fr calc(30px * var(--ldt-scale)); align-items: center; gap: calc(12px * var(--ldt-scale)); }
+.tv-next7-label {
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-size: calc(21px * var(--ldt-scale));
+  font-weight: 600;
+  letter-spacing: 1px;
+  white-space: nowrap;
+  color: var(--tv-text-secondary);
+}
+.tv-next7-count {
+  font-family: 'Saira', Arial, sans-serif;
+  font-weight: 800;
+  font-size: calc(21px * var(--ldt-scale));
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--tv-text);
+}
+.tv-led-bar { display: flex; gap: 4px; }
+.tv-led-block {
+  flex: 1;
+  height: 15px;
+  border-radius: 2px;
+  background: var(--tv-led-track);
+  opacity: 0;
+  animation: tv-led-in 0.4s ease forwards;
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+.tv-led-block.is-filled { background: var(--tv-led-normal); }
+.tv-led-bar.is-busy .tv-led-block.is-filled {
+  background: var(--tv-led-busy);
+  animation: tv-led-in 0.4s ease forwards, tv-led-glow 2.4s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 40ms), 0.4s;
+}
+@keyframes tv-led-in { from { opacity: 0; transform: scaleX(0.5); } to { opacity: 1; transform: scaleX(1); } }
+@keyframes tv-led-glow { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.5); } }
+.tv-empty-inline { color: var(--tv-muted); font-size: calc(16px * var(--ldt-scale)); margin: 0; }
+
+/* ---- Premium finish: glass panels, depth, slow ambient motion ----
+   Everything here is slow and soft; the global prefers-reduced-motion
+   rule switches all of it off. */
+.live-due-tracker.is-tv-fit {
+  --tv-shadow: 0 22px 44px -22px rgba(0, 0, 0, 0.85);
+  --tv-edge: color-mix(in srgb, var(--tv-accent) 24%, var(--tv-border));
+  --tv-sheen: linear-gradient(150deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 38%);
+  background:
+    radial-gradient(circle at 12% 8%, color-mix(in srgb, var(--tv-accent) 13%, transparent), transparent 42%),
+    radial-gradient(circle at 90% 92%, color-mix(in srgb, var(--tv-accent) 9%, transparent), transparent 46%),
+    var(--tv-bg);
+  background-size: 170% 170%, 170% 170%, auto;
+  background-repeat: no-repeat;
+  animation: tv-bg-drift 48s ease-in-out infinite alternate;
+}
+[data-theme="light"] .live-due-tracker.is-tv-fit {
+  --tv-shadow: 0 18px 36px -22px rgba(60, 40, 10, 0.35);
+  --tv-sheen: linear-gradient(150deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0) 45%);
+}
+@keyframes tv-bg-drift {
+  from { background-position: 0% 0%, 100% 100%, 0 0; }
+  to { background-position: 60% 40%, 40% 60%, 0 0; }
+}
+
+.tv-header {
+  position: relative;
+  overflow: hidden;
+  background: var(--tv-sheen), var(--tv-surface);
+  box-shadow: 0 10px 30px -14px rgba(0, 0, 0, 0.7);
+}
+.tv-header::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28%;
+  height: 4px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.85), transparent);
+  animation: tv-header-shimmer 7s ease-in-out infinite;
+}
+@keyframes tv-header-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(460%); } }
+
+.tv-table-card, .tv-next7-card {
+  background: var(--tv-sheen), var(--tv-card);
+  border-color: var(--tv-edge);
+  border-radius: 16px;
+  box-shadow: var(--tv-shadow), 0 0 28px -12px color-mix(in srgb, var(--tv-accent) 40%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.tv-kpis { perspective: calc(1100px * var(--ldt-scale)); }
+.tv-kpi-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--tv-sheen), var(--tv-surface);
+  border-color: var(--tv-edge);
+  border-radius: 16px;
+  box-shadow: var(--tv-shadow), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  transform-style: preserve-3d;
+  transition: border-color 0.3s ease, box-shadow 0.4s ease;
+  animation: tv-kpi-float-l 7s ease-in-out infinite;
+}
+.tv-kpi-card:nth-child(even) { animation-name: tv-kpi-float-r; }
+.tv-kpi-card:nth-child(2) { animation-delay: -1.7s; }
+.tv-kpi-card:nth-child(3) { animation-delay: -3.4s; }
+.tv-kpi-card:nth-child(4) { animation-delay: -5.1s; }
+.tv-kpi-card:hover { box-shadow: var(--tv-shadow), 0 0 26px -4px var(--tv-accent), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+.tv-kpi-card.is-active {
+  box-shadow: var(--tv-shadow), 0 0 0 2px var(--tv-accent), 0 0 34px -2px color-mix(in srgb, var(--tv-accent) 65%, transparent), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+.tv-kpi-card.is-active::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -60%;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: skewX(-18deg);
+  animation: tv-kpi-sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes tv-kpi-float-l {
+  0%, 100% { transform: rotateY(6deg) rotateX(2deg) translateY(0); }
+  50% { transform: rotateY(4deg) rotateX(-1deg) translateY(calc(-4px * var(--ldt-scale))); }
+}
+@keyframes tv-kpi-float-r {
+  0%, 100% { transform: rotateY(-6deg) rotateX(2deg) translateY(0); }
+  50% { transform: rotateY(-4deg) rotateX(-1deg) translateY(calc(-4px * var(--ldt-scale))); }
+}
+@keyframes tv-kpi-sweep {
+  0%, 55% { left: -60%; }
+  100% { left: 160%; }
+}
+
+/* ---- Bottom ticker ---- */
+.tv-ticker {
+  flex: 0 0 auto;
+  height: 56px;
+  display: flex;
+  align-items: stretch;
+  background: var(--tv-accent);
+  color: var(--tv-on-accent);
+  overflow: hidden;
+}
+.tv-ticker-label {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 700;
+  font-size: calc(23px * var(--ldt-scale));
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  background: var(--tv-ticker-label-bg, transparent);
+  color: var(--tv-ticker-label-text, var(--tv-on-accent));
+  white-space: nowrap;
+}
+.tv-ticker-viewport { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; overflow: hidden; }
+.tv-ticker-static {
+  padding: 0 24px;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 700;
+  font-size: calc(20px * var(--ldt-scale));
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+.tv-ticker-track { display: flex; align-items: center; white-space: nowrap; animation: tv-ticker-scroll 50s linear infinite; }
+.tv-ticker-item {
+  display: inline-flex;
+  align-items: center;
+  font-family: 'Saira Condensed', Arial Narrow, sans-serif;
+  font-weight: 700;
+  font-size: calc(23px * var(--ldt-scale));
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  padding: 0 16px;
+}
+.tv-ticker-item strong { font-weight: 700; margin-right: 10px; }
+.tv-ticker-sep { width: 10px; height: 10px; background: currentColor; opacity: 0.5; margin-left: 20px; flex-shrink: 0; }
+@keyframes tv-ticker-scroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+/* ---- Control bar: Refresh/A-/A+/Light/Mono/Exit full screen, auto-hides ---- */
+.tv-controls {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: calc(8px * var(--ldt-scale));
+}
+.tv-btn {
+  height: calc(40px * var(--ldt-scale));
+  min-width: 0;
+  padding: 0 calc(8px * var(--ldt-scale));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  background: var(--tv-surface);
+  color: var(--tv-text);
+  border: 1px solid var(--tv-border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: calc(16px * var(--ldt-scale));
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+.tv-btn:hover:not(:disabled) { border-color: var(--tv-accent); }
+.tv-btn:focus-visible { outline: 2px solid var(--tv-accent); outline-offset: 2px; }
+.tv-btn-wide { grid-column: span 12; }
+.tv-btn-half { grid-column: span 6; }
+.tv-btn-quarter { grid-column: span 3; }
+.tv-btn:disabled { opacity: 0.5; cursor: default; }
+
+.due-soon-table th:last-child,
+.due-soon-table td:last-child { border-right: none; }
+
+.due-soon-table .col-date { width: 120px; }
+.due-soon-table .col-type { width: 96px; }
+.due-soon-table .col-code { width: 100px; }
+.due-soon-table .col-status { width: 110px; }
+.due-soon-table .col-owner { width: 140px; }
+.due-soon-table .col-edit { width: 56px; }
+
+.due-soon-table tbody td { vertical-align: middle; }
+.due-soon-table tbody tr.is-today > td { background: var(--warn-soft); }
+.due-soon-table tbody tr.is-today > td.col-date { font-weight: 700; }
+.due-soon-table tbody tr.is-editing > td { background: var(--page); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+
+/* ---------- Toast ---------- */
+
+.toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 50;
+  padding: 10px 18px;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--on-color);
+  animation: toast-in 0.15s ease;
+}
+
+.toast-success { background: var(--ok-fg); }
+.toast-error { background: var(--bad-fg); }
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- Phase 3: manual fields ---------- */
+
+.col-notes { width: 140px; font-size: 13px; }
+.col-edit  { width: 68px; }
+
+tr.is-editing > td { background: var(--page); }
+
+tr.is-overdue > td { background: var(--bad-soft-row); }
+
+tr.is-overdue:hover > td { background: var(--bad-soft); }
+
+/* Abandoned (red Code cell in the sheet): same tint as an overdue row on the
+   tabs that list them (Published, Patent filed), plus a badge so the
+   signal isn't color-only. */
+tr.is-abandoned > td { background: var(--bad-soft-row); }
+tr.is-abandoned:hover > td { background: var(--bad-soft); }
+
+.abandoned-badge {
+  display: block;
+  width: fit-content;
+  margin: 3px auto 0;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--bad-soft);
+  color: var(--bad-fg);
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.6;
+}
+
+.edit-row > td { padding: 0; background: var(--page); }
+
+.edit-panel {
+  padding: var(--sp-4);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.edit-head {
+  font-size: 13px;
+  margin-bottom: var(--sp-3);
+  color: var(--muted);
+}
+
+.edit-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-3);
+}
+
+.edit-grid-wide .field { flex: 1 1 260px; }
+
+.textarea {
+  font: inherit;
+  font-size: 14px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.input-sm { width: 180px; }
+
+.edit-actions {
+  display: flex;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+}
+
+.edit-error {
+  color: var(--bad-fg);
+  font-size: 13px;
+  margin-top: var(--sp-2);
+}
+
+/* ---------- F1 / F26 combined column ---------- */
+
+.col-forms { width: 190px; }
+
+.form-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.form-status-key {
+  display: inline-block;
+  min-width: 26px;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.form-status-line.tone-ok   { color: var(--ok-fg); }
+.form-status-line.tone-bad  { color: var(--bad-fg); }
+.form-status-line.tone-wait { color: var(--warn-fg); }
+
+.form-status-none { color: var(--muted); opacity: 0.6; }
+
+/* ---------- Login screen ---------- */
+
+.login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--page);
+}
+
+.login-card {
+  width: 100%;
+  max-width: 340px;
+  padding: var(--sp-6) var(--sp-5);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.login-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  text-align: center;
+}
+
+/* Shared wordmark (Brand.jsx): icon + two-tone text, sized off the
+   parent heading's font-size so it fits both the header and login title. */
+.brand-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+.brand-icon {
+  height: 1.5em;
+  width: 1.5em;
+  flex-shrink: 0;
+  object-fit: contain;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--line-strong), var(--shadow-card);
+}
+
+.brand-text-accent {
+  color: var(--accent);
+}
+
+.login-subtitle {
+  margin: 0 0 var(--sp-2);
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.login-error {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--radius);
+  background: var(--bad-soft);
+  color: var(--bad-fg);
+  font-size: 13px;
+}
+
+.login-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.login-field input {
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--page);
+  color: var(--ink);
+  font-size: 14px;
+  font-family: inherit;
+}
+
+.login-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.login-submit {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: none;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-color);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.login-submit:hover { background: var(--accent-hover); }
+.login-submit:disabled { opacity: 0.6; cursor: default; }
+
+/* ---------- Phone header, tab grid and login (max-width 720px) ----------
+   Same header markup as desktop: display: contents on the wrappers turns
+   the logo, title, theme button, tabs and sync status into direct children
+   of .app-header-inner, which lays them out as a grid. The base rules below
+   only hide phone-only bits, so desktop and tablet render as before. */
+
+.tab-short,
+.tab-icon,
+.sheet-status-phone { display: none; }
+
+/* ---------- Phone sizes: the ONE place to tune them (max-width 720px) ----------
+   Every phone size below (header, tabs, fields, buttons, count cards, paging)
+   reads from these variables. Login keeps its own larger 44px / 16px sizes. */
+@media (max-width: 720px) {
+  :root {
+    /* text */
+    --m-font: 14px;            /* base text: inputs, selects, date field */
+    --m-label: 11px;           /* small labels: filter labels */
+    --m-title: 18px;           /* page title */
+    --m-count: 12px;           /* record count under the title */
+    /* header */
+    --m-logo: 32px;
+    --m-brand: 18px;           /* "Patent Hub" */
+    --m-theme-btn: 32px;
+    --m-header-pad-y: 6px;
+    --m-header-pad-x: 12px;
+    --m-sync-font: 11px;
+    --m-sync-pad: 2px 0 0;
+    /* tabs and Action list section buttons */
+    --m-tab-h: 34px;
+    --m-tab-font: 13px;
+    --m-tab-gap: 6px;
+    /* Due soon button */
+    --m-duesoon-h: 32px;
+    --m-duesoon-font: 13px;
+    /* search, selects, date field */
+    --m-field-h: 36px;
+    --m-field-font: var(--m-font);
+    --m-filter-row-gap: 4px;
+    --m-filter-col-gap: 8px;
+    /* Refresh / Export */
+    --m-btn-h: 36px;
+    --m-btn-font: 13px;
+    --m-btn-icon: 14px;
+    /* count cards */
+    --m-card-num: 16px;
+    --m-card-label: 11px;
+    --m-card-pad: 6px 8px;
+    --m-card-gap: 6px;
+    /* Prev / Next */
+    --m-page-btn-h: 36px;
+    /* spacing between blocks, and page padding */
+    --m-gap: 6px;              /* header rows, search / filters / buttons */
+    --m-section-gap: 8px;      /* toolbar -> cards -> list */
+    --m-page-pad-y: 10px;
+    --m-page-pad-x: 12px;
+    /* list cards (MobileCard) — reading-sized, bigger than the compact
+       control sizes above (this is content to read, not a button/filter to
+       tap); shared by every tab that adopts MobileCard, so task 3's LR
+       records sizing becomes the default for tasks 4-11 too. */
+    --m-mc-pad: 16px;              /* card padding, all sides */
+    --m-mc-radius: 14px;           /* card corner radius */
+    --m-mc-min-h: 44px;
+    --m-mc-list-gap: 12px;         /* gap between cards */
+    --m-mc-code: 17px;             /* code (medium weight, accent) */
+    --m-mc-title: 14.5px;
+    --m-mc-title-lh: 1.45;
+    --m-mc-title-ls: 0.02em;       /* titles are ALL CAPS in the sheet */
+    --m-mc-title-mt: 8px;          /* space above the title */
+    --m-mc-sub: 13px;              /* institution / subtitle line */
+    --m-mc-sub-mt: 6px;            /* space above the institution line */
+    --m-mc-text: 13.5px;           /* full-width text line (Abandoned STATUS) */
+    --m-mc-pills-mt: 12px;         /* space above the MAHE/status pills row */
+    --m-mc-pills-gap: 8px;         /* gap between pills in that row */
+    --m-mc-pill: 12.5px;
+    --m-mc-pill-pad: 3px 10px;
+    --m-mc-foot: 13px;             /* application no. / assigned-to text */
+    --m-mc-footer-mt: 12px;        /* space above the footer's divider */
+    --m-mc-footer-pt: 12px;        /* space after the divider, before content */
+    /* record page (RecordDetailPhone) */
+    --m-dt-code: 18px;
+    --m-dt-title: 14px;
+    --m-dt-key: 12px;
+    --m-dt-key-w: 104px;
+    --m-dt-val: 14px;
+    --m-dt-sec-h: 40px;
+    --m-dt-gap: 8px;
+    --m-dt-row-pad: 6px 10px;
+    /* smallest allowed tap target (height) */
+    --m-tap-min: 32px;
+  }
+}
+
+@media (max-width: 720px) {
+  .app-header { padding: var(--m-header-pad-y) var(--m-header-pad-x); }
+
+  .app-header-inner {
+    display: grid;
+    grid-template-columns: var(--m-theme-btn) 1fr var(--m-theme-btn);
+    align-items: center;
+    row-gap: var(--m-gap);
+  }
+
+  .app-title,
+  .app-title .brand-mark,
+  .header-row,
+  .header-actions { display: contents; }
+
+  .app-header .brand-icon {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+    width: var(--m-logo);
+    height: var(--m-logo);
+  }
+
+  .app-header .brand-text {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: center;
+    font-size: var(--m-brand);
+  }
+
+  .theme-toggle {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+    width: var(--m-theme-btn);
+    height: var(--m-theme-btn);
+    font-size: 14px;
+  }
+
+  .tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--m-tab-gap);
+  }
+
+  .tab {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-width: 0;
+    min-height: var(--m-tab-h);
+    padding: 0 4px;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius);
+    font-size: var(--m-tab-font);
+    font-weight: 400;
+    letter-spacing: 0;
+    white-space: nowrap;
+    color: var(--muted);
+  }
+
+  .tab::after { display: none; }
+
+  .tab:hover { color: var(--muted); }
+
+  .tab.is-active,
+  .tab.is-active:hover {
+    color: var(--accent);
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    font-weight: 500;
+  }
+
+  .tab-full { display: none; }
+  .tab-short { display: inline; }
+
+  .tab-action { grid-column: 1 / -1; }
+  .tab-icon { display: block; flex-shrink: 0; }
+
+  .sheet-status {
+    grid-column: 1 / -1;
+    grid-row: 3;
+    justify-self: end;
+    padding: var(--m-sync-pad);
+    font-size: var(--m-sync-font);
+    line-height: 1;
+  }
+
+  .sheet-status-full { display: none; }
+  .sheet-status-phone { display: inline; }
+
+  .app-main { padding: var(--m-page-pad-y) var(--m-page-pad-x); }
+
+  /* Login: one centred column that scrolls instead of clipping when the
+     keyboard is open (margin: auto centres safely, unlike align-items). */
+  .login-screen {
+    display: flex;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--sp-4);
+  }
+
+  .login-card {
+    margin: auto;
+    max-width: 400px;
+    padding: var(--sp-5) var(--sp-4);
+    gap: var(--sp-4);
+  }
+
+  .login-field { font-size: 14px; }
+
+  .login-field input {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .login-submit {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .login-error {
+    font-size: 14px;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---------- Reusable phone card (MobileCard.jsx) ----------
+   Only rendered on phones (via useIsPhone), so these base rules have no effect
+   on desktop. Sizes read the --m-mc-* variables (fallbacks = the old values). */
+
+.mobile-card-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--m-mc-list-gap, 12px);
+}
+
+/* No `gap` here — each row below sets its own margin-top, so a row that
+   isn't rendered (empty institution, no status, ...) leaves no blank space
+   rather than an empty gap slot. */
+.mobile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  min-height: var(--m-mc-min-h, 44px);
+  padding: var(--m-mc-pad, 16px);
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left-width: 3px;
+  border-radius: var(--m-mc-radius, 14px);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+}
+
+.mobile-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mobile-card-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.mobile-card-code {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--m-mc-code, 17px);
+  font-weight: 500;
+  color: var(--accent);
+  overflow-wrap: anywhere;
+}
+
+/* Due dashboard/Overdue only: stacks the code above an optional sub-badge
+   (e.g. "Abandoned") instead of them sitting side by side. Takes over the
+   row-flex sizing .mobile-card-code normally has on its own. */
+.mobile-card-code-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-card-code-stack .mobile-card-code { flex: initial; }
+
+.mobile-card-code-stack .status-pill {
+  margin-left: 0;
+  font-size: var(--m-mc-pill, 12.5px);
+  padding: var(--m-mc-pill-pad, 3px 10px);
+}
+
+.mobile-card-badge { flex-shrink: 0; }
+
+.mobile-card-chevron { flex-shrink: 0; color: var(--muted); }
+
+.mobile-card-title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  margin-top: var(--m-mc-title-mt, 8px);
+  font-size: var(--m-mc-title, 14.5px);
+  font-weight: 500;
+  line-height: var(--m-mc-title-lh, 1.45);
+  letter-spacing: var(--m-mc-title-ls, 0.02em);
+  overflow-wrap: anywhere;
+}
+
+.mobile-card-subtitle {
+  display: block;
+  margin-top: var(--m-mc-sub-mt, 6px);
+  overflow: hidden;
+  font-size: var(--m-mc-sub, 13px);
+  line-height: 1.3;
+  color: var(--muted);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.mobile-card-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: var(--m-mc-sub-mt, 6px);
+}
+
+.mobile-card-field {
+  display: flex;
+  gap: var(--sp-2);
+  font-size: var(--m-mc-foot, 13px);
+  line-height: 1.4;
+}
+
+.mobile-card-label {
+  flex: 0 0 84px;
+  color: var(--muted);
+}
+
+.mobile-card-value {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Row 4: MAHE/Non-MAHE badge + STATUS pill. Wraps onto its own line(s)
+   rather than ever truncating or overflowing (see .mobile-card-pills
+   .status-pill below). */
+.mobile-card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-mc-pills-gap, 8px);
+  margin-top: var(--m-mc-pills-mt, 12px);
+}
+
+/* Row 5: a divider, then application no. (left) / assigned-to (right).
+   margin-left: auto on the right side (instead of justify-content:
+   space-between on the row) keeps it pinned to the right edge even when
+   it's the only thing in the row, i.e. no application number. */
+.mobile-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--sp-2);
+  margin-top: var(--m-mc-footer-mt, 12px);
+  padding-top: var(--m-mc-footer-pt, 12px);
+  border-top: 1px solid var(--line);
+  font-size: var(--m-mc-foot, 13px);
+}
+
+.mobile-card-footer-left {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
+.mobile-card-footer-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-left: auto;
+  color: var(--muted);
+}
+
+/* Small pills used on the LR records card and record page. Base size/padding
+   stays as it already was — the record page (.rec-badges) reads this rule
+   too and must not change; the list card's own bigger sizing is scoped
+   below under .mobile-card-pills instead of changed here. */
+.mahe-pill,
+.status-pill {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1.5;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.mahe-pill { font-weight: 700; }
+
+.mahe-pill.is-mahe {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.status-pill {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-left: auto;
+}
+
+.mobile-card-pills .mahe-pill,
+.mobile-card-pills .status-pill {
+  padding: var(--m-mc-pill-pad, 3px 10px);
+  font-size: var(--m-mc-pill, 12.5px);
+}
+
+/* A long status must never be cut with "…" or overflow the card: it sits
+   next to the MAHE badge, wraps onto its own line if it doesn't fit there,
+   and wraps its own text inside the pill as a last resort. */
+.mobile-card-pills .status-pill {
+  max-width: 100%;
+  overflow: visible;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  white-space: normal;
+  text-overflow: clip;
+  margin-left: 0;
+  flex-shrink: 1;
+  min-width: 0;
+}
+
+/* Highlight tint: a translucent wash over the surface plus a coloured left edge. */
+.mobile-card.tone-bad {
+  background-image: linear-gradient(var(--bad-soft-row), var(--bad-soft-row));
+  border-left-color: var(--bad-fg);
+}
+.mobile-card.tone-warn {
+  background-image: linear-gradient(var(--warn-soft), var(--warn-soft));
+  border-left-color: var(--warn-fg);
+}
+.mobile-card.tone-ok {
+  background-image: linear-gradient(var(--ok-soft), var(--ok-soft));
+  border-left-color: var(--ok-fg);
+}
+
+/* ---------- Phone shared parts (max-width 720px) ----------
+   Title, search, filters, Refresh / Export row, count cards, paging and the
+   Action list section buttons. Sizes come from the --m-* variables above.
+   Desktop and tablet never reach these rules (and never render PhoneToolbar). */
+
+@media (max-width: 720px) {
+  /* Title centred with the count as small muted text directly under it.
+     On the Due dashboard the count comes before the Due soon button. */
+  .page-head { gap: 2px; margin-bottom: var(--m-section-gap); }
+  .page-title { font-size: var(--m-title); line-height: 1.25; }
+  .page-meta { font-size: var(--m-count); }
+  .page-head-side {
+    flex-direction: column;
+    align-items: center;
+    gap: var(--m-gap);
+  }
+  .page-head-side .page-meta { order: -1; }
+  .refreshing { margin-bottom: var(--m-gap); }
+
+  /* Due soon view */
+  .due-soon-back {
+    min-height: var(--m-tap-min);
+    padding: 0 var(--sp-3);
+    margin-bottom: var(--m-section-gap);
+    font-size: var(--m-btn-font);
+  }
+  .due-soon-title { font-size: var(--m-title); text-align: center; }
+  .due-soon-note { font-size: var(--m-count); text-align: center; margin-bottom: var(--m-section-gap); }
+  .due-soon-cards { gap: var(--m-card-gap); margin-bottom: var(--m-section-gap); }
+
+  /* Due dashboard: Live Due Board button centred under the title and count. */
+  .due-soon-btn {
+    min-height: var(--m-duesoon-h);
+    padding: 0 var(--sp-3);
+    font-size: var(--m-duesoon-font);
+  }
+
+  .phone-toolbar {
+    display: flex;
+    flex-direction: column;
+    gap: var(--m-gap);
+    margin-bottom: var(--m-section-gap);
+  }
+
+  .phone-search .input {
+    width: 100%;
+    min-height: var(--m-field-h);
+    padding: 0 var(--sp-3);
+    font-size: var(--m-field-font);
+  }
+
+  /* Room for the clear button only while there is text to clear. */
+  .phone-search .input:not(:placeholder-shown) { padding-right: 36px; }
+
+  .phone-search .search-clear {
+    right: 2px;
+    width: var(--m-tap-min);
+    height: var(--m-tap-min);
+    font-size: 20px;
+  }
+
+  .phone-actions {
+    display: grid;
+    grid-template-columns: repeat(var(--phone-actions-cols, 2), minmax(0, 1fr));
+    gap: var(--m-gap) var(--sp-2);
+  }
+
+  .phone-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-width: 0;
+    min-height: var(--m-btn-h);
+    padding: 0 4px;
+    font-size: var(--m-btn-font);
+    white-space: nowrap;
+  }
+
+  .phone-btn-icon { flex-shrink: 0; width: var(--m-btn-icon); height: var(--m-btn-icon); }
+
+  /* Every filter is always visible, two per row in desktop order. An odd last
+     filter and any .is-wide one (the Deadline date) take the full row. */
+  .phone-filters {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--m-filter-row-gap) var(--m-filter-col-gap);
+  }
+
+  .phone-filters .field {
+    min-width: 0;
+    gap: 2px;
+  }
+
+  .phone-filters .field-label {
+    font-size: var(--m-label);
+    line-height: 1.2;
+  }
+
+  .phone-filters .field.is-wide,
+  .phone-filters .field:last-child:nth-child(odd) { grid-column: 1 / -1; }
+
+  .phone-filters .select,
+  .phone-filters .input {
+    width: 100%;
+    min-height: var(--m-field-h);
+    padding-top: 0;
+    padding-bottom: 0;
+    font-size: var(--m-field-font);
+  }
+
+  /* Date field: a "dd-mm-yyyy" hint while empty and a calendar icon instead of
+     the browser's own chevron / picker glyph. The hint sits on top of the
+     input's own (sometimes blank) text; taps go through to the input. */
+  .field-control { position: relative; display: flex; }
+  .field-control > .input { padding-right: 34px; }
+
+  .field-control > input[type="date"] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .field-control > input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; }
+
+  .field-hint,
+  .field-icon {
+    position: absolute;
+    top: 1px;
+    bottom: 1px;
+    display: flex;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .field-hint {
+    left: 1px;
+    right: 34px;
+    padding-left: var(--sp-3);
+    border-radius: var(--radius) 0 0 var(--radius);
+    background: var(--surface);
+    color: var(--muted);
+    font-size: var(--m-field-font);
+  }
+
+  .field-icon {
+    right: 1px;
+    width: 34px;
+    justify-content: center;
+    color: var(--muted);
+  }
+
+  /* Count cards: 3 columns that wrap; nothing scrolls or hides. */
+  .summary-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--m-card-gap);
+    margin-bottom: var(--m-section-gap);
+  }
+
+  .summary-card {
+    padding: var(--m-card-pad);
+    text-align: center;
+  }
+
+  .summary-number { font-size: var(--m-card-num); line-height: 1.1; }
+
+  .summary-label {
+    margin-top: 0;
+    font-size: var(--m-card-label);
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  /* Due soon has only two cards: two equal columns instead of an empty third. */
+  .due-soon-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+  /* Paging: Prev | Page X of Y | Next */
+  .pagination {
+    justify-content: space-between;
+    gap: var(--sp-2);
+    margin-top: var(--m-section-gap);
+  }
+
+  .pagination .btn {
+    min-width: 80px;
+    min-height: var(--m-page-btn-h);
+    font-size: var(--m-btn-font);
+  }
+
+  .pagination-info {
+    flex: 1;
+    text-align: center;
+    font-size: var(--m-count);
+  }
+
+  /* Action list sections: four equal buttons, 2 per row — "Data issues" is
+     long enough that one row of four would cramp it. */
+  .action-sections {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--m-tab-gap);
+    margin-bottom: var(--m-section-gap);
+  }
+
+  .action-section-btn {
+    min-height: var(--m-tab-h);
+    padding: 0 4px;
+    font-size: var(--m-tab-font);
+    white-space: nowrap;
+  }
+
+  /* iPhone Safari zooms into any field under 16px, so bump the fields there
+     only; other phones keep --m-field-font. Pinch zoom is left alone. */
+  @supports (-webkit-touch-callout: none) {
+    .phone-search .input,
+    .phone-filters .select,
+    .phone-filters .input,
+    .field-hint {
+      font-size: 16px;
+    }
+  }
+}
+
+/* ---------- LR record page on phones (RecordDetailPhone.jsx) ---------- */
+
+@media (max-width: 720px) {
+  .rec-phone { display: flex; flex-direction: column; }
+
+  .rec-back {
+    align-self: flex-start;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-height: var(--m-btn-h);
+    padding: 0 var(--sp-3) 0 var(--sp-2);
+    margin-bottom: var(--m-gap);
+    font-size: var(--m-btn-font);
+  }
+
+  .rec-code {
+    margin: 0;
+    font-size: var(--m-dt-code);
+    font-weight: 800;
+    line-height: 1.25;
+    color: var(--accent);
+    overflow-wrap: anywhere;
+  }
+
+  .rec-title {
+    margin: 2px 0 0;
+    font-size: var(--m-dt-title);
+    line-height: 1.4;
+    overflow-wrap: anywhere;
+  }
+
+  .rec-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--m-gap);
+    margin-top: var(--m-gap);
+  }
+
+  .rec-badges .status-pill { margin-left: 0; }
+
+  .rec-section {
+    margin-top: var(--m-dt-gap);
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .rec-code + .rec-title + .rec-badges + .rec-section,
+  .rec-phone > .rec-section:first-of-type { margin-top: var(--m-section-gap); }
+
+  .rec-section-head {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+    width: 100%;
+    min-height: var(--m-dt-sec-h);
+    padding: 0 var(--sp-3);
+    background: none;
+    border: none;
+    font: inherit;
+    font-size: var(--m-font);
+    font-weight: 700;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .rec-section-head:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+
+  .rec-section-name { flex: 1; min-width: 0; }
+
+  .rec-section-count {
+    font-size: var(--m-count);
+    font-weight: 500;
+    color: var(--muted);
+  }
+
+  .rec-section-chevron { flex-shrink: 0; color: var(--muted); transition: transform 0.15s ease; }
+  .rec-section-head[aria-expanded="true"] .rec-section-chevron { transform: rotate(180deg); }
+
+  .rec-rows { border-top: 1px solid var(--line); }
+
+  .rec-row {
+    display: flex;
+    gap: var(--sp-3);
+    padding: var(--m-dt-row-pad);
+    border-top: 1px solid var(--line);
+  }
+
+  .rec-row:first-child { border-top: none; }
+
+  .rec-key {
+    flex: 0 0 var(--m-dt-key-w);
+    min-width: 0;
+    font-size: var(--m-dt-key);
+    line-height: 1.4;
+    color: var(--muted);
+    overflow-wrap: anywhere;
+  }
+
+  .rec-value {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--m-dt-val);
+    line-height: 1.4;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* ---------- Due cards and Due detail page on phones ----------
+   DueMobileCard.jsx and DueDetailPhone.jsx are only rendered on phones (via
+   useIsPhone), so none of this reaches desktop or tablet. Sizes reuse the
+   --m-mc-* card variables and the --m-dt-* record-page variables. */
+
+/* Due type: a small outlined pill, top right of the card and on the detail page. */
+.due-type-pill {
+  display: inline-block;
+  padding: var(--m-mc-pill-pad, 3px 10px);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  font-size: var(--m-mc-pill, 12.5px);
+  line-height: 1.4;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+/* Status (the app's own .badge colours) as a pill, on the card and page. */
+.mobile-card-pills .badge,
+.rec-badges .badge {
+  padding: var(--m-mc-pill-pad, 3px 10px);
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-size: var(--m-mc-pill, 12.5px);
+  line-height: 1.4;
+}
+
+.due-deadline {
+  min-width: 0;
+  font-size: var(--m-mc-foot, 13px);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.due-deadline.is-overdue { color: var(--bad-fg); }
+
+/* "Can be postdated: ..." — wraps rather than truncating. */
+.mobile-card-note {
+  display: block;
+  margin-top: var(--m-mc-sub-mt, 6px);
+  font-size: var(--m-mc-sub, 13px);
+  line-height: 1.4;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* F9/F18 pending card: the RFE deadline as a label / value row (muted label
+   left, the date right in the normal text colour), like the footer below it.
+   A lapsed deadline turns the whole row red. */
+.rfe-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 2px var(--sp-2);
+}
+.rfe-row-label { min-width: 0; }
+.rfe-row-date {
+  min-width: 0;
+  color: var(--ink);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.rfe-row.is-lapsed .rfe-row-label,
+.rfe-row.is-lapsed .rfe-row-date { color: var(--bad-fg); }
+
+/* MobileCard `boxes`: a 2-column grid of small label-over-value boxes
+   (F1/F26 delayed or pending: Form 1, Form 26, Days needed, Days available). */
+.mobile-card-boxes {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--sp-2);
+  margin-top: var(--m-mc-sub-mt, 10px);
+}
+.mobile-card-box {
+  display: block;
+  min-width: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+.mobile-card-box-label {
+  display: block;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--muted);
+}
+.mobile-card-box-value {
+  display: block;
+  margin-top: 2px;
+  font-size: 13.5px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.mobile-card-box-value.is-warn { color: var(--warn-fg); }
+
+/* F1/F26 card: the sheet STATUS on its own muted, wrapping line. */
+.f1f26-status {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status-pill.is-warn {
+  color: var(--warn-fg);
+  border-color: var(--warn-fg);
+}
+
+.due-detail-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--m-gap) var(--sp-2);
+}
+
+.due-detail-top .rec-code { min-width: 0; }
+
+/* ---------- Patent filed cards and detail page on phones ----------
+   Only rendered on phones (via useIsPhone). The Abandoned badge is the same
+   red pill as the desktop table's, made inline so it sits beside the code. */
+
+.mobile-card-code .abandoned-badge,
+.rec-badges .abandoned-badge {
+  display: inline-block;
+  width: auto;
+  margin: 0 0 0 8px;
+  vertical-align: middle;
+}
+
+.rec-badges .abandoned-badge { margin-left: 0; }
+
+/* A published patent's pill takes the app's green; "Not published" stays plain. */
+.status-pill.is-published {
+  color: var(--ok-fg);
+  border-color: var(--ok-fg);
+}
+
+/* Granted patents: a renewal that is overdue turns its pill red. */
+.status-pill.is-overdue {
+  color: var(--bad-fg);
+  border-color: var(--bad-fg);
+}
+
+/* Due dashboard/Overdue only: an abandoned application's old deadline can
+   still appear in these two tables, so its Code cell gets a small label
+   under the code. Same outlined-red look as is-overdue for now, kept as
+   its own modifier so a future, distinct "abandoned" color (planned for
+   every section) won't also recolor the unrelated overdue/RFE pills. */
+.status-pill.is-abandoned {
+  color: var(--bad-fg);
+  border-color: var(--bad-fg);
+}
+
+/* Stacks the code button and the abandoned pill below it, instead of
+   letting .col-code's white-space: nowrap force them onto one line. */
+.code-cell-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+}
+
+.code-cell-stack .status-pill {
+  margin-left: 0;
+  /* Overrides the shared .status-pill's ellipsis truncation — "Abandoned"
+     must always read in full, never cut down to "Aba…" in a narrow column. */
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+/* Abandoned patents: the sheet's STATUS text is the key field here, so it gets
+   its own full-colour line, wrapping over as many lines as it needs (never cut). */
+.mobile-card-text {
+  display: block;
+  margin-top: var(--m-mc-title-mt, 8px);
+  font-size: var(--m-mc-text, 13.5px);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.rec-status {
+  margin: var(--m-gap) 0 0;
+  font-size: var(--m-dt-val);
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}

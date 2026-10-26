@@ -1,0 +1,22 @@
+{
+  "name": "lextria-patent-dashboard",
+  "version": "1.0.0",
+  "description": "Enterprise Patent Prosecution & Portfolio Management Dashboard for Lextria LegalTech Ecosystem",
+  "scripts": {
+    "dev": "npm run dev --prefix frontend",
+    "build": "npm run build --prefix frontend",
+    "preview": "npm run preview --prefix frontend",
+    "vercel-build": "npm run build --prefix frontend"
+  },
+  "keywords": [
+    "patent",
+    "dashboard",
+    "legaltech",
+    "prosecution",
+    "supabase",
+    "lextria"
+  ],
+  "author": "Lextria Research <dev@lextriaresearch.com>",
+  "license": "UNLICENSED",
+  "private": true
+}
