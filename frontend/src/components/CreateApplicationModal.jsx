@@ -148,18 +148,17 @@ export default function CreateApplicationModal({
       }
     }
 
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await onCreate({
-        ...formData,
-        tags: formData.selectedTags,
-      });
-      onClose();
-    } catch (err) {
-      setError(err.message || 'Failed to create patent application.');
-    } finally {
-      setIsSubmitting(false);
+    const payload = {
+      ...formData,
+      tags: formData.selectedTags,
+    };
+
+    // Close modal immediately (0ms instant closure)
+    onClose();
+
+    // Dispatch create optimistically
+    if (onCreate) {
+      onCreate(payload);
     }
   };
 

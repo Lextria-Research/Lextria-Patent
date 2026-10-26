@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import {
   X, Copy, Check, ExternalLink, Calendar, FileText, User, AlertCircle,
-  Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle, Edit3
+  Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle, Edit3,
+  Tag as TagIcon
 } from 'lucide-react';
 
 export default function SlideOverDrawer({
   record,
   onClose,
   onSaveManualNotes,
+  onUpdate,
+  tags = [],
   onOpenEdit,
   onOpenTimeline,
   auditLogs = []
@@ -154,6 +157,47 @@ export default function SlideOverDrawer({
                 {copiedField === 'app' ? <Check size={12} color="var(--ok-fg)" /> : <Copy size={12} />}
               </button>
             )}
+          </div>
+
+          {/* Quick Interactive Tags Strip */}
+          <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <TagIcon size={12} /> Tags:
+            </span>
+            {['Priority', 'Ticket Raised', 'Critical', 'Political', ...tags.filter(t => !['priority','ticket raised','critical','political'].includes(t.name.toLowerCase())).map(t => t.name)].map((tg) => {
+              const currentTags = Array.isArray(record.tags) ? record.tags : (record.classification ? record.classification.split(',').map(s => s.trim()) : []);
+              const isApplied = currentTags.includes(tg);
+              return (
+                <button
+                  key={tg}
+                  type="button"
+                  onClick={() => {
+                    const newTags = isApplied ? currentTags.filter(t => t !== tg) : [...currentTags, tg];
+                    if (onUpdate) {
+                      onUpdate(record.project_code, { tags: newTags });
+                    }
+                  }}
+                  style={{
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '12px',
+                    border: `1px solid ${isApplied ? '#2563EB' : 'var(--line)'}`,
+                    background: isApplied ? 'rgba(37, 99, 235, 0.15)' : 'var(--page)',
+                    color: isApplied ? '#1D4ED8' : 'var(--muted)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    transition: 'all 0.15s ease',
+                  }}
+                  title={isApplied ? `Remove tag "${tg}"` : `Add tag "${tg}"`}
+                >
+                  {isApplied ? '✓ ' : '+ '}
+                  {tg}
+                </button>
+              );
+            })}
           </div>
         </div>
 

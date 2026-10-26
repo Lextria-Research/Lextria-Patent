@@ -139,7 +139,7 @@ export default function EditApplicationModal({
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!formData.title.trim()) {
       setError('Title cannot be empty.');
@@ -155,18 +155,17 @@ export default function EditApplicationModal({
       }
     }
 
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      await onUpdate(record.project_code, {
-        ...formData,
-        tags: formData.selectedTags,
-      });
-      onClose();
-    } catch (err) {
-      setError(err.message || 'Failed to update patent application.');
-    } finally {
-      setIsSubmitting(false);
+    const payload = {
+      ...formData,
+      tags: formData.selectedTags,
+    };
+
+    // Close modal immediately (0ms instant closure)
+    onClose();
+
+    // Dispatch update optimistically
+    if (onUpdate) {
+      onUpdate(record.project_code, payload);
     }
   };
 

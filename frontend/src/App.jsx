@@ -185,6 +185,24 @@ export default function App() {
         const resp = await fetch('/master_records.json');
         if (resp.ok) {
           const data = await resp.json();
+          try {
+            const rawOverrides = localStorage.getItem('patent_local_overrides');
+            if (rawOverrides) {
+              const overrides = JSON.parse(rawOverrides);
+              const merged = data.map((rec) => {
+                const ov = overrides[rec.project_code];
+                return ov ? { ...rec, ...ov } : rec;
+              });
+              const existingCodes = new Set(data.map((r) => r.project_code));
+              const extraCreated = Object.values(overrides).filter(
+                (r) => r && r.project_code && !existingCodes.has(r.project_code)
+              );
+              setRecords([...extraCreated, ...merged]);
+              return;
+            }
+          } catch (e) {
+            console.warn('Error reading patent_local_overrides:', e);
+          }
           setRecords(data);
         }
       } catch (err) {
@@ -214,9 +232,9 @@ export default function App() {
   );
 
   // ==========================================
-  // CRUD 1: CREATE NEW APPLICATION
+  // CRUD 1: CREATE NEW APPLICATION (0ms Optimistic UI)
   // ==========================================
-  const handleCreateApplication = async (formData) => {
+  const handleCreateApplication = (formData) => {
     // Calculate all statutory deadlines automatically
     const statutory = calculateAllStatutoryDeadlines(formData);
 
@@ -231,59 +249,79 @@ export default function App() {
       created_at: new Date().toISOString(),
     };
 
-    // Update state immediately
+    // 1. Update state immediately (0ms instant UI update)
     setRecords((prev) => [newRecord, ...prev]);
 
-    // Record audit log (Requirement 7)
+    // 2. Persist to local overrides immediately
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      overrides[newRecord.project_code] = newRecord;
+      localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+    } catch (e) {
+      console.warn('Failed to save to localStorage overrides:', e);
+    }
+
+    // 3. Record audit log (Requirement 7)
     recordAuditLog(
       'CREATE_APPLICATION',
       newRecord.project_code,
       `Created patent application: ${newRecord.title} (Assigned to: ${newRecord.assigned_to})`
     );
 
-    // Save to Supabase
-    try {
-      await patentDb.from('applications').insert({
-        project_code: newRecord.project_code,
-        title: newRecord.title,
-        application_number: newRecord.application_number || null,
-        specification_type: newRecord.specification_type || 'PS',
-        record_category: newRecord.record_category || 'INTERNAL_FILING',
-        classification: newRecord.classification || null,
-        applicant_name: newRecord.applicant_name || null,
-        entity_category: newRecord.entity_category || null,
-        is_mahe: Boolean(newRecord.is_mahe),
-        assigned_to: newRecord.assigned_to || null,
-        current_status: newRecord.current_status || 'PS Not Yet Filed',
-        color_code_status: newRecord.color_code_status || 'PURPLE',
-        workdrive_folder_url: newRecord.workdrive_folder_url || null,
-        inventors_summary: newRecord.inventors_summary || null,
-      });
-
-      await patentDb.from('prosecution_dates').insert({
-        project_code: newRecord.project_code,
-        ps_filing_date: newRecord.ps_filing_date || null,
-        cs_deadline: newRecord.cs_deadline || null,
-      });
-
-      await patentDb.from('forms_tracker').insert({
-        project_code: newRecord.project_code,
-        form_1_deadline: newRecord.form_1_deadline || null,
-        form_26_deadline: newRecord.form_26_deadline || null,
-        f1_status: newRecord.f1_status,
-        f26_status: newRecord.f26_status,
-      });
-    } catch (err) {
-      console.warn('Saved locally; Supabase async sync:', err);
-    }
-
     showToast(`Application ${newRecord.project_code} created successfully!`);
+
+    // 4. Background non-blocking sync with Supabase (with 3-second timeout protection)
+    (async () => {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Sync timeout')), 3000)
+        );
+
+        const syncTask = async () => {
+          await patentDb.from('applications').insert({
+            project_code: newRecord.project_code,
+            title: newRecord.title,
+            application_number: newRecord.application_number || null,
+            specification_type: newRecord.specification_type || 'PS',
+            record_category: newRecord.record_category || 'INTERNAL_FILING',
+            classification: Array.isArray(newRecord.tags) ? newRecord.tags.join(', ') : (newRecord.classification || null),
+            applicant_name: newRecord.applicant_name || null,
+            entity_category: newRecord.entity_category || null,
+            is_mahe: Boolean(newRecord.is_mahe),
+            assigned_to: newRecord.assigned_to || null,
+            current_status: newRecord.current_status || 'PS Not Yet Filed',
+            color_code_status: newRecord.color_code_status || 'PURPLE',
+            workdrive_folder_url: newRecord.workdrive_folder_url || null,
+            inventors_summary: newRecord.inventors_summary || null,
+          });
+
+          await patentDb.from('prosecution_dates').insert({
+            project_code: newRecord.project_code,
+            ps_filing_date: newRecord.ps_filing_date || null,
+            post_dated_date: newRecord.post_dated_date || null,
+            cs_deadline: newRecord.cs_deadline || null,
+          });
+
+          await patentDb.from('forms_tracker').insert({
+            project_code: newRecord.project_code,
+            form_1_deadline: newRecord.form_1_deadline || null,
+            form_26_deadline: newRecord.form_26_deadline || null,
+            f1_status: newRecord.f1_status,
+            f26_status: newRecord.f26_status,
+          });
+        };
+
+        await Promise.race([syncTask(), timeoutPromise]);
+      } catch (err) {
+        console.warn('Background Supabase creation sync notice:', err?.message || err);
+      }
+    })();
   };
 
   // ==========================================
-  // CRUD 2: UPDATE APPLICATION
+  // CRUD 2: UPDATE APPLICATION (0ms Optimistic UI)
   // ==========================================
-  const handleUpdateApplication = async (projectCode, updatedFields) => {
+  const handleUpdateApplication = (projectCode, updatedFields) => {
     // Recalculate all statutory deadlines
     const existing = records.find((r) => r.project_code === projectCode) || {};
     const merged = { ...existing, ...updatedFields };
@@ -302,6 +340,7 @@ export default function App() {
       updated_at: new Date().toISOString(),
     };
 
+    // 1. Update state immediately (0ms instant UI update)
     setRecords((prev) =>
       prev.map((r) => (r.project_code === projectCode ? finalizedRecord : r))
     );
@@ -310,41 +349,125 @@ export default function App() {
       setSelectedRecord(finalizedRecord);
     }
 
-    // Record audit log (Requirement 7)
+    // 2. Persist to local storage overrides immediately
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      overrides[projectCode] = finalizedRecord;
+      localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+    } catch (e) {
+      console.warn('Failed to save to localStorage overrides:', e);
+    }
+
+    // 3. Record audit log (Requirement 7)
+    const tagSummary = Array.isArray(finalizedRecord.tags) && finalizedRecord.tags.length > 0
+      ? ` Tags: [${finalizedRecord.tags.join(', ')}]`
+      : '';
     recordAuditLog(
       'UPDATE_APPLICATION',
       projectCode,
-      `Updated matter details: Status -> ${finalizedRecord.current_status}, Drafter -> ${finalizedRecord.assigned_to}`
+      `Updated matter details: Status -> ${finalizedRecord.current_status}, Drafter -> ${finalizedRecord.assigned_to}.${tagSummary}`
     );
 
-    // Save to Supabase
-    try {
-      await patentDb
-        .from('applications')
-        .update({
-          title: finalizedRecord.title,
-          application_number: finalizedRecord.application_number || null,
-          current_status: finalizedRecord.current_status,
-          color_code_status: finalizedRecord.color_code_status,
-          assigned_to: finalizedRecord.assigned_to,
-        })
-        .eq('project_code', projectCode);
-    } catch (err) {
-      console.warn('Saved locally; Supabase update sync:', err);
-    }
-
     showToast(`Application ${projectCode} updated successfully!`);
+
+    // 4. Background non-blocking sync with Supabase (with 3-second timeout protection)
+    (async () => {
+      try {
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Sync timeout')), 3000)
+        );
+
+        const syncTask = async () => {
+          // 1. Applications table
+          await patentDb
+            .from('applications')
+            .update({
+              title: finalizedRecord.title,
+              application_number: finalizedRecord.application_number || null,
+              patent_number: finalizedRecord.patent_number || null,
+              specification_type: finalizedRecord.specification_type || 'PS',
+              classification: Array.isArray(finalizedRecord.tags)
+                ? finalizedRecord.tags.join(', ')
+                : (finalizedRecord.classification || null),
+              applicant_name: finalizedRecord.applicant_name || null,
+              assigned_to: finalizedRecord.assigned_to || null,
+              current_status: finalizedRecord.current_status,
+              color_code_status: finalizedRecord.color_code_status,
+              workdrive_folder_url: finalizedRecord.workdrive_folder_url || null,
+              inventors_summary: finalizedRecord.inventors_summary || null,
+            })
+            .eq('project_code', projectCode);
+
+          // 2. Prosecution dates
+          await patentDb
+            .from('prosecution_dates')
+            .upsert({
+              project_code: projectCode,
+              ps_filing_date: finalizedRecord.ps_filing_date || null,
+              post_dated_date: finalizedRecord.post_dated_date || null,
+              cs_filing_date: finalizedRecord.cs_filing_date || null,
+              cs_deadline: finalizedRecord.cs_deadline || null,
+              publication_date: finalizedRecord.publication_date || null,
+              fer_notice_date: finalizedRecord.fer_notice_date || null,
+              fer_reply_filing_date: finalizedRecord.fer_reply_filing_date || null,
+              fer_reply_deadline: finalizedRecord.fer_reply_deadline || null,
+              hearing_date: finalizedRecord.hearing_date || null,
+              ws_filing_date: finalizedRecord.ws_filing_date || null,
+              ws_deadline: finalizedRecord.ws_deadline || null,
+              grant_date: finalizedRecord.grant_date || null,
+            });
+
+          // 3. Forms tracker
+          await patentDb
+            .from('forms_tracker')
+            .upsert({
+              project_code: projectCode,
+              form_1_filing_date: finalizedRecord.form_1_filing_date || null,
+              form_1_deadline: finalizedRecord.form_1_deadline || null,
+              f1_status: finalizedRecord.f1_status || 'Pending',
+              form_26_filing_date: finalizedRecord.form_26_filing_date || null,
+              form_26_deadline: finalizedRecord.form_26_deadline || null,
+              f26_status: finalizedRecord.f26_status || 'Pending',
+              form_3_filing_date: finalizedRecord.form_3_filing_date || null,
+              form_18_filing_date: finalizedRecord.form_18_filing_date || null,
+              rfe_deadline: finalizedRecord.rfe_deadline || null,
+            });
+        };
+
+        await Promise.race([syncTask(), timeoutPromise]);
+      } catch (err) {
+        console.warn('Background Supabase update notice:', err?.message || err);
+      }
+    })();
   };
 
   // ==========================================
-  // CRUD 3: SAVE MANUAL SENIOR NOTES
+  // CRUD 3: SAVE MANUAL SENIOR NOTES (0ms Optimistic UI)
   // ==========================================
-  const handleSaveManualNotes = async (projectCode, notesData) => {
+  const handleSaveManualNotes = (projectCode, notesData) => {
+    let updatedRecord = null;
     setRecords((prev) =>
-      prev.map((r) => (r.project_code === projectCode ? { ...r, ...notesData } : r))
+      prev.map((r) => {
+        if (r.project_code === projectCode) {
+          updatedRecord = { ...r, ...notesData, updated_at: new Date().toISOString() };
+          return updatedRecord;
+        }
+        return r;
+      })
     );
+
     if (selectedRecord && selectedRecord.project_code === projectCode) {
       setSelectedRecord((prev) => ({ ...prev, ...notesData }));
+    }
+
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      if (updatedRecord) {
+        overrides[projectCode] = updatedRecord;
+        localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+      }
+    } catch (e) {
+      console.warn('Failed to save notes override:', e);
     }
 
     recordAuditLog(
@@ -811,6 +934,8 @@ export default function App() {
           record={selectedRecord}
           onClose={() => setSelectedRecord(null)}
           onSaveManualNotes={handleSaveManualNotes}
+          onUpdate={handleUpdateApplication}
+          tags={tags}
           onOpenEdit={(rec) => setEditingRecord(rec)}
           onOpenTimeline={(rec) => setTimelineRecord(rec)}
           auditLogs={auditLogs.filter((l) => l.project_code === selectedRecord.project_code)}
