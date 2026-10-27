@@ -2,9 +2,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Save, Edit3, Calendar, User, Tag as TagIcon,
-  ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building
+  ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building, Plus
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import { getFormFee, isReducedFeeEntity, formatINR } from '../utils/feeSchedule';
+import { getStatusColor } from '../constants/patentStatuses';
+import PhasedStatusSelector from './PhasedStatusSelector';
+import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 const DRAFTERS = [
@@ -36,11 +40,17 @@ export default function EditApplicationModal({
   record,
   onUpdate,
   clients: clientsProp = [],
-  tags = []
+  tags = [],
+  onClientCreated
 }) {
   if (!isOpen || !record) return null;
 
-  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
+  // Local clients list so newly added clients reflect immediately
+  const [internalClients, setInternalClients] = useState(() => {
+    return (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
+  });
+
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -56,6 +66,8 @@ export default function EditApplicationModal({
     communication_status: 'OPEN',
     workdrive_folder_url: '',
     inventors_summary: '',
+    abstract: '',
+    claims: '',
     ps_filing_date: '',
     post_dated_date: '',
     cs_filing_date: '',
@@ -84,24 +96,44 @@ export default function EditApplicationModal({
   const [error, setError] = useState(null);
 
   const filteredClients = useMemo(() => {
-    if (!clientSearchQuery) return clients;
+    if (!clientSearchQuery) return internalClients;
     const q = clientSearchQuery.toLowerCase();
-    return clients.filter(
+    return internalClients.filter(
       (c) =>
         (c.client_code || '').toLowerCase().includes(q) ||
         (c.client_name || '').toLowerCase().includes(q)
     );
-  }, [clients, clientSearchQuery]);
+  }, [internalClients, clientSearchQuery]);
 
   const selectedClient = useMemo(() => {
-    return clients.find((c) => c.id === selectedClientId) || null;
-  }, [clients, selectedClientId]);
+    return internalClients.find((c) => c.id === selectedClientId) || null;
+  }, [internalClients, selectedClientId]);
+
+  // Section 17 Post-Dating leeway calculations
+  const postDateValidation = useMemo(() => {
+    return validateSection17PostDating(formData.ps_filing_date, formData.post_dated_date);
+  }, [formData.ps_filing_date, formData.post_dated_date]);
+
+  // Abstract & Claims word counters
+  const abstractWords = useMemo(() => {
+    return (formData.abstract || '').trim().split(/\s+/).filter(Boolean).length;
+  }, [formData.abstract]);
+
+  const claimsWords = useMemo(() => {
+    return (formData.claims || '').trim().split(/\s+/).filter(Boolean).length;
+  }, [formData.claims]);
+
+  const claimsCount = useMemo(() => {
+    if (!formData.claims || !formData.claims.trim()) return 0;
+    const matches = formData.claims.match(/(?:^|\n)\s*(?:(?:\d+[\.\)])|Claim\s+\d+)/gi);
+    return matches ? matches.length : (formData.claims.split('\n\n').filter((p) => p.trim()).length || 1);
+  }, [formData.claims]);
 
   useEffect(() => {
     if (record) {
       const rTags = Array.isArray(record.tags) ? record.tags : (record.classification ? [record.classification] : []);
       // Interconnected client matching from core.clients
-      const matched = clients.find((c) => {
+      const matched = internalClients.find((c) => {
         if (record.applicant_name && c.client_name && (record.applicant_name.toLowerCase().includes(c.client_name.toLowerCase()) || c.client_name.toLowerCase().includes(record.applicant_name.toLowerCase()))) return true;
         if (record.project_code && c.client_code && record.project_code.toUpperCase().startsWith(c.client_code.toUpperCase())) return true;
         return false;
@@ -122,6 +154,8 @@ export default function EditApplicationModal({
         communication_status: record.communication_status || 'OPEN',
         workdrive_folder_url: record.workdrive_folder_url || '',
         inventors_summary: record.inventors_summary || '',
+        abstract: record.abstract || '',
+        claims: record.claims || '',
         client_commitment_date: record.client_commitment_date ? record.client_commitment_date.slice(0, 10) : '',
         ps_filing_date: record.ps_filing_date ? record.ps_filing_date.slice(0, 10) : '',
         post_dated_date: record.post_dated_date ? record.post_dated_date.slice(0, 10) : '',
@@ -143,7 +177,7 @@ export default function EditApplicationModal({
         selectedTags: rTags,
       });
     }
-  }, [record]);
+  }, [record, internalClients]);
 
   // Live Statutory Deadline Calculations (Requirements 4, 5, 6)
   const statutoryCalculations = useMemo(() => {
@@ -156,6 +190,28 @@ export default function EditApplicationModal({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  const handleStatusChange = (newStatus) => {
+    const col = getStatusColor(newStatus);
+    setFormData((prev) => ({
+      ...prev,
+      current_status: newStatus,
+      color_code_status: col.colorKey || 'PURPLE'
+    }));
+  };
+
+  const handleNewClientCreated = (newClient) => {
+    if (!newClient) return;
+    setInternalClients((prev) => [newClient, ...prev]);
+    setSelectedClientId(newClient.id);
+    setFormData((prev) => ({
+      ...prev,
+      applicant_name: newClient.client_name,
+    }));
+    if (onClientCreated) {
+      onClientCreated(newClient);
+    }
   };
 
   const toggleTag = (tagName) => {
@@ -443,9 +499,30 @@ export default function EditApplicationModal({
               {/* Client & Tags Selection */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Interconnected Client (core.clients)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Interconnected Client (core.clients)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsAddClientOpen(true)}
+                      style={{
+                        background: '#eff6ff',
+                        color: '#2563eb',
+                        border: '1px solid #bfdbfe',
+                        borderRadius: '5px',
+                        padding: '3px 8px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px'
+                      }}
+                    >
+                      <Plus size={12} /> Add New Client
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
                     <input
                       type="text"
@@ -485,7 +562,7 @@ export default function EditApplicationModal({
                     onChange={(e) => {
                       const cId = e.target.value;
                       setSelectedClientId(cId);
-                      const found = clients.find((c) => c.id === cId);
+                      const found = internalClients.find((c) => c.id === cId);
                       if (found) {
                         setFormData((prev) => ({
                           ...prev,
@@ -503,7 +580,7 @@ export default function EditApplicationModal({
                       fontWeight: 600,
                     }}
                   >
-                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {clients.length}) --</option>
+                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {internalClients.length}) --</option>
                     {filteredClients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
@@ -588,8 +665,8 @@ export default function EditApplicationModal({
                 </div>
               </div>
 
-              {/* Drafter & Triage Status */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+              {/* Drafter & Phased Status */}
+              <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '14px', alignItems: 'flex-start' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                     Assigned Drafter
@@ -616,46 +693,102 @@ export default function EditApplicationModal({
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Visual Triage Color
+                    Prosecution Status (7 Statutory Phases)
                   </label>
-                  <select
-                    name="color_code_status"
-                    value={formData.color_code_status}
+                  <PhasedStatusSelector
+                    value={formData.current_status}
+                    onChange={handleStatusChange}
+                    applicationType={formData.specification_type}
+                  />
+                </div>
+              </div>
+
+              {/* Abstract & Claims (Requirement 4) */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '6px' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Abstract (Rule 13(7)(a))
+                    </label>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      background: abstractWords > 150 ? '#fee2e2' : '#f1f5f9',
+                      color: abstractWords > 150 ? '#dc2626' : '#475569',
+                      border: `1px solid ${abstractWords > 150 ? '#fca5a5' : '#cbd5e1'}`
+                    }}>
+                      {abstractWords} / 150 words
+                    </span>
+                  </div>
+                  <textarea
+                    name="abstract"
+                    value={formData.abstract}
                     onChange={handleChange}
+                    placeholder="Concise technical summary not exceeding 150 words..."
+                    rows={5}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       borderRadius: '6px',
-                      border: '1px solid var(--line)',
+                      border: `1px solid ${abstractWords > 150 ? '#ef4444' : 'var(--line)'}`,
                       background: 'var(--page)',
-                      fontSize: '13px',
-                      fontWeight: 700,
+                      fontSize: '12.5px',
+                      lineHeight: '1.45',
+                      resize: 'vertical',
                     }}
-                  >
-                    {COLOR_CODES.map((c) => (
-                      <option key={c.value} value={c.value}>{c.label}</option>
-                    ))}
-                  </select>
+                  />
+                  {abstractWords > 150 ? (
+                    <div style={{ marginTop: '4px', fontSize: '11px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <AlertTriangle size={13} />
+                      <span>Exceeds 150 words limit under Rule 13(7)(a) of Patents Rules.</span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                      Statutory limit: 150 words maximum per Rule 13(7)(a).
+                    </span>
+                  )}
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Current Status
-                  </label>
-                  <input
-                    type="text"
-                    name="current_status"
-                    value={formData.current_status}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Claims (Unrestricted Length)
+                    </label>
+                    <span style={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '10px',
+                      background: '#ecfdf5',
+                      color: '#065f46',
+                      border: '1px solid #a7f3d0'
+                    }}>
+                      {claimsWords} words • {claimsCount} claim(s)
+                    </span>
+                  </div>
+                  <textarea
+                    name="claims"
+                    value={formData.claims}
                     onChange={handleChange}
+                    placeholder="Enter patent claims..."
+                    rows={5}
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px solid var(--line)',
                       background: 'var(--page)',
-                      fontSize: '13px',
+                      fontSize: '12.5px',
+                      lineHeight: '1.45',
+                      fontFamily: 'monospace',
+                      resize: 'vertical',
                     }}
                   />
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                    Claims 1-10 included in basic fee; subsequent claims incur ₹320 (Reduced) / ₹1,600 (Others).
+                  </span>
                 </div>
               </div>
             </div>
@@ -808,6 +941,35 @@ export default function EditApplicationModal({
                   />
                 </div>
               </div>
+
+              {/* Section 17 Post-Dating Leeway Indicator (Requirement 2) */}
+              {formData.post_dated_date && formData.ps_filing_date && (
+                <div
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: '6px',
+                    background: postDateValidation.isValid ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                    border: `1.5px solid ${postDateValidation.isValid ? '#10B981' : '#EF4444'}`,
+                    color: postDateValidation.isValid ? '#065F46' : '#991B1B',
+                    fontSize: '12px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}
+                >
+                  <Clock size={16} style={{ flexShrink: 0 }} />
+                  <div>
+                    <strong>Section 17 Post-Dating Leeway Status:</strong>{' '}
+                    {postDateValidation.isValid ? (
+                      <span>
+                        {postDateValidation.detailedMessage} (<strong>{postDateValidation.remainingMonths} months, {postDateValidation.remainingDays} days</strong> remaining).
+                      </span>
+                    ) : (
+                      <span>{postDateValidation.message}</span>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Live Statutory Deadlines Preview Card */}
               <div
@@ -995,9 +1157,14 @@ export default function EditApplicationModal({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 1 (Proof of Right Filing Date)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Form 1 (Proof of Right)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#2563EB', fontWeight: 700 }}>
+                      Fee: ₹1,600 / ₹8,000
+                    </span>
+                  </div>
                   <input
                     type="date"
                     name="form_1_filing_date"
@@ -1015,9 +1182,14 @@ export default function EditApplicationModal({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 26 (Power of Attorney Filing Date)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Form 26 (Power of Attorney)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#059669', fontWeight: 700 }}>
+                      Fee: Free (₹0)
+                    </span>
+                  </div>
                   <input
                     type="date"
                     name="form_26_filing_date"
@@ -1035,9 +1207,14 @@ export default function EditApplicationModal({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 3 (Foreign Filings Date)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Form 3 (Foreign Filings)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#059669', fontWeight: 700 }}>
+                      Fee: Free (₹0)
+                    </span>
+                  </div>
                   <input
                     type="date"
                     name="form_3_filing_date"
@@ -1057,9 +1234,14 @@ export default function EditApplicationModal({
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '14px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 9 (Early Publication Filing Date)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Form 9 (Early Publication)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#2563EB', fontWeight: 700 }}>
+                      Fee: ₹2,500 / ₹12,500
+                    </span>
+                  </div>
                   <input
                     type="date"
                     name="form_9_filing_date"
@@ -1077,9 +1259,14 @@ export default function EditApplicationModal({
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Form 18 / 18A (RFE Filing Date)
-                  </label>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                      Form 18 / 18A (RFE Filing Date)
+                    </label>
+                    <span style={{ fontSize: '10.5px', color: '#2563EB', fontWeight: 700 }}>
+                      Fee: ₹4,000 / ₹20,000
+                    </span>
+                  </div>
                   <input
                     type="date"
                     name="form_18_filing_date"
@@ -1094,6 +1281,49 @@ export default function EditApplicationModal({
                       fontSize: '13px',
                     }}
                   />
+                </div>
+              </div>
+
+              {/* Statutory Government Fee Reference Schedule */}
+              <div style={{
+                marginTop: '8px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                background: 'var(--surface-muted, #f8fafc)',
+                border: '1px solid var(--line)',
+                fontSize: '11.5px'
+              }}>
+                <div style={{ fontWeight: 800, color: 'var(--accent)', marginBottom: '8px', textTransform: 'uppercase', fontSize: '11px' }}>
+                  Statutory Government Fee Schedule (First Schedule of Indian Patents Rules)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '8px' }}>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 1 (Application):</strong> ₹1,600 (Reduced) / ₹8,000 (Others)
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 2 (Spec):</strong> Free up to 30 sheets & 10 claims
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 3 & Form 5:</strong> Free of statutory fee (₹0)
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 4 (FER Ext R.24B):</strong> ₹1,000/mo / ₹4,000/mo
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 9 (Early Pub):</strong> ₹2,500 / ₹12,500
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 18 (RFE):</strong> ₹4,000 / ₹20,000
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Form 30 (Hearing):</strong> ₹1,500 / ₹7,500
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Sec 17 (Postdating):</strong> ₹800 / ₹4,000
+                  </div>
+                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                    <strong>Sec 53 Renewals:</strong> Y3-Y6: ₹800/yr / ₹4,000/yr
+                  </div>
                 </div>
               </div>
             </div>
@@ -1215,6 +1445,13 @@ export default function EditApplicationModal({
           </div>
         </form>
       </div>
+
+      {/* Interconnected Add Client Modal (Requirement 3) */}
+      <AddClientModal
+        isOpen={isAddClientOpen}
+        onClose={() => setIsAddClientOpen(false)}
+        onClientCreated={handleNewClientCreated}
+      />
     </div>
   );
 }

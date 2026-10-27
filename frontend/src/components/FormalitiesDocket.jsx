@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import {
   FileWarning, Clock, AlertTriangle, CheckCircle2, Shield,
   Search, Filter, ExternalLink, Calendar, RefreshCw, AlertCircle,
-  FileText, Download, CheckSquare, Edit3, ArrowRight
+  FileText, Download, CheckSquare, Edit3, ArrowRight, IndianRupee
 } from 'lucide-react';
 
 export default function FormalitiesDocket({
@@ -512,6 +512,45 @@ export default function FormalitiesDocket({
             </span>
           </div>
 
+          {/* Statutory Fees Reference Strip */}
+          <div
+            style={{
+              padding: '6px 20px',
+              background: '#f8fafc',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '11px',
+              color: 'var(--ink)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700, color: 'var(--muted)' }}>
+              <IndianRupee size={12} />
+              <span>Statutory Fees (1st Schedule):</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 1 (Application):</span>
+              <strong style={{ color: '#0f172a' }}>₹1,600</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Startup/Edu) / <strong>₹8,000</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 26 (PoA):</span>
+              <strong style={{ color: '#059669' }}>Free (₹0)</strong>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Sec 17 Post-dating:</span>
+              <strong style={{ color: '#7c3aed' }}>₹1,000/mo</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹4,000/mo</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Rule 137 Petition:</span>
+              <strong style={{ color: '#d97706' }}>₹1,600</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹8,000</strong> (Others)</span>
+            </div>
+          </div>
+
           {/* Table */}
           <div style={{ flex: 1, overflowY: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
@@ -678,6 +717,46 @@ export default function FormalitiesDocket({
             <span style={{ color: 'var(--muted)', fontWeight: 600 }}>
               {f9f18Filtered.length} applications
             </span>
+          </div>
+
+          {/* Statutory Examination Fees Reference Strip */}
+          <div
+            style={{
+              padding: '6px 20px',
+              background: '#f8fafc',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '11px',
+              color: 'var(--ink)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700, color: 'var(--muted)' }}>
+              <IndianRupee size={12} />
+              <span>Statutory Examination Fees:</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 9 (Early Pub):</span>
+              <strong style={{ color: '#0f172a' }}>₹2,500</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Startup/Edu) / <strong>₹12,500</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 18 (RFE):</span>
+              <strong style={{ color: '#2563eb' }}>₹4,000</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Startup/Edu) / <strong>₹20,000</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 18A (Expedited):</span>
+              <strong style={{ color: '#7c3aed' }}>₹8,000</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Startups/Women/Edu) / <strong>₹60,000</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Form 4 (Extension):</span>
+              <strong style={{ color: '#d97706' }}>₹800/mo</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹4,000/mo</strong> (Others)</span>
+            </div>
           </div>
 
           <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -872,6 +951,49 @@ export default function FormalitiesDocket({
       {/* SECTION CONTENT 4: GRANTED & RENEWALS */}
       {activeSection === 'renewals' && (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+          {/* Statutory Renewal Fees Reference Strip */}
+          <div
+            style={{
+              padding: '8px 20px',
+              background: '#f8fafc',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '16px',
+              fontSize: '11px',
+              color: 'var(--ink)',
+              flexWrap: 'wrap',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontWeight: 700, color: 'var(--muted)' }}>
+              <IndianRupee size={12} />
+              <span>Section 53 Annuity Schedule (e-filing):</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Years 3–6:</span>
+              <strong style={{ color: '#0f172a' }}>₹800/yr</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹4,000/yr</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Years 7–10:</span>
+              <strong style={{ color: '#0f172a' }}>₹2,400/yr</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹12,000/yr</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Years 11–15:</span>
+              <strong style={{ color: '#0f172a' }}>₹4,800/yr</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹24,000/yr</strong> (Others)</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ color: 'var(--muted)' }}>Years 16–20:</span>
+              <strong style={{ color: '#0f172a' }}>₹8,000/yr</strong>
+              <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹40,000/yr</strong> (Others)</span>
+            </div>
+            <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, background: '#ecfdf5', padding: '2px 6px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+              10% discount on renewal fees paid online for ≥ 4 years in advance
+            </span>
+          </div>
+
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px', textAlign: 'left' }}>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--page)', borderBottom: '1px solid var(--line)', zIndex: 10 }}>
               <tr style={{ color: 'var(--muted)', fontWeight: 700, fontSize: '11px' }}>

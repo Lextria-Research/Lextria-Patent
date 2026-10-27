@@ -2,9 +2,14 @@
 import React, { useState, useMemo } from 'react';
 import {
   X, Plus, FileText, Calendar, User, Building, Tag as TagIcon,
-  ExternalLink, CheckCircle2, Shield, AlertTriangle, Clock
+  ExternalLink, CheckCircle2, Shield, AlertTriangle, Clock, IndianRupee,
+  Layers, AlertCircle
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import { getFormFee, isReducedFeeEntity, formatINR } from '../utils/feeSchedule';
+import { getStatusColor } from '../constants/patentStatuses';
+import PhasedStatusSelector from './PhasedStatusSelector';
+import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 const DRAFTERS = [
@@ -43,11 +48,17 @@ export default function CreateApplicationModal({
   onCreate,
   existingCodes = [],
   clients: clientsProp = [],
-  tags = []
+  tags = [],
+  onClientCreated
 }) {
   if (!isOpen) return null;
 
-  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
+  // Local client list state so newly created clients are instantly selectable
+  const [internalClients, setInternalClients] = useState(() => {
+    return (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
+  });
+
+  const [isAddClientOpen, setIsAddClientOpen] = useState(false);
 
   // Auto-generate next candidate project code e.g. AR432
   const defaultCode = () => {
@@ -73,7 +84,7 @@ export default function CreateApplicationModal({
     entity_category: 'EDUCATIONAL_INSTITUTION',
     is_mahe: true,
     assigned_to: 'Anusha',
-    current_status: 'PS Not Yet Filed',
+    current_status: 'Idf sent, awaiting data',
     color_code_status: 'PURPLE',
     ps_filing_date: new Date().toISOString().split('T')[0],
     post_dated_date: '',
@@ -83,6 +94,8 @@ export default function CreateApplicationModal({
     form_26_filing_date: '',
     workdrive_folder_url: '',
     inventors_summary: '',
+    abstract: '',
+    claims: '',
     status_notes: '',
     selectedTags: ['Priority'],
   });
@@ -93,23 +106,57 @@ export default function CreateApplicationModal({
   const [error, setError] = useState(null);
 
   const filteredClients = useMemo(() => {
-    if (!clientSearchQuery) return clients;
+    if (!clientSearchQuery) return internalClients;
     const q = clientSearchQuery.toLowerCase();
-    return clients.filter(
+    return internalClients.filter(
       (c) =>
         (c.client_code || '').toLowerCase().includes(q) ||
         (c.client_name || '').toLowerCase().includes(q)
     );
-  }, [clients, clientSearchQuery]);
+  }, [internalClients, clientSearchQuery]);
 
   const selectedClient = useMemo(() => {
-    return clients.find((c) => c.id === selectedClientId) || null;
-  }, [clients, selectedClientId]);
+    return internalClients.find((c) => c.id === selectedClientId) || null;
+  }, [internalClients, selectedClientId]);
 
-  // Live Statutory Deadline Calculations (Requirements 4, 5, 6)
+  // Section 17 Post-Dating leeway calculations
+  const postDateValidation = useMemo(() => {
+    return validateSection17PostDating(formData.ps_filing_date, formData.post_dated_date);
+  }, [formData.ps_filing_date, formData.post_dated_date]);
+
+  // Abstract & Claims word counters
+  const abstractWords = useMemo(() => {
+    return (formData.abstract || '').trim().split(/\s+/).filter(Boolean).length;
+  }, [formData.abstract]);
+
+  const claimsWords = useMemo(() => {
+    return (formData.claims || '').trim().split(/\s+/).filter(Boolean).length;
+  }, [formData.claims]);
+
+  const claimsCount = useMemo(() => {
+    if (!formData.claims || !formData.claims.trim()) return 0;
+    const matches = formData.claims.match(/(?:^|\n)\s*(?:(?:\d+[\.\)])|Claim\s+\d+)/gi);
+    return matches ? matches.length : (formData.claims.split('\n\n').filter((p) => p.trim()).length || 1);
+  }, [formData.claims]);
+
+  // Live Statutory Deadline Calculations
   const statutoryCalculations = useMemo(() => {
     return calculateAllStatutoryDeadlines(formData);
   }, [formData]);
+
+  // Government Statutory Fees for Current Applicant Entity Category
+  const statutoryFees = useMemo(() => {
+    const cat = formData.entity_category || 'OTHER';
+    return {
+      f1: getFormFee('F1', cat),
+      f2: getFormFee('F2', cat),
+      f3: getFormFee('F3', cat),
+      f9: getFormFee('F9', cat),
+      f18: getFormFee('F18', cat),
+      f30: getFormFee('F30', cat),
+      sec17: getFormFee('SEC17', cat)
+    };
+  }, [formData.entity_category]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -126,7 +173,7 @@ export default function CreateApplicationModal({
     setSelectedClientId(cId);
     if (!cId) return;
 
-    const found = clients.find((c) => c.id === cId);
+    const found = internalClients.find((c) => c.id === cId);
     if (found) {
       const isMahe =
         (found.client_code || '').toUpperCase() === 'MAHE' ||
@@ -135,8 +182,11 @@ export default function CreateApplicationModal({
 
       let suggestedEntity = 'OTHER';
       if (isMahe) suggestedEntity = 'EDUCATIONAL_INSTITUTION';
-      else if (found.entity_type === 'STARTUP') suggestedEntity = 'STARTUP';
-      else if (found.entity_type === 'LARGE') suggestedEntity = 'LARGE';
+      else if (found.entity_type === 'STARTUP') suggestedEntity = 'STARTUP_DPIIT';
+      else if (found.entity_type === 'SMALL_ENTITY') suggestedEntity = 'SMALL_ENTITY_UDYAM';
+      else if (found.entity_type === 'NATURAL_PERSON') suggestedEntity = 'INDIVIDUAL';
+      else if (found.entity_type === 'EDUCATIONAL') suggestedEntity = 'EDUCATIONAL_INSTITUTION';
+      else if (found.entity_type === 'LARGE') suggestedEntity = 'LARGE_ENTITY';
 
       setFormData((prev) => {
         let newProjectCode = prev.project_code;
@@ -152,6 +202,38 @@ export default function CreateApplicationModal({
         };
       });
     }
+  };
+
+  const handleNewClientCreated = (newClient) => {
+    if (!newClient) return;
+    setInternalClients((prev) => [newClient, ...prev]);
+    setSelectedClientId(newClient.id);
+    
+    let suggestedEntity = 'OTHER';
+    if (newClient.entity_type === 'STARTUP') suggestedEntity = 'STARTUP_DPIIT';
+    else if (newClient.entity_type === 'SMALL_ENTITY') suggestedEntity = 'SMALL_ENTITY_UDYAM';
+    else if (newClient.entity_type === 'NATURAL_PERSON') suggestedEntity = 'INDIVIDUAL';
+    else if (newClient.entity_type === 'EDUCATIONAL') suggestedEntity = 'EDUCATIONAL_INSTITUTION';
+
+    setFormData((prev) => ({
+      ...prev,
+      applicant_name: newClient.client_name,
+      entity_category: suggestedEntity,
+      project_code: newClient.client_code ? `${newClient.client_code}-01` : prev.project_code,
+    }));
+
+    if (onClientCreated) {
+      onClientCreated(newClient);
+    }
+  };
+
+  const handleStatusChange = (newStatus) => {
+    const col = getStatusColor(newStatus);
+    setFormData((prev) => ({
+      ...prev,
+      current_status: newStatus,
+      color_code_status: col.colorKey || 'PURPLE'
+    }));
   };
 
   // Toggle tag selection (Requirement 10)
@@ -407,9 +489,30 @@ export default function CreateApplicationModal({
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
               {/* Client Selection (core.clients) */}
               <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Select Client (Interconnected from core.clients)
-                </label>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                    Select Client (Interconnected from core.clients)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddClientOpen(true)}
+                    style={{
+                      background: '#eff6ff',
+                      color: '#2563eb',
+                      border: '1px solid #bfdbfe',
+                      borderRadius: '5px',
+                      padding: '3px 8px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                  >
+                    <Plus size={12} /> Add New Client
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
                   <input
                     type="text"
@@ -457,7 +560,7 @@ export default function CreateApplicationModal({
                     fontWeight: 600,
                   }}
                 >
-                  <option value="">-- Choose Existing Client ({filteredClients.length} of {clients.length} Available) --</option>
+                  <option value="">-- Choose Existing Client ({filteredClients.length} of {internalClients.length} Available) --</option>
                   {filteredClients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
@@ -556,12 +659,12 @@ export default function CreateApplicationModal({
             </div>
           </div>
 
-          {/* Section 3: Drafter Assignment & Operational Triage */}
+          {/* Section 3: Drafter Assignment & Phased Statutory Statuses */}
           <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
             <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', marginBottom: '12px' }}>
-              3. Drafter Assignment & Operational Triage
+              3. Drafter Assignment & Prosecution Phase Status
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '14px', alignItems: 'flex-start', marginBottom: '8px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                   Assigned Drafter *
@@ -584,56 +687,25 @@ export default function CreateApplicationModal({
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
+                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>
+                  Responsible patent agent/drafter for this matter.
+                </span>
               </div>
 
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Visual Triage Status
+                  Select Prosecution Status (Organized into 7 Statutory Phases)
                 </label>
-                <select
-                  name="color_code_status"
-                  value={formData.color_code_status}
-                  onChange={handleChange}
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--page)',
-                    fontSize: '13px',
-                    fontWeight: 700,
-                  }}
-                >
-                  {COLOR_CODES.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                  Current Status
-                </label>
-                <input
-                  type="text"
-                  name="current_status"
+                <PhasedStatusSelector
                   value={formData.current_status}
-                  onChange={handleChange}
-                  placeholder="e.g. PS Filed, Under Drafting"
-                  style={{
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--page)',
-                    fontSize: '13px',
-                  }}
+                  onChange={handleStatusChange}
+                  applicationType={formData.specification_type}
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 4: Filing Dates & Section 17 Post-Dating (Requirements 4, 5, 6) */}
+          {/* Section 4: Filing Dates & Section 17 Post-Dating (Requirements 2, 4, 5, 6) */}
           <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
             <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', marginBottom: '12px' }}>
               4. Client Delivery Commitment & Filing Dates
@@ -699,7 +771,7 @@ export default function CreateApplicationModal({
                 />
               </div>
 
-              {/* Section 17 Post-Dating (Requirement 6) */}
+              {/* Section 17 Post-Dating (Requirement 2 & 6) */}
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: '#7C3AED' }}>
                   Sec 17 Post-Date (Max 6m)
@@ -762,7 +834,37 @@ export default function CreateApplicationModal({
               </div>
             </div>
 
-            {/* Live Statutory Deadlines Preview Card (Requirement 4 & 5) */}
+            {/* Section 17 Post-Dating Leeway Indicator (Requirement 2) */}
+            {formData.post_dated_date && formData.ps_filing_date && (
+              <div
+                style={{
+                  marginTop: '12px',
+                  padding: '10px 14px',
+                  borderRadius: '6px',
+                  background: postDateValidation.isValid ? 'rgba(16, 185, 129, 0.08)' : 'rgba(239, 68, 68, 0.08)',
+                  border: `1.5px solid ${postDateValidation.isValid ? '#10B981' : '#EF4444'}`,
+                  color: postDateValidation.isValid ? '#065F46' : '#991B1B',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px'
+                }}
+              >
+                <Clock size={16} style={{ flexShrink: 0 }} />
+                <div>
+                  <strong>Section 17 Post-Dating Leeway Status:</strong>{' '}
+                  {postDateValidation.isValid ? (
+                    <span>
+                      {postDateValidation.detailedMessage} (<strong>{postDateValidation.remainingMonths} months, {postDateValidation.remainingDays} days</strong> remaining).
+                    </span>
+                  ) : (
+                    <span>{postDateValidation.message}</span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Live Statutory Deadlines Preview Card */}
             <div
               style={{
                 marginTop: '16px',
@@ -827,6 +929,180 @@ export default function CreateApplicationModal({
             </div>
           </div>
 
+          {/* Section 5: Specification Content - Abstract & Claims (Requirement 4) */}
+          <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+            <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', marginBottom: '12px' }}>
+              5. Specification Content (Abstract & Claims)
+            </h3>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+              {/* Abstract Field with strict 150-word statutory monitor */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                    Invention Abstract (Rule 13(7)(a))
+                  </label>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: abstractWords > 150 ? '#fee2e2' : '#f1f5f9',
+                    color: abstractWords > 150 ? '#dc2626' : '#475569',
+                    border: `1px solid ${abstractWords > 150 ? '#fca5a5' : '#cbd5e1'}`
+                  }}>
+                    {abstractWords} / 150 words
+                  </span>
+                </div>
+                <textarea
+                  name="abstract"
+                  value={formData.abstract}
+                  onChange={handleChange}
+                  placeholder="Enter concise technical abstract (Rule 13(7)(a) mandates concise summary not exceeding 150 words)..."
+                  rows={6}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: `1px solid ${abstractWords > 150 ? '#ef4444' : 'var(--line)'}`,
+                    background: 'var(--page)',
+                    fontSize: '12.5px',
+                    lineHeight: '1.45',
+                    resize: 'vertical',
+                  }}
+                />
+                {abstractWords > 150 ? (
+                  <div style={{ marginTop: '4px', fontSize: '11px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <AlertTriangle size={13} />
+                    <span>Statutory violation: Abstract exceeds 150 words limit under Rule 13(7)(a) of Patents Rules.</span>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                    Per Rule 13(7)(a), abstract must summarize technical field and not exceed 150 words.
+                  </span>
+                )}
+              </div>
+
+              {/* Claims Field (Unrestricted word count) */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 700 }}>
+                    Patent Claims (Unrestricted Length)
+                  </label>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#ecfdf5',
+                    color: '#065f46',
+                    border: '1px solid #a7f3d0'
+                  }}>
+                    {claimsWords} words • {claimsCount} claim(s)
+                  </span>
+                </div>
+                <textarea
+                  name="claims"
+                  value={formData.claims}
+                  onChange={handleChange}
+                  placeholder="Enter full patent claims (1. An apparatus comprising...\n2. The apparatus of claim 1, further comprising...)..."
+                  rows={6}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--page)',
+                    fontSize: '12.5px',
+                    lineHeight: '1.45',
+                    fontFamily: 'monospace',
+                    resize: 'vertical',
+                  }}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                  No word limit for claims. First 10 claims included in basic fee; subsequent claims incur ₹320 (Reduced) / ₹1,600 (Others) each.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 6: Official IPO Statutory Government Fee Schedule (Requirement 1) */}
+          <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+              <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', margin: 0 }}>
+                6. Government Fee Schedule (First Schedule of Indian Patents Rules)
+              </h3>
+              <span style={{
+                fontSize: '11px',
+                fontWeight: 700,
+                padding: '2px 8px',
+                borderRadius: '6px',
+                background: isReducedFeeEntity(formData.entity_category) ? '#dbeafe' : '#f1f5f9',
+                color: isReducedFeeEntity(formData.entity_category) ? '#1e40af' : '#475569'
+              }}>
+                Current Applicant Rate: {isReducedFeeEntity(formData.entity_category) ? '80% Reduced (Natural / Startup / Small / Edu)' : 'Standard (Others / Large Entity)'}
+              </span>
+            </div>
+
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
+              gap: '8px',
+              padding: '12px',
+              borderRadius: '8px',
+              background: 'var(--surface-muted, #f8fafc)',
+              border: '1px solid var(--line)'
+            }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 1 (Application)</span>
+                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f1.label}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Basic fee up to 30p, 10c</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 2 (Specification)</span>
+                <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Up to 30p & 10 claims</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 3 (Sec 8 Statement)</span>
+                <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Foreign applications</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 9 (Early Pub)</span>
+                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f9.label}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11A(2)</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 18 (RFE Exam)</span>
+                <strong style={{ fontSize: '13px', color: '#2563eb' }}>{statutoryFees.f18.label}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11B</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 17 (Postdating)</span>
+                <strong style={{ fontSize: '13px', color: '#7c3aed' }}>{statutoryFees.sec17.label}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Max 6 months leeway</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 30 (Hearing Attendance)</span>
+                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f30.label}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Rule 62(2) notice</span>
+              </div>
+
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 53 Renewals (Y3-Y6)</span>
+                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{isReducedFeeEntity(formData.entity_category) ? '₹800/yr' : '₹4,000/yr'}</strong>
+                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>10% discount for 4+ yr e-filing</span>
+              </div>
+            </div>
+          </div>
+
           {/* Form Actions */}
           <div
             style={{
@@ -876,6 +1152,13 @@ export default function CreateApplicationModal({
           </div>
         </form>
       </div>
+
+      {/* Interconnected Add Client Modal (Requirement 3) */}
+      <AddClientModal
+        isOpen={isAddClientOpen}
+        onClose={() => setIsAddClientOpen(false)}
+        onClientCreated={handleNewClientCreated}
+      />
     </div>
   );
 }

@@ -214,6 +214,19 @@ export default function App() {
     fetchClients();
   }, []);
 
+  // Synchronize newly created client across local state & cache (Requirement 3)
+  const handleClientCreated = (newClient) => {
+    if (!newClient) return;
+    setClients((prev) => {
+      const exists = prev.some((c) => c.id === newClient.id || (c.client_code && c.client_code === newClient.client_code));
+      const updated = exists ? prev.map((c) => (c.id === newClient.id ? newClient : c)) : [newClient, ...prev];
+      try {
+        localStorage.setItem('patent_cached_clients', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+  };
+
   // Helper to seed realistic initial client commitment dates for under-drafting matters
   const seedCommitmentDates = (dataList) => {
     const today = new Date();
@@ -1323,6 +1336,7 @@ export default function App() {
         existingCodes={existingCodes}
         clients={clients}
         tags={tags}
+        onClientCreated={handleClientCreated}
       />
 
       {/* Edit Application Modal */}
@@ -1333,6 +1347,7 @@ export default function App() {
         onUpdate={handleUpdateApplication}
         clients={clients}
         tags={tags}
+        onClientCreated={handleClientCreated}
       />
 
       {/* Master Statutory Prosecution Timeline Modal */}

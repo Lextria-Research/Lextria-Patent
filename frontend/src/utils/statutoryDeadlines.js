@@ -39,34 +39,66 @@ export function addDays(dateStr, days) {
 }
 
 /**
- * Validates Section 17 Post-Dating statutory limitation (max 6 months / 180 days)
+ * Validates Section 17 Post-Dating statutory limitation (max 6 months / approx 181 days)
+ * and computes the exact remaining leeway (months and days) available for further post-dating.
  */
 export function validateSection17PostDating(psFilingDate, postDatedDate) {
-  if (!psFilingDate || !postDatedDate) return { isValid: true };
+  if (!psFilingDate || !postDatedDate) return { isValid: true, remainingMonths: 0, remainingDays: 0, message: '' };
   const psDt = new Date(psFilingDate);
   const postDt = new Date(postDatedDate);
   if (isNaN(psDt.getTime()) || isNaN(postDt.getTime())) {
     return { isValid: false, message: 'Invalid date format' };
   }
 
-  if (postDt <= psDt) {
-    return {
-      isValid: false,
-      message: 'Post-dated date must be strictly after the original Provisional (PS) filing date.'
-    };
-  }
-
   // Max 6 months statutory ceiling per Section 17
   const maxPostDt = new Date(psDt);
   maxPostDt.setMonth(maxPostDt.getMonth() + 6);
-  if (postDt > maxPostDt) {
+
+  if (postDt <= psDt) {
     return {
       isValid: false,
-      message: `Statutory limitation exceeded: Section 17 strictly prohibits post-dating beyond 6 months (${toIsoDate(maxPostDt)}).`
+      message: 'Post-dated date must be strictly after the original Provisional (PS) filing date.',
+      maxAllowedDate: toIsoDate(maxPostDt)
     };
   }
 
-  return { isValid: true };
+  if (postDt > maxPostDt) {
+    const daysOver = Math.round((postDt.getTime() - maxPostDt.getTime()) / (1000 * 60 * 60 * 24));
+    return {
+      isValid: false,
+      daysOver,
+      message: `Statutory limit exceeded by ${daysOver} days! Section 17 strictly prohibits post-dating beyond 6 months (${toIsoDate(maxPostDt)}).`,
+      maxAllowedDate: toIsoDate(maxPostDt)
+    };
+  }
+
+  // Calculate remaining leeway between postDatedDate and maxPostDt
+  let tempDate = new Date(postDt);
+  let monthsRemaining = 0;
+  while (true) {
+    const nextMonth = new Date(tempDate);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    if (nextMonth <= maxPostDt) {
+      monthsRemaining++;
+      tempDate = nextMonth;
+    } else {
+      break;
+    }
+  }
+
+  const msDiff = maxPostDt.getTime() - tempDate.getTime();
+  const daysRemaining = Math.max(0, Math.round(msDiff / (1000 * 60 * 60 * 24)));
+  const totalDaysRemaining = Math.max(0, Math.round((maxPostDt.getTime() - postDt.getTime()) / (1000 * 60 * 60 * 24)));
+
+  return {
+    isValid: true,
+    remainingMonths: monthsRemaining,
+    remainingDays: daysRemaining,
+    totalDaysRemaining,
+    maxAllowedDate: toIsoDate(maxPostDt),
+    message: `${monthsRemaining} month${monthsRemaining !== 1 ? 's' : ''}, ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''} remaining for further post-dating (Max allowed: ${toIsoDate(maxPostDt)})`,
+    detailedMessage: `Post-dated to ${toIsoDate(postDt)}. You can still post-date further by up to ${monthsRemaining} month(s) and ${daysRemaining} day(s) until ${toIsoDate(maxPostDt)}.`
+  };
 }
 
 /**
@@ -140,6 +172,11 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     statusText: 'No Provisional Filing Found',
   };
 
+  let postDateLeeway = null;
+  if (psFilingDate && postDatedDate) {
+    postDateLeeway = validateSection17PostDating(psFilingDate, postDatedDate);
+  }
+
   if (psFilingDate && !csFilingDate) {
     const originalPsDt = new Date(psFilingDate);
     const maxPostDt = new Date(originalPsDt);
@@ -154,10 +191,13 @@ export function calculateAllStatutoryDeadlines(params = {}) {
       maxPostDate: maxPostDateStr,
       remainingDays: Math.max(0, diffDays),
       statusText: postDatedDate
-        ? `Post-dated to ${postDatedDate} (CS Deadline extended to ${csDeadline})`
+        ? (postDateLeeway?.isValid 
+            ? `Post-dated to ${postDatedDate}. ${postDateLeeway.message} (CS Deadline: ${csDeadline})`
+            : `Post-dated to ${postDatedDate}. ⚠️ ${postDateLeeway?.message}`)
         : isEligible
         ? `Feasible: ${diffDays} days remaining to invoke Section 17`
         : 'Section 17 window expired (must file CS immediately)',
+      postDateLeeway
     };
   }
 
@@ -196,6 +236,7 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     wsDeadline,
     ws_deadline: wsDeadline,
     postDateFeasibility,
+    postDateLeeway,
     nextRenewalDate,
     next_renewal_date: nextRenewalDate,
     currentAnnuityYear,

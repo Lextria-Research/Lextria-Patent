@@ -11,6 +11,7 @@ import {
   FileText, ExternalLink, Plus, Edit3, Tag as TagIcon,
   CheckSquare, Square, User, Building, X, UserCheck
 } from 'lucide-react';
+import { getStatusColor } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 export const VIEW_PRESETS = {
@@ -471,36 +472,18 @@ export default function MasterDataGrid({
         },
       },
 
-      // 6. Status (IDF · Orange, Drafting · Purple, etc.)
+      // 6. Status (Strict 5-Color Semantics: Green, Yellow, Grey, Orange, Purple)
       {
         accessorKey: 'current_status',
         header: 'Status',
-        size: 150,
+        size: 160,
         cell: ({ row }) => {
-          const color = (row.original.color_code_status || '').toUpperCase();
-          const st = row.original.current_status || 'Under Drafting';
-          let label = st;
-          let bg = 'rgba(16, 185, 129, 0.12)';
-          let fg = '#059669';
-          let dot = '#10B981';
-
-          if (color === 'ORANGE' || st.includes('ORANGE')) {
-            bg = 'rgba(234, 88, 12, 0.12)'; fg = '#EA580C'; dot = '#EA580C';
-            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
-          } else if (color === 'PURPLE' || st.includes('PURPLE')) {
-            bg = 'rgba(138, 79, 255, 0.12)'; fg = '#7C3AED'; dot = '#8A4FFF';
-            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
-          } else if (color === 'YELLOW' || st.includes('YELLOW')) {
-            bg = 'rgba(217, 119, 6, 0.12)'; fg = '#D97706'; dot = '#F59E0B';
-            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
-          } else if (color === 'GREEN' || st.includes('GREEN')) {
-            bg = 'rgba(16, 185, 129, 0.12)'; fg = '#059669'; dot = '#10B981';
-            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
-          }
+          const st = row.original.current_status || 'Idf sent, awaiting data';
+          const col = getStatusColor(st);
 
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-              <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: dot, flexShrink: 0 }} />
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: col.dot, flexShrink: 0 }} />
               <span
                 style={{
                   display: 'inline-block',
@@ -508,16 +491,17 @@ export default function MasterDataGrid({
                   borderRadius: '12px',
                   fontSize: '11px',
                   fontWeight: 700,
-                  background: bg,
-                  color: fg,
-                  maxWidth: '130px',
+                  background: col.bg,
+                  color: col.text,
+                  border: `1px solid ${col.border}`,
+                  maxWidth: '145px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}
                 title={st}
               >
-                {label}
+                {st}
               </span>
             </div>
           );

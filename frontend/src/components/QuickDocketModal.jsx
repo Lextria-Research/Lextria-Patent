@@ -2,9 +2,13 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, CheckSquare, Save, Shield, Clock, AlertTriangle, FileText,
-  Calendar, CheckCircle2, Hash, RefreshCw, Scale, Search, ArrowRight
+  Calendar, CheckCircle2, Hash, RefreshCw, Scale, Search, ArrowRight,
+  IndianRupee
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import { getFormFee, formatINR } from '../utils/feeSchedule';
+import { getStatusColor } from '../constants/patentStatuses';
+import PhasedStatusSelector from './PhasedStatusSelector';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 const DRAFTERS = [
@@ -132,6 +136,15 @@ export default function QuickDocketModal({
     formData.ps_filing_date,
     formData.post_dated_date
   );
+
+  const handleStatusChange = (newStatus) => {
+    const col = getStatusColor(newStatus);
+    setFormData((prev) => ({
+      ...prev,
+      current_status: newStatus,
+      color_code_status: col.colorKey || 'PURPLE'
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -503,9 +516,22 @@ export default function QuickDocketModal({
                       fontSize: '13px',
                     }}
                   />
-                  {formData.post_dated_date && (
-                    <div style={{ marginTop: '4px', fontSize: '11px', fontWeight: 700, color: postDatingCheck.isValid ? '#059669' : '#DC2626' }}>
-                      {postDatingCheck.reason} ({postDatingCheck.daysOffset} days shift)
+                  {formData.post_dated_date && formData.ps_filing_date && (
+                    <div style={{
+                      marginTop: '6px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: postDatingCheck.isValid ? '#059669' : '#DC2626',
+                      background: postDatingCheck.isValid ? '#ecfdf5' : '#fef2f2',
+                      padding: '5px 8px',
+                      borderRadius: '5px',
+                      border: `1px solid ${postDatingCheck.isValid ? '#a7f3d0' : '#fecaca'}`
+                    }}>
+                      {postDatingCheck.isValid ? (
+                        <span>⏳ {postDatingCheck.remainingMonths}m {postDatingCheck.remainingDays}d remaining leeway for further post-dating (Max: {postDatingCheck.maxAllowedDate})</span>
+                      ) : (
+                        <span>⚠️ {postDatingCheck.message}</span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -541,9 +567,14 @@ export default function QuickDocketModal({
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 <div style={{ padding: '14px', borderRadius: '8px', border: '1px solid var(--line)', background: 'var(--page)' }}>
-                  <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Shield size={14} color="#2563EB" /> Form 1 (Proof of Right / Assignment)
-                  </h4>
+                  <div style={{ margin: '0 0 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={14} color="#2563EB" /> Form 1 (Proof of Right)
+                    </h4>
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                      Govt Fee: ₹1,600 / ₹8,000
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div>
                       <label style={{ fontSize: '11.5px', fontWeight: 700, display: 'block', marginBottom: '4px', color: 'var(--muted)' }}>
@@ -597,9 +628,14 @@ export default function QuickDocketModal({
                 </div>
 
                 <div style={{ padding: '14px', borderRadius: '8px', border: '1px solid var(--line)', background: 'var(--page)' }}>
-                  <h4 style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Shield size={14} color="#EA580C" /> Form 26 (Power of Attorney / Authorization)
-                  </h4>
+                  <div style={{ margin: '0 0 10px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <h4 style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={14} color="#EA580C" /> Form 26 (Power of Attorney)
+                    </h4>
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                      Govt Fee: Free (₹0)
+                    </span>
+                  </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                     <div>
                       <label style={{ fontSize: '11.5px', fontWeight: 700, display: 'block', marginBottom: '4px', color: 'var(--muted)' }}>
@@ -988,29 +1024,15 @@ export default function QuickDocketModal({
                   />
                 </div>
 
-                <div>
+                <div style={{ gridColumn: 'span 3' }}>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px', color: 'var(--ink)' }}>
-                    Current Docket Status
+                    Current Docket Status (7 Statutory Prosecution Phases)
                   </label>
-                  <select
-                    name="current_status"
+                  <PhasedStatusSelector
                     value={formData.current_status}
-                    onChange={handleChange}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      color: 'var(--ink)',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    {STATUS_OPTIONS.map((st) => (
-                      <option key={st} value={st}>{st}</option>
-                    ))}
-                  </select>
+                    onChange={handleStatusChange}
+                    applicationType={formData.specification_type}
+                  />
                 </div>
 
                 <div>

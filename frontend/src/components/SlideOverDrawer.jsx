@@ -3,8 +3,11 @@ import {
   X, Copy, Check, ExternalLink, Calendar, FileText, User, AlertCircle,
   Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle, Edit3,
   Tag as TagIcon, Upload, Download, Trash2, Plus, Target, Paperclip, Send, AlertOctagon,
-  FileCheck, HelpCircle
+  FileCheck, HelpCircle, IndianRupee
 } from 'lucide-react';
+import { getStatusColor } from '../constants/patentStatuses';
+import { getFormFee, formatINR } from '../utils/feeSchedule';
+import { validateSection17PostDating } from '../utils/statutoryDeadlines';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 export default function SlideOverDrawer({
@@ -233,22 +236,26 @@ export default function SlideOverDrawer({
               {record.is_mahe ? 'MAHE' : 'Non-MAHE'}
             </span>
 
-            <span style={{
-              fontSize: '11px',
-              padding: '2px 8px',
-              borderRadius: '12px',
-              fontWeight: 700,
-              background: record.color_code_status === 'PURPLE' ? 'rgba(138, 79, 255, 0.15)' :
-                          record.color_code_status === 'GREEN' ? 'rgba(78, 158, 86, 0.15)' :
-                          record.color_code_status === 'RED' ? 'rgba(194, 59, 46, 0.15)' :
-                          record.color_code_status === 'YELLOW' ? 'rgba(201, 138, 44, 0.15)' : 'rgba(58, 134, 255, 0.15)',
-              color: record.color_code_status === 'PURPLE' ? '#8A4FFF' :
-                     record.color_code_status === 'GREEN' ? '#4E9E56' :
-                     record.color_code_status === 'RED' ? '#C23B2E' :
-                     record.color_code_status === 'YELLOW' ? '#C98A2C' : '#3A86FF'
-            }}>
-              {record.current_status || record.color_code_status}
-            </span>
+            {(() => {
+              const statusCol = getStatusColor(record.current_status);
+              return (
+                <span style={{
+                  fontSize: '11px',
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  fontWeight: 700,
+                  background: statusCol.bg,
+                  color: statusCol.text,
+                  border: `1px solid ${statusCol.border}`,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px'
+                }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: statusCol.dot }} />
+                  {record.current_status || 'Status Not Set'}
+                </span>
+              );
+            })()}
           </div>
 
           <div style={{ fontSize: '13px', color: 'var(--muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -820,32 +827,43 @@ export default function SlideOverDrawer({
               </div>
             </div>
 
-            {/* Post-Dating Section 17 Status */}
-            <div style={{ padding: '14px 16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                Section 17 Post-Dating Window
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
-                <div>
-                  <span style={{ fontSize: '14px', fontWeight: 700 }}>
-                    {record.post_dated_date ? `Post-Dated to: ${record.post_dated_date}` : 'Not yet Postdated'}
-                  </span>
-                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                    Can be post-dated up to 6 months from PS filing
+            {/* Post-Dating Section 17 Status (Requirement 2) */}
+            {(() => {
+              const leeway = record.ps_filing_date && record.post_dated_date
+                ? validateSection17PostDating(record.ps_filing_date, record.post_dated_date)
+                : null;
+              return (
+                <div style={{ padding: '14px 16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+                    Section 17 Post-Dating Leeway Status
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '6px' }}>
+                    <div>
+                      <span style={{ fontSize: '14px', fontWeight: 700 }}>
+                        {record.post_dated_date ? `Post-Dated to: ${record.post_dated_date}` : 'Not yet Postdated'}
+                      </span>
+                      <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>
+                        {leeway?.isValid
+                          ? `⏳ Leeway remaining: ${leeway.remainingMonths} months, ${leeway.remainingDays} days for further post-dating (Max allowed: ${leeway.maxAllowedDate})`
+                          : (leeway ? `⚠️ ${leeway.message}` : 'Can be post-dated up to 6 months from original PS filing')}
+                      </div>
+                    </div>
+                    <span style={{
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                      background: leeway && !leeway.isValid ? 'rgba(239, 68, 68, 0.15)' : 'rgba(78, 158, 86, 0.15)',
+                      color: leeway && !leeway.isValid ? '#DC2626' : '#4E9E56'
+                    }}>
+                      {leeway?.isValid
+                        ? `${leeway.totalDaysRemaining} Days Available`
+                        : (record.remaining_post_date_days || 181) + ' Days Limit'}
+                    </span>
                   </div>
                 </div>
-                <span style={{
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  background: 'rgba(78, 158, 86, 0.15)',
-                  color: '#4E9E56'
-                }}>
-                  {record.remaining_post_date_days || 181} Days Available
-                </span>
-              </div>
-            </div>
+              );
+            })()}
           </div>
         )}
 
@@ -914,6 +932,108 @@ export default function SlideOverDrawer({
                 >
                   Save Link
                 </button>
+              </div>
+            </div>
+
+            {/* Abstract & Claims Card (Requirement 4) */}
+            <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <FileText size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>Specification Content (Abstract & Claims)</span>
+                </div>
+                {onOpenEdit && (
+                  <button
+                    onClick={() => onOpenEdit(record)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      color: 'var(--accent)',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Edit3 size={12} /> Edit Abstract & Claims
+                  </button>
+                )}
+              </div>
+
+              {/* Abstract display */}
+              <div style={{ padding: '12px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)' }}>
+                    Abstract (Rule 13(7)(a) - Max 150 words)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '8px',
+                      background: (record.abstract || '').trim().split(/\s+/).filter(Boolean).length > 150 ? '#fee2e2' : '#f1f5f9',
+                      color: (record.abstract || '').trim().split(/\s+/).filter(Boolean).length > 150 ? '#dc2626' : '#475569'
+                    }}>
+                      {(record.abstract || '').trim().split(/\s+/).filter(Boolean).length} / 150 words
+                    </span>
+                    {record.abstract && (
+                      <button
+                        onClick={() => copyToClipboard(record.abstract, 'abstract')}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '2px' }}
+                        title="Copy Abstract"
+                      >
+                        {copiedField === 'abstract' ? <Check size={13} color="var(--ok-fg)" /> : <Copy size={13} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div style={{ fontSize: '12.5px', color: record.abstract ? 'var(--ink)' : 'var(--muted)', whiteSpace: 'pre-wrap', lineHeight: '1.5' }}>
+                  {record.abstract || 'No abstract entered yet. Click "Edit Abstract & Claims" to add technical summary.'}
+                </div>
+              </div>
+
+              {/* Claims display */}
+              <div style={{ padding: '12px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)' }}>
+                    Claims (Unrestricted Length)
+                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{
+                      fontSize: '10.5px',
+                      fontWeight: 700,
+                      padding: '2px 6px',
+                      borderRadius: '8px',
+                      background: '#ecfdf5',
+                      color: '#065f46'
+                    }}>
+                      {(record.claims || '').trim().split(/\s+/).filter(Boolean).length} words
+                    </span>
+                    {record.claims && (
+                      <button
+                        onClick={() => copyToClipboard(record.claims, 'claims')}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '2px' }}
+                        title="Copy Claims"
+                      >
+                        {copiedField === 'claims' ? <Check size={13} color="var(--ok-fg)" /> : <Copy size={13} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                <div style={{
+                  fontSize: '12px',
+                  fontFamily: 'monospace',
+                  color: record.claims ? 'var(--ink)' : 'var(--muted)',
+                  whiteSpace: 'pre-wrap',
+                  lineHeight: '1.45',
+                  maxHeight: '180px',
+                  overflowY: 'auto'
+                }}>
+                  {record.claims || 'No claims entered yet. Click "Edit Abstract & Claims" to add patent claims.'}
+                </div>
               </div>
             </div>
 
@@ -1157,7 +1277,12 @@ export default function SlideOverDrawer({
             <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px' }}>Form 1 — Proof of Right</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>Form 1 — Proof of Right</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#eff6ff', color: '#1d4ed8', border: '1px solid #bfdbfe' }}>
+                      Govt Fee: ₹1,600 / ₹8,000
+                    </span>
+                  </div>
                   <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Statutory deadline: 6 months from filing</div>
                 </div>
                 <span style={{
@@ -1177,7 +1302,12 @@ export default function SlideOverDrawer({
             <div style={{ padding: '12px 14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px' }}>Form 26 — Power of Authority (POA)</div>
+                  <div style={{ fontWeight: 700, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>Form 26 — Power of Authority (POA)</span>
+                    <span style={{ fontSize: '11px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                      Govt Fee: Free (₹0)
+                    </span>
+                  </div>
                   <div style={{ fontSize: '12px', color: 'var(--muted)' }}>Statutory deadline: 3 months from filing</div>
                 </div>
                 <span style={{
@@ -1195,16 +1325,24 @@ export default function SlideOverDrawer({
 
             {/* Other Forms List */}
             {[
-              { code: 'Form 3', name: 'Section 8 Foreign Undertaking', date: record.form_3_filing_date, dead: record.form_3_deadline },
-              { code: 'Form 9', name: 'Early Publication Request', date: record.form_9_filing_date },
-              { code: 'Form 18 / 18A', name: 'Request for Examination (RFE)', date: record.form_18_filing_date, dead: record.rfe_deadline },
-              { code: 'Form 13', name: 'Amendments', date: record.form_13_filing_date, detail: record.form_13_particulars },
-              { code: 'Form 4', name: 'Extension of Time (FER / WS / F3)', date: record.form_4_fer_filing_date },
-              { code: 'Form 27', name: 'Commercial Working Statement', date: record.form_27_filing_date },
+              { code: 'Form 2', name: 'Specification (Provisional / Complete)', fee: 'Free (up to 30p & 10c)', date: record.ps_filing_date || record.cs_filing_date },
+              { code: 'Form 3', name: 'Section 8 Foreign Undertaking', fee: 'Free (₹0)', date: record.form_3_filing_date, dead: record.form_3_deadline },
+              { code: 'Form 9', name: 'Early Publication Request', fee: '₹2,500 / ₹12,500', date: record.form_9_filing_date },
+              { code: 'Form 18 / 18A', name: 'Request for Examination (RFE)', fee: '₹4,000 / ₹20,000 (F18) | ₹8,000 / ₹60,000 (F18A)', date: record.form_18_filing_date, dead: record.rfe_deadline },
+              { code: 'Form 13', name: 'Amendments (Sec 57)', fee: '₹800 / ₹4,000 (Pre-grant)', date: record.form_13_filing_date, detail: record.form_13_particulars },
+              { code: 'Form 4', name: 'Extension of Time (Rule 24B(6))', fee: '₹1,000/mo / ₹4,000/mo', date: record.form_4_fer_filing_date },
+              { code: 'Form 30', name: 'Hearing Attendance (Rule 62(2))', fee: '₹1,500 / ₹7,500', date: record.hearing_date },
+              { code: 'Form 27', name: 'Commercial Working Statement', fee: 'Free (₹0)', date: record.form_27_filing_date },
+              { code: 'Sec 53 Renewals', name: 'Annuity Maintenance (Y3-Y20)', fee: 'Y3-Y6: ₹800/yr / ₹4,000/yr', date: record.grant_date },
             ].map((f, idx) => (
               <div key={idx} style={{ padding: '10px 14px', borderRadius: '6px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 600, fontSize: '13px' }}>{f.code} — {f.name}</div>
+                  <div style={{ fontWeight: 600, fontSize: '13px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <span>{f.code} — {f.name}</span>
+                    <span style={{ fontSize: '10.5px', fontWeight: 600, color: 'var(--accent)', background: 'var(--surface)', padding: '1px 5px', borderRadius: '4px', border: '1px solid var(--line)' }}>
+                      Govt Fee: {f.fee}
+                    </span>
+                  </div>
                   {f.detail && <div style={{ fontSize: '11px', color: 'var(--muted)' }}>{f.detail}</div>}
                   {f.dead && <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Deadline: {f.dead}</div>}
                 </div>
