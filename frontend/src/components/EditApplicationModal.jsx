@@ -67,6 +67,7 @@ export default function EditApplicationModal({
     form_3_filing_date: '',
     form_9_filing_date: '',
     form_18_filing_date: '',
+    client_commitment_date: '',
     status_notes: '',
     suggested_action: '',
     issue: '',
@@ -94,6 +95,7 @@ export default function EditApplicationModal({
         communication_status: record.communication_status || 'OPEN',
         workdrive_folder_url: record.workdrive_folder_url || '',
         inventors_summary: record.inventors_summary || '',
+        client_commitment_date: record.client_commitment_date ? record.client_commitment_date.slice(0, 10) : '',
         ps_filing_date: record.ps_filing_date ? record.ps_filing_date.slice(0, 10) : '',
         post_dated_date: record.post_dated_date ? record.post_dated_date.slice(0, 10) : '',
         cs_filing_date: record.cs_filing_date ? record.cs_filing_date.slice(0, 10) : '',
@@ -540,6 +542,89 @@ export default function EditApplicationModal({
           {/* TAB 2: PROSECUTION DATES & POST-DATING */}
           {activeTab === 'DATES' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Client Delivery Commitment Section */}
+              <div
+                style={{
+                  padding: '12px 16px',
+                  borderRadius: '8px',
+                  background: 'rgba(234, 88, 12, 0.06)',
+                  border: '1.5px solid #EA580C',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '8px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <label style={{ fontSize: '12.5px', fontWeight: 800, color: '#C2410C', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    🎯 Client Delivery Commitment Date (Under-Drafting Deadline)
+                  </label>
+                  <span style={{ fontSize: '10.5px', color: '#EA580C', fontWeight: 700 }}>
+                    ⚡ Changing this triggers automated SPOC & Org alert
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <input
+                    type="date"
+                    name="client_commitment_date"
+                    value={formData.client_commitment_date}
+                    onChange={handleChange}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  />
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    {[3, 7, 14].map((d) => (
+                      <button
+                        key={d}
+                        type="button"
+                        onClick={() => {
+                          const dt = new Date();
+                          dt.setDate(dt.getDate() + d);
+                          setFormData((prev) => ({
+                            ...prev,
+                            client_commitment_date: dt.toISOString().split('T')[0],
+                          }));
+                        }}
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        +{d}d
+                      </button>
+                    ))}
+                    {formData.client_commitment_date && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData((prev) => ({ ...prev, client_commitment_date: '' }))}
+                        style={{
+                          padding: '6px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          fontSize: '11px',
+                          color: 'var(--muted)',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>

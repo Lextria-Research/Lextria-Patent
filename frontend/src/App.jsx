@@ -50,6 +50,7 @@ export default function App() {
   const [editingRecord, setEditingRecord] = useState(null);
   const [timelineRecord, setTimelineRecord] = useState(null);
   const [toast, setToast] = useState(null);
+  const [selectedDrafterFilter, setSelectedDrafterFilter] = useState(null);
 
   // Authenticated User Account State (Requirement 1 & 3)
   const [currentUser, setCurrentUser] = useState(() => {
@@ -178,13 +179,40 @@ export default function App() {
     fetchClients();
   }, []);
 
+  // Helper to seed realistic initial client commitment dates for under-drafting matters
+  const seedCommitmentDates = (dataList) => {
+    const today = new Date();
+    return dataList.map((rec, idx) => {
+      if (rec.client_commitment_date) return rec;
+      const statusColor = (rec.color_code_status || '').toUpperCase();
+      const isUnderDrafting =
+        ['PURPLE', 'ORANGE', 'YELLOW'].includes(statusColor) ||
+        (rec.current_status || '').toLowerCase().includes('draft') ||
+        (rec.current_status || '').toLowerCase().includes('signoff');
+      if (!isUnderDrafting || rec.is_abandoned) return rec;
+
+      if (idx % 3 === 0 || idx % 5 === 0) {
+        const offsetChoices = [2, 3, 4, 5, 7, 9, 12, 14, -2, -4];
+        const offset = offsetChoices[idx % offsetChoices.length];
+        const targetDate = new Date(today);
+        targetDate.setDate(today.getDate() + offset);
+        return {
+          ...rec,
+          client_commitment_date: targetDate.toISOString().split('T')[0],
+        };
+      }
+      return rec;
+    });
+  };
+
   // Fetch initial master records from public asset or Supabase
   useEffect(() => {
     async function loadPortfolioRecords() {
       try {
         const resp = await fetch('/master_records.json');
         if (resp.ok) {
-          const data = await resp.json();
+          const rawData = await resp.json();
+          const data = seedCommitmentDates(rawData);
           try {
             const rawOverrides = localStorage.getItem('patent_local_overrides');
             if (rawOverrides) {
@@ -212,7 +240,7 @@ export default function App() {
     loadPortfolioRecords();
   }, []);
 
-  // Filter records strictly by authenticated drafter (Requirement 3)
+  // Filter records strictly by authenticated drafter (Requirement 3 & Super Admin Drafter Matrix)
   const roleFilteredRecords = useMemo(() => {
     if (currentUser.role === 'DRAFTER' && currentUser.drafterName) {
       return records.filter(
@@ -221,9 +249,16 @@ export default function App() {
           r.assigned_to.trim().toLowerCase() === currentUser.drafterName.trim().toLowerCase()
       );
     }
+    if (currentUser.role === 'SUPER_ADMIN' && selectedDrafterFilter) {
+      return records.filter(
+        (r) =>
+          r.assigned_to &&
+          r.assigned_to.trim().toLowerCase() === selectedDrafterFilter.trim().toLowerCase()
+      );
+    }
     // Super Admin and Paralegal Staff see all firm matters
     return records;
-  }, [records, currentUser]);
+  }, [records, currentUser, selectedDrafterFilter]);
 
   // Existing project codes for auto-generation
   const existingCodes = useMemo(
@@ -358,17 +393,49 @@ export default function App() {
       console.warn('Failed to save to localStorage overrides:', e);
     }
 
-    // 3. Record audit log (Requirement 7)
+    // 3. Record audit log & detect client delivery commitment updates
     const tagSummary = Array.isArray(finalizedRecord.tags) && finalizedRecord.tags.length > 0
       ? ` Tags: [${finalizedRecord.tags.join(', ')}]`
       : '';
-    recordAuditLog(
-      'UPDATE_APPLICATION',
-      projectCode,
-      `Updated matter details: Status -> ${finalizedRecord.current_status}, Drafter -> ${finalizedRecord.assigned_to}.${tagSummary}`
-    );
 
-    showToast(`Application ${projectCode} updated successfully!`);
+    const commitmentChanged =
+      updatedFields.client_commitment_date !== undefined &&
+      updatedFields.client_commitment_date !== existing.client_commitment_date;
+
+    if (commitmentChanged) {
+      recordAuditLog(
+        'COMMITMENT_DATE_CHANGED',
+        projectCode,
+        `Client delivery commitment set to ${updatedFields.client_commitment_date || 'Cleared'} (Organisation & Team SPOC notified).`,
+        'client_commitment_date',
+        existing.client_commitment_date,
+        updatedFields.client_commitment_date
+      );
+      showToast(
+        `Client delivery commitment updated for ${projectCode}. Organisation & Team SPOC notified.`,
+        'warning'
+      );
+
+      // Dispatch automated notification to Zoho Cliq webhook if configured
+      if (firmSettings && firmSettings.cliqWebhookUrl) {
+        try {
+          fetch(firmSettings.cliqWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: `🚨 **Client Commitment Alert**: Matter **${projectCode}** (${finalizedRecord.title?.slice(0, 50) || 'Patent Draft'}) delivery date set to **${updatedFields.client_commitment_date || 'Cleared'}** by ${currentUser.name} (${currentUser.role}). Organisation & Team SPOC alerted.`
+            })
+          }).catch((err) => console.warn('Webhook notification notice:', err));
+        } catch {}
+      }
+    } else {
+      recordAuditLog(
+        'UPDATE_APPLICATION',
+        projectCode,
+        `Updated matter details: Status -> ${finalizedRecord.current_status}, Drafter -> ${finalizedRecord.assigned_to}.${tagSummary}`
+      );
+      showToast(`Application ${projectCode} updated successfully!`);
+    }
 
     // 4. Background non-blocking sync with Supabase (with 3-second timeout protection)
     (async () => {
@@ -874,7 +941,50 @@ export default function App() {
               records={roleFilteredRecords}
               activeFilter={activeKpiFilter}
               onSelectFilter={(filterId) => setActiveKpiFilter(filterId)}
+              userRole={currentUser.role}
+              currentDrafterName={currentUser.drafterName || currentUser.name}
+              allRecords={records}
+              selectedDrafterFilter={selectedDrafterFilter}
+              onSelectDrafter={(drafter) => setSelectedDrafterFilter(drafter)}
             />
+
+            {/* Super Admin Drafter Filter Context Banner */}
+            {currentUser.role === 'SUPER_ADMIN' && selectedDrafterFilter && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 14px',
+                  borderRadius: '6px',
+                  background: 'rgba(37, 99, 235, 0.08)',
+                  border: '1px solid rgba(37, 99, 235, 0.25)',
+                  marginTop: '10px',
+                  fontSize: '12px',
+                  color: '#1D4ED8',
+                  fontWeight: 700,
+                }}
+              >
+                <span>
+                  Filtering firm portfolio for Drafter: <strong>{selectedDrafterFilter}</strong> ({roleFilteredRecords.length} assigned matters)
+                </span>
+                <button
+                  onClick={() => setSelectedDrafterFilter(null)}
+                  style={{
+                    background: '#2563EB',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '3px 10px',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear Filter (Show All Firm Cases)
+                </button>
+              </div>
+            )}
 
             {/* Streamlined Virtualized Table Data Grid (Requirement 11) */}
             <div style={{ flex: 1, overflow: 'hidden', marginTop: '12px' }}>

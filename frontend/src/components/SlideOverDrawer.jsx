@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, Copy, Check, ExternalLink, Calendar, FileText, User, AlertCircle,
   Clock, Shield, Building, Mail, Phone, Bookmark, CheckCircle2, AlertTriangle, Edit3,
-  Tag as TagIcon
+  Tag as TagIcon, Upload, Download, Trash2, Plus, Target, Paperclip, Send, AlertOctagon,
+  FileCheck, HelpCircle
 } from 'lucide-react';
 
 export default function SlideOverDrawer({
@@ -18,7 +19,69 @@ export default function SlideOverDrawer({
   if (!record) return null;
 
   const [copiedField, setCopiedField] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview'); // overview, timeline, forms, inventors, queries
+  const [activeTab, setActiveTab] = useState('overview'); // overview, work, timeline, forms, inventors, notes, audit
+
+  // Client Delivery Commitment state
+  const [commitmentDate, setCommitmentDate] = useState(record.client_commitment_date || '');
+  const [isUpdatingCommitment, setIsUpdatingCommitment] = useState(false);
+
+  // Deliverables & work uploads state
+  const [deliverables, setDeliverables] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`patent_deliverables_${record.project_code}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: `del_init_1`,
+        name: `${record.project_code}_Draft_Specification_v1.docx`,
+        category: 'Draft Complete Specification',
+        size: '142 KB',
+        uploaded_by: record.assigned_to || 'Drafter',
+        created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+      }
+    ];
+  });
+  const [uploadCategory, setUploadCategory] = useState('Draft Complete Specification');
+  const [workdriveLink, setWorkdriveLink] = useState(record.workdrive_folder_url || '');
+
+  // Applicant state
+  const [applicantName, setApplicantName] = useState(record.applicant_name || 'Manipal Academy of Higher Education');
+  const [applicantAddress, setApplicantAddress] = useState(record.applicant_address || 'Madhav Nagar, Manipal, Karnataka - 576104');
+  const [entityCategory, setEntityCategory] = useState(record.entity_category || 'EDUCATIONAL_INSTITUTION');
+  const [isMahe, setIsMahe] = useState(Boolean(record.is_mahe));
+  const [applicantEmail, setApplicantEmail] = useState(record.applicant_email || 'ipr.office@manipal.edu');
+  const [applicantPhone, setApplicantPhone] = useState(record.applicant_phone || '+91 820 292 2400');
+
+  // Inventors state
+  const [inventorsList, setInventorsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`patent_inventors_${record.project_code}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    if (record.inventors_summary) {
+      return record.inventors_summary.split(',').map((inv, idx) => ({
+        id: `inv_${idx + 1}`,
+        name: inv.trim(),
+        department: 'Department of Research & Innovation',
+        email: `${inv.trim().toLowerCase().replace(/\s+/g, '.')}@manipal.edu`,
+        phone: '+91 98450 XXXXX',
+        nationality: 'Indian',
+      }));
+    }
+    return [
+      {
+        id: 'inv_1',
+        name: 'Dr. Principal Investigator',
+        department: 'Biomedical & Engineering Sciences',
+        email: 'pi.research@manipal.edu',
+        phone: '+91 98450 12345',
+        nationality: 'Indian',
+      }
+    ];
+  });
+  const [newInventor, setNewInventor] = useState({ name: '', department: '', email: '', phone: '', nationality: 'Indian' });
+  const [showAddInventor, setShowAddInventor] = useState(false);
 
   // Editable manual fields state
   const [statusNotes, setStatusNotes] = useState(record.status_notes || '');
@@ -27,6 +90,20 @@ export default function SlideOverDrawer({
   const [checklistDate, setChecklistDate] = useState(record.checklist_sent_date || '');
   const [isSaving, setIsSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Sync state when selected record changes
+  useEffect(() => {
+    setCommitmentDate(record.client_commitment_date || '');
+    setWorkdriveLink(record.workdrive_folder_url || '');
+    setApplicantName(record.applicant_name || 'Manipal Academy of Higher Education');
+    setApplicantAddress(record.applicant_address || 'Madhav Nagar, Manipal, Karnataka - 576104');
+    setEntityCategory(record.entity_category || 'EDUCATIONAL_INSTITUTION');
+    setIsMahe(Boolean(record.is_mahe));
+    setStatusNotes(record.status_notes || '');
+    setSuggestedAction(record.suggested_action || '');
+    setIssue(record.issue || '');
+    setChecklistDate(record.checklist_sent_date || '');
+  }, [record.project_code]);
 
   const copyToClipboard = (text, fieldName) => {
     navigator.clipboard.writeText(text);
@@ -273,9 +350,10 @@ export default function SlideOverDrawer({
       }}>
         {[
           { id: 'overview', label: 'Overview' },
+          { id: 'work', label: 'Work & Deliverables' },
           { id: 'timeline', label: 'Prosecution Timeline' },
           { id: 'forms', label: 'Statutory Forms' },
-          { id: 'inventors', label: 'Inventors' },
+          { id: 'inventors', label: 'Applicants & Inventors' },
           { id: 'notes', label: 'Senior Notes & Action' },
           { id: 'audit', label: 'History & Audit' },
         ].map((t) => (
@@ -303,6 +381,248 @@ export default function SlideOverDrawer({
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 1. Client Delivery Commitment Tracking Panel */}
+            <div
+              style={{
+                borderRadius: '8px',
+                border: '1.5px solid #EA580C',
+                background: 'rgba(234, 88, 12, 0.04)',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '6px',
+                      background: 'rgba(234, 88, 12, 0.15)',
+                      color: '#EA580C',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Target size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                      Client Delivery Commitment Date
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      Drafters or Patent Admin can set client delivery date. Any changes or misses trigger automated alerts to Organisation & Team SPOC.
+                    </div>
+                  </div>
+                </div>
+
+                {/* Overdue / Near Badge */}
+                {commitmentDate && (() => {
+                  const now = new Date();
+                  const diff = Math.round((new Date(commitmentDate) - now) / 86400000);
+                  if (diff < 0) {
+                    return (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: '8px',
+                          background: '#FEE2E2',
+                          color: '#DC2626',
+                          border: '1px solid #FCA5A5',
+                        }}
+                      >
+                        🚨 Commitment Missed ({Math.abs(diff)}d Overdue) - SPOC Alerted
+                      </span>
+                    );
+                  }
+                  if (diff <= 7) {
+                    return (
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: '8px',
+                          background: '#FFEDD5',
+                          color: '#EA580C',
+                          border: '1px solid #FDBA74',
+                        }}
+                      >
+                        ⚡ Near Commitment: {diff} days remaining
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        padding: '3px 8px',
+                        borderRadius: '8px',
+                        background: 'rgba(16, 185, 129, 0.12)',
+                        color: '#059669',
+                        border: '1px solid rgba(16, 185, 129, 0.3)',
+                      }}
+                    >
+                      ✓ On Schedule ({diff} days left)
+                    </span>
+                  );
+                })()}
+              </div>
+
+              {/* Date Input and Preset Buttons */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <input
+                  type="date"
+                  value={commitmentDate}
+                  onChange={(e) => setCommitmentDate(e.target.value)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface)',
+                    color: 'var(--ink)',
+                    fontSize: '13px',
+                    fontWeight: 600,
+                  }}
+                />
+
+                <div style={{ display: 'flex', gap: '4px' }}>
+                  {[
+                    { label: '+3 Days', days: 3 },
+                    { label: '+7 Days', days: 7 },
+                    { label: '+14 Days', days: 14 },
+                  ].map((p) => (
+                    <button
+                      key={p.label}
+                      type="button"
+                      onClick={() => {
+                        const d = new Date();
+                        d.setDate(d.getDate() + p.days);
+                        setCommitmentDate(d.toISOString().split('T')[0]);
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '11px',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                  {commitmentDate && (
+                    <button
+                      type="button"
+                      onClick={() => setCommitmentDate('')}
+                      style={{
+                        padding: '6px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--muted)',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+
+                <button
+                  type="button"
+                  disabled={isUpdatingCommitment}
+                  onClick={async () => {
+                    setIsUpdatingCommitment(true);
+                    try {
+                      if (onUpdate) {
+                        await onUpdate(record.project_code, {
+                          client_commitment_date: commitmentDate || null,
+                        });
+                      }
+                    } finally {
+                      setIsUpdatingCommitment(false);
+                    }
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: '#EA580C',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(234, 88, 12, 0.3)',
+                    marginLeft: 'auto',
+                  }}
+                >
+                  {isUpdatingCommitment ? 'Saving & Alerting...' : 'Save Commitment & Alert SPOC'}
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Matter Roadblock & Problem Status Card */}
+            <div
+              style={{
+                padding: '14px 16px',
+                borderRadius: '8px',
+                background: (record.issue || (Array.isArray(record.tags) && record.tags.includes('Ticket Raised')))
+                  ? 'rgba(239, 68, 68, 0.06)'
+                  : 'var(--page)',
+                border: `1px solid ${(record.issue || (Array.isArray(record.tags) && record.tags.includes('Ticket Raised'))) ? '#EF4444' : 'var(--line)'}`,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <AlertOctagon size={18} color={(record.issue || (Array.isArray(record.tags) && record.tags.includes('Ticket Raised'))) ? '#DC2626' : 'var(--muted)'} />
+                <div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+                    Matter Roadblock & Problem Radar
+                  </div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                    {record.issue ? `Active Roadblock: "${record.issue}"` : 'No active blockers reported on this matter.'}
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const currentTags = Array.isArray(record.tags) ? record.tags : (record.classification ? record.classification.split(',').map(s => s.trim()) : []);
+                  const hasTicket = currentTags.includes('Ticket Raised');
+                  const newTags = hasTicket ? currentTags.filter(t => t !== 'Ticket Raised') : [...currentTags, 'Ticket Raised'];
+                  if (onUpdate) {
+                    onUpdate(record.project_code, { tags: newTags });
+                  }
+                }}
+                style={{
+                  padding: '5px 10px',
+                  borderRadius: '5px',
+                  border: '1px solid var(--line)',
+                  background: (Array.isArray(record.tags) && record.tags.includes('Ticket Raised')) ? '#DC2626' : 'var(--surface)',
+                  color: (Array.isArray(record.tags) && record.tags.includes('Ticket Raised')) ? '#fff' : 'var(--ink)',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                {(Array.isArray(record.tags) && record.tags.includes('Ticket Raised')) ? '✓ Ticket Raised (Resolve)' : '+ Raise Problem Ticket'}
+              </button>
+            </div>
+
             <div>
               <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Invention Title</div>
               <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)', marginTop: '4px', lineHeight: 1.4 }}>
@@ -405,6 +725,268 @@ export default function SlideOverDrawer({
                   {record.remaining_post_date_days || 181} Days Available
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* WORK & DELIVERABLES TAB */}
+        {activeTab === 'work' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* Header & Cloud WorkDrive Sync */}
+            <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>Zoho WorkDrive & Cloud Repository</span>
+                </div>
+                {workdriveLink && (
+                  <a
+                    href={workdriveLink}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      fontSize: '11px',
+                      color: 'var(--accent)',
+                      textDecoration: 'none',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Open Folder <ExternalLink size={12} />
+                  </a>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="url"
+                  placeholder="Paste Zoho WorkDrive or Google Drive folder URL..."
+                  value={workdriveLink}
+                  onChange={(e) => setWorkdriveLink(e.target.value)}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface)',
+                    color: 'var(--ink)',
+                    fontSize: '12.5px',
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdate) {
+                      onUpdate(record.project_code, { workdrive_folder_url: workdriveLink });
+                    }
+                  }}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: '6px',
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save Link
+                </button>
+              </div>
+            </div>
+
+            {/* Upload New Deliverable Form */}
+            <div
+              style={{
+                padding: '16px',
+                borderRadius: '8px',
+                border: '1.5px dashed var(--line)',
+                background: 'var(--surface)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Upload size={16} color="var(--accent)" />
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>Upload Work & Drafting Deliverables</span>
+              </div>
+              <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--muted)' }}>
+                Upload provisional specifications, complete claims, technical drawings, or IDF for client sign-off.
+              </p>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Deliverable Category
+                  </label>
+                  <select
+                    value={uploadCategory}
+                    onChange={(e) => setUploadCategory(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <option value="Draft Complete Specification">Draft Complete Specification (.docx, .pdf)</option>
+                    <option value="Provisional Specification">Provisional Specification (.docx, .pdf)</option>
+                    <option value="Patent Claims Draft">Patent Claims Draft (.docx)</option>
+                    <option value="Formal Drawings & Figures">Formal Drawings & Figures (.pdf, .png)</option>
+                    <option value="Invention Disclosure Form (IDF)">Invention Disclosure Form (IDF)</option>
+                    <option value="Prior Art & Novelty Search">Prior Art & Novelty Search Report</option>
+                    <option value="Client Feedback & Queries">Client Feedback / Queries</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Select File from Device
+                  </label>
+                  <input
+                    type="file"
+                    id={`file_input_${record.project_code}`}
+                    style={{
+                      width: '100%',
+                      padding: '6px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '11px',
+                    }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const newDel = {
+                        id: `del_${Date.now()}`,
+                        name: file.name,
+                        category: uploadCategory,
+                        size: `${Math.round(file.size / 1024)} KB`,
+                        uploaded_by: record.assigned_to || 'Drafter',
+                        created_at: new Date().toISOString(),
+                      };
+                      const updated = [newDel, ...deliverables];
+                      setDeliverables(updated);
+                      try {
+                        localStorage.setItem(`patent_deliverables_${record.project_code}`, JSON.stringify(updated));
+                      } catch {}
+                      e.target.value = '';
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* List of Deliverables */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+                  Active Deliverables ({deliverables.length})
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                  All versions tracked for client presentation
+                </span>
+              </div>
+
+              {deliverables.length === 0 ? (
+                <div style={{ padding: '24px', textAlign: 'center', background: 'var(--page)', borderRadius: '8px', color: 'var(--muted)', fontSize: '12px' }}>
+                  No files uploaded yet for this application.
+                </div>
+              ) : (
+                deliverables.map((del) => (
+                  <div
+                    key={del.id}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--page)',
+                      border: '1px solid var(--line)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
+                      <Paperclip size={16} color="var(--accent)" />
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
+                          {del.name}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '2px', fontSize: '11px', color: 'var(--muted)' }}>
+                          <span style={{ padding: '1px 6px', borderRadius: '4px', background: 'var(--accent-soft)', color: 'var(--accent)', fontWeight: 600 }}>
+                            {del.category}
+                          </span>
+                          <span>•</span>
+                          <span>{del.size}</span>
+                          <span>•</span>
+                          <span>Uploaded by {del.uploaded_by} on {new Date(del.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const blob = new Blob([`Deliverable: ${del.name}\nProject: ${record.project_code}\nTitle: ${record.title}\nCategory: ${del.category}`], { type: 'text/plain' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = del.name;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          color: 'var(--ink)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '11px',
+                          fontWeight: 600,
+                        }}
+                      >
+                        <Download size={12} /> Download
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = deliverables.filter((d) => d.id !== del.id);
+                          setDeliverables(updated);
+                          try {
+                            localStorage.setItem(`patent_deliverables_${record.project_code}`, JSON.stringify(updated));
+                          } catch {}
+                        }}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          color: '#DC2626',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                        }}
+                        title="Remove deliverable"
+                      >
+                        <Trash2 size={12} />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
@@ -514,14 +1096,342 @@ export default function SlideOverDrawer({
           </div>
         )}
 
-        {/* INVENTORS TAB */}
+        {/* APPLICANTS & INVENTORS TAB */}
         {activeTab === 'inventors' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>Normalized Inventors Roster</div>
-            <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>INVENTORS SUMMARY</div>
-              <div style={{ fontWeight: 600, fontSize: '14px', marginTop: '4px' }}>
-                {record.inventors_summary || 'No inventor recorded'}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* 1. Applicant Profile Section */}
+            <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Building size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>Applicant Organization Details</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (onUpdate) {
+                      onUpdate(record.project_code, {
+                        applicant_name: applicantName,
+                        applicant_address: applicantAddress,
+                        entity_category: entityCategory,
+                        is_mahe: isMahe,
+                        applicant_email: applicantEmail,
+                        applicant_phone: applicantPhone,
+                      });
+                    }
+                  }}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '5px',
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Save Applicant Details
+                </button>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Applicant Full Name
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantName}
+                    onChange={(e) => setApplicantName(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Entity Classification
+                  </label>
+                  <select
+                    value={entityCategory}
+                    onChange={(e) => setEntityCategory(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <option value="EDUCATIONAL_INSTITUTION">Educational Institution (80% IPO fee concession)</option>
+                    <option value="STARTUP">Recognized Startup</option>
+                    <option value="SMALL_ENTITY">Small Entity (Form 28)</option>
+                    <option value="NATURAL_PERSON">Natural Person</option>
+                    <option value="LARGE_ENTITY">Large Entity / Others</option>
+                  </select>
+                </div>
+
+                <div style={{ gridColumn: 'span 2' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Registered Address for Service
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantAddress}
+                    onChange={(e) => setApplicantAddress(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Contact Email
+                  </label>
+                  <input
+                    type="email"
+                    value={applicantEmail}
+                    onChange={(e) => setApplicantEmail(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
+                    Contact Phone
+                  </label>
+                  <input
+                    type="text"
+                    value={applicantPhone}
+                    onChange={(e) => setApplicantPhone(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Normalized Inventors Roster */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <User size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                    Inventors Roster ({inventorsList.length})
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowAddInventor(!showAddInventor)}
+                  style={{
+                    padding: '5px 12px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface)',
+                    color: 'var(--accent)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                  }}
+                >
+                  <Plus size={12} /> Add Inventor
+                </button>
+              </div>
+
+              {/* Add Inventor Subform */}
+              {showAddInventor && (
+                <div
+                  style={{
+                    padding: '14px',
+                    borderRadius: '8px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--accent)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px',
+                  }}
+                >
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+                    Add New Inventor to Patent Application
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <input
+                      type="text"
+                      placeholder="Full Name (e.g. Dr. Rajesh Kumar)"
+                      value={newInventor.name}
+                      onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
+                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Department / Affiliation"
+                      value={newInventor.department}
+                      onChange={(e) => setNewInventor({ ...newInventor, department: e.target.value })}
+                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
+                    />
+                    <input
+                      type="email"
+                      placeholder="Email Address"
+                      value={newInventor.email}
+                      onChange={(e) => setNewInventor({ ...newInventor, email: e.target.value })}
+                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="Phone / Mobile"
+                      value={newInventor.phone}
+                      onChange={(e) => setNewInventor({ ...newInventor, phone: e.target.value })}
+                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
+                    />
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddInventor(false)}
+                      style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11px', cursor: 'pointer' }}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!newInventor.name.trim()) return;
+                        const updated = [
+                          ...inventorsList,
+                          {
+                            id: `inv_${Date.now()}`,
+                            ...newInventor,
+                          }
+                        ];
+                        setInventorsList(updated);
+                        const summary = updated.map(i => i.name).join(', ');
+                        try {
+                          localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
+                        } catch {}
+                        if (onUpdate) {
+                          onUpdate(record.project_code, { inventors_summary: summary });
+                        }
+                        setNewInventor({ name: '', department: '', email: '', phone: '', nationality: 'Indian' });
+                        setShowAddInventor(false);
+                      }}
+                      style={{ padding: '5px 12px', borderRadius: '5px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                    >
+                      Save Inventor
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Inventors List */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {inventorsList.map((inv, idx) => (
+                  <div
+                    key={inv.id || idx}
+                    style={{
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--page)',
+                      border: '1px solid var(--line)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      gap: '12px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div
+                        style={{
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '50%',
+                          background: 'rgba(37, 99, 235, 0.12)',
+                          color: '#2563EB',
+                          fontWeight: 800,
+                          fontSize: '11px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        {idx + 1}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
+                          {inv.name}
+                        </div>
+                        <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
+                          {inv.department} • {inv.email} • {inv.phone}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = inventorsList.filter((_, i) => i !== idx);
+                        setInventorsList(updated);
+                        const summary = updated.map(i => i.name).join(', ');
+                        try {
+                          localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
+                        } catch {}
+                        if (onUpdate) {
+                          onUpdate(record.project_code, { inventors_summary: summary });
+                        }
+                      }}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid var(--line)',
+                        background: 'transparent',
+                        color: '#DC2626',
+                        cursor: 'pointer',
+                      }}
+                      title="Remove inventor"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

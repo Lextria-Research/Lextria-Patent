@@ -75,6 +75,7 @@ export default function CreateApplicationModal({
     ps_filing_date: new Date().toISOString().split('T')[0],
     post_dated_date: '',
     cs_filing_date: '',
+    client_commitment_date: '',
     form_1_filing_date: '',
     form_26_filing_date: '',
     workdrive_folder_url: '',
@@ -524,8 +525,48 @@ export default function CreateApplicationModal({
           {/* Section 4: Filing Dates & Section 17 Post-Dating (Requirements 4, 5, 6) */}
           <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
             <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', marginBottom: '12px' }}>
-              4. Filing Dates & Section 17 Post-Dating Calculation
+              4. Client Delivery Commitment & Filing Dates
             </h3>
+
+            {/* Client Delivery Commitment Banner */}
+            <div
+              style={{
+                marginBottom: '14px',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                background: 'rgba(234, 88, 12, 0.06)',
+                border: '1.5px solid #EA580C',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '12px',
+                flexWrap: 'wrap',
+              }}
+            >
+              <div>
+                <label style={{ fontSize: '12.5px', fontWeight: 800, color: '#C2410C', display: 'block' }}>
+                  🎯 Client Delivery Commitment Date (Under-Drafting Near Commitment)
+                </label>
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                  Set delivery target for client. Automatic notification sent to Organisation & Team SPOC.
+                </span>
+              </div>
+              <input
+                type="date"
+                name="client_commitment_date"
+                value={formData.client_commitment_date}
+                onChange={handleChange}
+                style={{
+                  padding: '7px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                }}
+              />
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>

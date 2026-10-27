@@ -60,6 +60,44 @@ export default function MasterDataGrid({
             return diff <= 7 && !r.is_abandoned;
           });
         });
+      } else if (activeKpiFilter === 'commitments_near') {
+        data = data.filter((r) => {
+          if (!r.client_commitment_date || r.is_abandoned) return false;
+          const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+          return diff <= 7;
+        });
+      } else if (activeKpiFilter === 'commitments_overdue') {
+        data = data.filter((r) => {
+          if (!r.client_commitment_date || r.is_abandoned) return false;
+          const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+          return diff < 0;
+        });
+      } else if (activeKpiFilter === 'problems') {
+        data = data.filter((r) => {
+          const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? r.classification.split(',').map((s) => s.trim()) : []);
+          const hasTicket = rTags.some((t) => ['ticket raised', 'critical'].includes(t.toLowerCase()));
+          const hasIssue = Boolean(r.issue && r.issue.trim());
+          return hasTicket || hasIssue;
+        });
+      } else if (activeKpiFilter === 'spec_ps') {
+        data = data.filter((r) => (r.specification_type || '').toUpperCase() === 'PS');
+      } else if (activeKpiFilter === 'spec_cs') {
+        data = data.filter((r) => (r.specification_type || '').toUpperCase() === 'CS');
+      } else if (activeKpiFilter === 'spec_ps_cs') {
+        data = data.filter((r) => {
+          const spec = (r.specification_type || '').toUpperCase();
+          return spec.includes('PS') && spec.includes('CS');
+        });
+      } else if (activeKpiFilter === 'stage_fer') {
+        data = data.filter((r) => Boolean(r.fer_notice_date || r.fer_reply_deadline));
+      } else if (activeKpiFilter === 'stage_ws') {
+        data = data.filter((r) => Boolean(r.hearing_date || r.ws_deadline));
+      } else if (activeKpiFilter === 'color_purple') {
+        data = data.filter((r) => (r.color_code_status || '').toUpperCase() === 'PURPLE');
+      } else if (activeKpiFilter === 'color_orange') {
+        data = data.filter((r) => (r.color_code_status || '').toUpperCase() === 'ORANGE');
+      } else if (activeKpiFilter === 'color_yellow') {
+        data = data.filter((r) => (r.color_code_status || '').toUpperCase() === 'YELLOW');
       } else if (activeKpiFilter === 'cs_due') {
         data = data.filter((r) => {
           if (!r.cs_deadline || r.cs_filing_date || r.is_abandoned) return false;
@@ -280,18 +318,91 @@ export default function MasterDataGrid({
         header: 'Title of Invention',
         size: 340,
         cell: ({ row }) => (
-          <div
-            title={row.original.title}
-            style={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-              fontWeight: 500,
-              fontSize: '12.5px',
-              color: 'var(--ink)'
-            }}
-          >
-            {row.original.title || 'Untitled Invention'}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
+            <div
+              title={row.original.title}
+              style={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                fontWeight: 600,
+                fontSize: '12.5px',
+                color: 'var(--ink)'
+              }}
+            >
+              {row.original.title || 'Untitled Invention'}
+            </div>
+
+            {/* Client Delivery Commitment date & Overdue alert */}
+            {row.original.client_commitment_date && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {(() => {
+                  const now = new Date();
+                  const diff = Math.round((new Date(row.original.client_commitment_date) - now) / 86400000);
+                  if (diff < 0) {
+                    return (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '1px 6px',
+                          borderRadius: '6px',
+                          background: '#FEE2E2',
+                          color: '#DC2626',
+                          border: '1px solid #FCA5A5',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                        title={`Delivery commitment missed by ${Math.abs(diff)} days. Organisation & SPOC alerted.`}
+                      >
+                        🚨 Delivery Overdue ({Math.abs(diff)}d)
+                      </span>
+                    );
+                  }
+                  if (diff <= 7) {
+                    return (
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '1px 6px',
+                          borderRadius: '6px',
+                          background: '#FFEDD5',
+                          color: '#EA580C',
+                          border: '1px solid #FDBA74',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px',
+                        }}
+                        title={`Client delivery commitment due in ${diff} days (${row.original.client_commitment_date}).`}
+                      >
+                        ⚡ Delivery: in {diff}d ({row.original.client_commitment_date})
+                      </span>
+                    );
+                  }
+                  return (
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 600,
+                        padding: '1px 5px',
+                        borderRadius: '6px',
+                        background: 'var(--page)',
+                        color: 'var(--muted)',
+                        border: '1px solid var(--line)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '3px',
+                      }}
+                      title={`Client delivery commitment: ${row.original.client_commitment_date}`}
+                    >
+                      🎯 Delivery: {row.original.client_commitment_date}
+                    </span>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         ),
       },
@@ -752,6 +863,45 @@ export default function MasterDataGrid({
           </span>
         </div>
       </div>
+
+      {/* Active KPI Filter Notification Bar */}
+      {activeKpiFilter && (
+        <div
+          style={{
+            padding: '7px 18px',
+            background: 'rgba(234, 88, 12, 0.08)',
+            borderBottom: '1px solid rgba(234, 88, 12, 0.25)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            fontSize: '12px',
+            fontWeight: 700,
+            color: '#C2410C',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#EA580C' }} />
+            <span>
+              Active Filter: <strong>{String(activeKpiFilter).replace(/_/g, ' ').toUpperCase()}</strong> ({filteredData.length} matching matters)
+            </span>
+          </div>
+          <button
+            onClick={onClearKpiFilter}
+            style={{
+              padding: '3px 10px',
+              borderRadius: '4px',
+              border: '1px solid #EA580C',
+              background: '#EA580C',
+              color: '#fff',
+              fontSize: '11px',
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            Clear Filter (Show All)
+          </button>
+        </div>
+      )}
 
       {/* Bulk Selection Notification Bar */}
       {selectedRowsList.length > 0 && (
