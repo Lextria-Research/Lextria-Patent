@@ -9,8 +9,9 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   Search, Filter, Download, Upload, Eye, ArrowUpDown, Clock,
   FileText, ExternalLink, Plus, Edit3, Tag as TagIcon,
-  CheckSquare, Square, User, Building, X
+  CheckSquare, Square, User, Building, X, UserCheck
 } from 'lucide-react';
+import DEFAULT_CLIENTS from '../data/clients.json';
 
 export const VIEW_PRESETS = {
   ALL_MASTER: 'All Master View',
@@ -32,20 +33,49 @@ export default function MasterDataGrid({
   onOpenCreate,
   onOpenEdit,
   onOpenTimeline,
+  onOpenQuickDocket,
+  onOpenReassign,
   userRole = 'SUPER_ADMIN',
   selectedDrafter = null,
-  clients = [],
+  clients: clientsProp = [],
   tags = [],
 }) {
+  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
   const [currentPreset, setCurrentPreset] = useState(VIEW_PRESETS.ALL_MASTER);
   const [globalFilter, setGlobalFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('ALL');
   const [tagFilter, setTagFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [deliveryUrgencyFilter, setDeliveryUrgencyFilter] = useState('ALL'); // ALL, OVERDUE, DUE_2, DUE_7, ON_TRACK, NO_DATE
   const [sorting, setSorting] = useState([{ id: 'project_code', desc: false }]);
   const [rowSelection, setRowSelection] = useState({});
 
-  // Filter records based on role, KPI filter, preset, dropdowns, and search
+  // Delivery urgency counts for filter row (Matching Reference UI Design)
+  const deliveryUrgencyCounts = useMemo(() => {
+    let overdue = 0;
+    let due2 = 0;
+    let due7 = 0;
+    let onTrack = 0;
+    let noDate = 0;
+    const now = new Date();
+
+    records.forEach((r) => {
+      if (r.is_abandoned) return;
+      if (!r.client_commitment_date) {
+        noDate++;
+        return;
+      }
+      const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+      if (diff < 0) overdue++;
+      else if (diff <= 2) due2++;
+      else if (diff <= 7) due7++;
+      else onTrack++;
+    });
+
+    return { overdue, due2, due7, onTrack, noDate };
+  }, [records]);
+
+  // Filter records based on role, KPI filter, preset, dropdowns, delivery urgency, and search
   const filteredData = useMemo(() => {
     let data = records;
 
@@ -147,6 +177,22 @@ export default function MasterDataGrid({
       data = data.filter((r) => r.current_status === statusFilter);
     }
 
+    // Delivery Urgency filter (Matching Reference UI Design)
+    if (deliveryUrgencyFilter !== 'ALL') {
+      const now = new Date();
+      data = data.filter((r) => {
+        if (!r.client_commitment_date) {
+          return deliveryUrgencyFilter === 'NO_DATE';
+        }
+        const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+        if (deliveryUrgencyFilter === 'OVERDUE') return diff < 0;
+        if (deliveryUrgencyFilter === 'DUE_2') return diff >= 0 && diff <= 2;
+        if (deliveryUrgencyFilter === 'DUE_7') return diff > 2 && diff <= 7;
+        if (deliveryUrgencyFilter === 'ON_TRACK') return diff > 7;
+        return true;
+      });
+    }
+
     // Role-based drafter filtering (Requirement 3)
     if (userRole === 'DRAFTER' && selectedDrafter) {
       data = data.filter((r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase());
@@ -166,7 +212,7 @@ export default function MasterDataGrid({
     }
 
     return data;
-  }, [records, activeKpiFilter, currentPreset, clientFilter, tagFilter, statusFilter, globalFilter, userRole, selectedDrafter]);
+  }, [records, activeKpiFilter, currentPreset, clientFilter, tagFilter, statusFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
 
   // Unique statuses for filter dropdown
   const statusOptions = useMemo(() => {
@@ -252,166 +298,153 @@ export default function MasterDataGrid({
         ),
       },
 
-      // 1. Codes (project_code + Tag Badges)
+      // 1. Codes (project_code + Client Prefix Badge)
       {
         accessorKey: 'project_code',
-        header: 'Codes',
-        size: 140,
+        header: 'Code',
+        size: 130,
         cell: ({ row }) => {
-          const code = row.original.project_code;
-          const rTags = Array.isArray(row.original.tags) ? row.original.tags : (row.original.classification ? [row.original.classification] : []);
+          const code = row.original.project_code || '';
+          const prefix = code.replace(/[0-9]/g, '') || (row.original.is_mahe ? 'MAHE' : 'AAIS');
 
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', overflow: 'hidden' }}>
-              <span style={{ fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.2px', fontSize: '13px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+              <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '13px' }}>
                 {code}
               </span>
-              {rTags.length > 0 && (
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px' }}>
-                  {rTags.slice(0, 2).map((tg, idx) => {
-                    const c = getTagColor(tg);
-                    return (
-                      <span
-                        key={idx}
-                        style={{
-                          fontSize: '9.5px',
-                          fontWeight: 700,
-                          padding: '1px 5px',
-                          borderRadius: '4px',
-                          background: c.bg,
-                          color: c.fg,
-                          border: `1px solid ${c.border}`,
-                          lineHeight: '1.2',
-                        }}
-                      >
-                        {tg}
-                      </span>
-                    );
-                  })}
-                  {rTags.length > 2 && (
-                    <span style={{ fontSize: '9px', color: 'var(--muted)', fontWeight: 700 }}>
-                      +{rTags.length - 2}
-                    </span>
-                  )}
-                </div>
-              )}
+              <span
+                style={{
+                  fontSize: '9.5px',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '4px',
+                  background: 'rgba(59, 130, 246, 0.1)',
+                  color: '#2563EB',
+                  width: 'fit-content',
+                  border: '1px solid rgba(59, 130, 246, 0.25)',
+                }}
+              >
+                {prefix}
+              </span>
             </div>
           );
         },
       },
 
-      // 2. Application Number
+      // 2. Application Number (or "Not filed")
       {
         accessorKey: 'application_number',
-        header: 'Application Number',
-        size: 160,
+        header: 'Application no.',
+        size: 150,
         cell: ({ row }) => (
-          <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
-            {row.original.application_number || '—'}
-          </span>
+          row.original.application_number ? (
+            <span style={{ fontFamily: 'monospace', fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
+              {row.original.application_number}
+            </span>
+          ) : (
+            <span style={{ color: 'var(--muted)', fontSize: '12px', fontStyle: 'italic' }}>
+              Not filed
+            </span>
+          )
         ),
       },
 
       // 3. Title of Invention
       {
         accessorKey: 'title',
-        header: 'Title of Invention',
-        size: 340,
+        header: 'Title of invention',
+        size: 320,
         cell: ({ row }) => (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', overflow: 'hidden' }}>
-            <div
-              title={row.original.title}
-              style={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                fontWeight: 600,
-                fontSize: '12.5px',
-                color: 'var(--ink)'
-              }}
-            >
-              {row.original.title || 'Untitled Invention'}
-            </div>
-
-            {/* Client Delivery Commitment date & Overdue alert */}
-            {row.original.client_commitment_date && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {(() => {
-                  const now = new Date();
-                  const diff = Math.round((new Date(row.original.client_commitment_date) - now) / 86400000);
-                  if (diff < 0) {
-                    return (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          padding: '1px 6px',
-                          borderRadius: '6px',
-                          background: '#FEE2E2',
-                          color: '#DC2626',
-                          border: '1px solid #FCA5A5',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                        }}
-                        title={`Delivery commitment missed by ${Math.abs(diff)} days. Organisation & SPOC alerted.`}
-                      >
-                        🚨 Delivery Overdue ({Math.abs(diff)}d)
-                      </span>
-                    );
-                  }
-                  if (diff <= 7) {
-                    return (
-                      <span
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 800,
-                          padding: '1px 6px',
-                          borderRadius: '6px',
-                          background: '#FFEDD5',
-                          color: '#EA580C',
-                          border: '1px solid #FDBA74',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '3px',
-                        }}
-                        title={`Client delivery commitment due in ${diff} days (${row.original.client_commitment_date}).`}
-                      >
-                        ⚡ Delivery: in {diff}d ({row.original.client_commitment_date})
-                      </span>
-                    );
-                  }
-                  return (
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 600,
-                        padding: '1px 5px',
-                        borderRadius: '6px',
-                        background: 'var(--page)',
-                        color: 'var(--muted)',
-                        border: '1px solid var(--line)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '3px',
-                      }}
-                      title={`Client delivery commitment: ${row.original.client_commitment_date}`}
-                    >
-                      🎯 Delivery: {row.original.client_commitment_date}
-                    </span>
-                  );
-                })()}
-              </div>
-            )}
+          <div
+            title={row.original.title}
+            style={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              fontWeight: 600,
+              fontSize: '12.5px',
+              color: 'var(--ink)'
+            }}
+          >
+            {row.original.title || 'Untitled Invention'}
           </div>
         ),
       },
 
-      // 4. CS / PS / CS-PS
+      // 4. Client Delivery (Dedicated Prominent Column matching Reference UI Design)
+      {
+        accessorKey: 'client_commitment_date',
+        header: 'Client delivery',
+        size: 160,
+        cell: ({ row }) => {
+          const cd = row.original.client_commitment_date;
+          if (!cd) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>No date set</span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Delivery not scheduled</span>
+              </div>
+            );
+          }
+          const now = new Date();
+          const diff = Math.round((new Date(cd) - now) / 86400000);
+          const d = new Date(cd);
+          const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+          if (diff < 0) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
+                  Overdue {Math.abs(diff)} days
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate}
+                </span>
+              </div>
+            );
+          }
+          if (diff <= 2) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
+                  Due in {diff === 0 ? 'today' : `${diff} days`}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate}
+                </span>
+              </div>
+            );
+          }
+          if (diff <= 7) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
+                  In {diff} days
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate}
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
+                In {diff} days
+              </span>
+              <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                Due {formattedDate}
+              </span>
+            </div>
+          );
+        },
+      },
+
+      // 5. Specification Type (Type)
       {
         accessorKey: 'specification_type',
-        header: 'CS / PS / CS-PS',
-        size: 120,
+        header: 'Type',
+        size: 90,
         cell: ({ row }) => {
           const spec = formatSpecType(
             row.original.specification_type,
@@ -438,21 +471,32 @@ export default function MasterDataGrid({
         },
       },
 
-      // 5. Current Status
+      // 6. Status (IDF · Orange, Drafting · Purple, etc.)
       {
         accessorKey: 'current_status',
-        header: 'Current Status',
-        size: 170,
+        header: 'Status',
+        size: 150,
         cell: ({ row }) => {
-          const color = row.original.color_code_status;
+          const color = (row.original.color_code_status || '').toUpperCase();
+          const st = row.original.current_status || 'Under Drafting';
+          let label = st;
           let bg = 'rgba(16, 185, 129, 0.12)';
           let fg = '#059669';
           let dot = '#10B981';
 
-          if (color === 'PURPLE') { bg = 'rgba(139, 92, 246, 0.12)'; fg = '#7C3AED'; dot = '#8B5CF6'; }
-          else if (color === 'RED') { bg = 'rgba(239, 68, 68, 0.12)'; fg = '#DC2626'; dot = '#EF4444'; }
-          else if (color === 'YELLOW' || color === 'ORANGE') { bg = 'rgba(245, 158, 11, 0.12)'; fg = '#D97706'; dot = '#F59E0B'; }
-          else if (color === 'BLUE') { bg = 'rgba(59, 130, 246, 0.12)'; fg = '#2563EB'; dot = '#3B82F6'; }
+          if (color === 'ORANGE' || st.includes('ORANGE')) {
+            bg = 'rgba(234, 88, 12, 0.12)'; fg = '#EA580C'; dot = '#EA580C';
+            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
+          } else if (color === 'PURPLE' || st.includes('PURPLE')) {
+            bg = 'rgba(138, 79, 255, 0.12)'; fg = '#7C3AED'; dot = '#8A4FFF';
+            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
+          } else if (color === 'YELLOW' || st.includes('YELLOW')) {
+            bg = 'rgba(217, 119, 6, 0.12)'; fg = '#D97706'; dot = '#F59E0B';
+            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
+          } else if (color === 'GREEN' || st.includes('GREEN')) {
+            bg = 'rgba(16, 185, 129, 0.12)'; fg = '#059669'; dot = '#10B981';
+            label = st.replace('IDF - ', 'IDF · ').replace(' - ', ' · ');
+          }
 
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
@@ -466,25 +510,25 @@ export default function MasterDataGrid({
                   fontWeight: 700,
                   background: bg,
                   color: fg,
-                  maxWidth: '140px',
+                  maxWidth: '130px',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}
-                title={row.original.current_status}
+                title={st}
               >
-                {row.original.current_status || 'Under Drafting'}
+                {label}
               </span>
             </div>
           );
         },
       },
 
-      // 6. Drafter Assigned
+      // 7. Drafter Assigned
       {
         accessorKey: 'assigned_to',
-        header: 'Drafter Assigned',
-        size: 150,
+        header: 'Drafter',
+        size: 140,
         cell: ({ row }) => {
           const drafter = row.original.assigned_to;
           return (
@@ -558,6 +602,25 @@ export default function MasterDataGrid({
               <Clock size={13} />
             </button>
 
+            {onOpenQuickDocket && (userRole === 'PARALEGAL' || userRole === 'SUPER_ADMIN') && (
+              <button
+                onClick={() => onOpenQuickDocket(row.original)}
+                style={{
+                  padding: '4px 6px',
+                  border: '1px solid rgba(5, 150, 105, 0.35)',
+                  background: 'rgba(5, 150, 105, 0.1)',
+                  color: '#059669',
+                  cursor: 'pointer',
+                  borderRadius: '4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+                title="Quick Docket (CBR / Forms / IPO Official Dates)"
+              >
+                <CheckSquare size={13} />
+              </button>
+            )}
+
             <button
               onClick={() => onOpenEdit && onOpenEdit(row.original)}
               style={{
@@ -579,7 +642,7 @@ export default function MasterDataGrid({
         ),
       },
     ];
-  }, [onSelectRecord, onOpenTimeline, onOpenEdit, tags]);
+  }, [onSelectRecord, onOpenTimeline, onOpenEdit, onOpenQuickDocket, userRole, tags]);
 
   const table = useReactTable({
     data: filteredData,
@@ -864,6 +927,81 @@ export default function MasterDataGrid({
         </div>
       </div>
 
+      {/* DELIVERY URGENCY Filter Row (Matching Reference UI Design Page 1) */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '8px 18px',
+          background: 'var(--page)',
+          borderBottom: '1px solid var(--line)',
+          flexWrap: 'wrap',
+        }}
+      >
+        <span
+          style={{
+            fontSize: '10.5px',
+            fontWeight: 800,
+            color: 'var(--muted)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.6px',
+          }}
+        >
+          DELIVERY URGENCY
+        </span>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          {[
+            { id: 'ALL', label: 'All', count: records.length, color: 'var(--muted)', bg: 'transparent' },
+            { id: 'OVERDUE', label: 'Overdue', count: deliveryUrgencyCounts.overdue, color: '#DC2626', bg: '#FEE2E2', dot: '#DC2626' },
+            { id: 'DUE_2', label: 'Due in ≤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
+            { id: 'DUE_7', label: 'Due in ≤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
+            { id: 'ON_TRACK', label: 'On track', count: deliveryUrgencyCounts.onTrack, color: '#16A34A', bg: '#DCFCE7', dot: '#16A34A' },
+            { id: 'NO_DATE', label: 'No date set', count: deliveryUrgencyCounts.noDate, color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
+          ].map((chip) => {
+            const isAct = deliveryUrgencyFilter === chip.id;
+            return (
+              <button
+                key={chip.id}
+                onClick={() => setDeliveryUrgencyFilter(isAct && chip.id !== 'ALL' ? 'ALL' : chip.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '4px 10px',
+                  borderRadius: '16px',
+                  border: isAct ? `1.5px solid ${chip.color}` : '1px solid var(--line)',
+                  background: isAct ? (chip.id === 'ALL' ? 'var(--surface)' : chip.bg) : 'var(--surface)',
+                  color: isAct ? chip.color : 'var(--ink)',
+                  fontSize: '11px',
+                  fontWeight: isAct ? 800 : 600,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                }}
+              >
+                {chip.dot && (
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: chip.dot }} />
+                )}
+                <span>{chip.label}</span>
+                <span
+                  style={{
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    padding: '1px 5px',
+                    borderRadius: '8px',
+                    background: isAct ? 'rgba(0,0,0,0.08)' : 'var(--page)',
+                    color: isAct ? chip.color : 'var(--muted)',
+                  }}
+                >
+                  {chip.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Active KPI Filter Notification Bar */}
       {activeKpiFilter && (
         <div
@@ -923,6 +1061,28 @@ export default function MasterDataGrid({
             <span>{selectedRowsList.length} applications selected</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onOpenReassign && userRole === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => onOpenReassign(selectedRowsList)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '5px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #1E3A8A, #2563EB)',
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  boxShadow: '0 1px 3px rgba(37, 99, 235, 0.3)',
+                }}
+              >
+                <UserCheck size={12} />
+                Reassign Selected ({selectedRowsList.length})
+              </button>
+            )}
             <button
               onClick={() => onOpenExportReport && onOpenExportReport(selectedRowsList)}
               style={{
@@ -1101,6 +1261,60 @@ export default function MasterDataGrid({
             )}
           </tbody>
         </table>
+      </div>
+
+      {/* Pagination Bar Matching Reference UI Design */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '10px 18px',
+          borderTop: '1px solid var(--line)',
+          background: 'var(--surface)',
+          fontSize: '12px',
+          color: 'var(--muted)',
+          fontWeight: 600,
+          flexShrink: 0,
+        }}
+      >
+        <div>
+          Showing 1–{Math.min(rows.length, 25)} of {rows.length} records
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            disabled
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: 'var(--page)',
+              color: 'var(--muted)',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: 'not-allowed',
+              opacity: 0.6,
+            }}
+          >
+            Previous
+          </button>
+          <button
+            disabled={rows.length <= 25}
+            style={{
+              padding: '5px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: rows.length > 25 ? 'var(--surface)' : 'var(--page)',
+              color: rows.length > 25 ? 'var(--ink)' : 'var(--muted)',
+              fontSize: '11.5px',
+              fontWeight: 600,
+              cursor: rows.length > 25 ? 'pointer' : 'not-allowed',
+              opacity: rows.length > 25 ? 1 : 0.6,
+            }}
+          >
+            Next
+          </button>
+        </div>
       </div>
     </div>
   );

@@ -12,6 +12,9 @@ export default function DeadlinesTab({
   onOpenDrawer,
   onOpenTimeline,
   onActionComplete,
+  onNavigateToCalendar,
+  onNavigateToPortfolio,
+  onOpenAuditTrail,
 }) {
   const [filterCategory, setFilterCategory] = useState('ALL'); // ALL, CS, FER, WS, FORMS, RENEWALS
   const [filterUrgency, setFilterUrgency] = useState('PENDING'); // ALL, PENDING, OVERDUE, NEXT_7, NEXT_30, COMPLETED
@@ -257,91 +260,136 @@ export default function DeadlinesTab({
       }}
     >
       {/* Top Banner / Metrics */}
+      {/* Top Header Section Matching Reference UI Design Page 2 */}
       <div
         style={{
-          padding: '16px 20px',
+          padding: '16px 22px 14px',
           borderBottom: '1px solid var(--line)',
-          background: 'var(--page)',
+          background: 'var(--surface)',
           display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '12px',
+          flexDirection: 'column',
+          gap: '14px',
         }}
       >
         <div>
-          <h2 style={{ fontSize: '16px', fontWeight: 900, margin: 0, color: 'var(--ink)' }}>
-            Statutory Deadlines & Action Checklist
-          </h2>
-          <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '2px 0 0' }}>
-            Tick actions when filed at IPO to maintain firm-wide compliance audit trail
+          <h1 style={{ fontSize: '20px', fontWeight: 900, margin: 0, color: 'var(--ink)', letterSpacing: '-0.3px' }}>
+            Statutory deadlines
+          </h1>
+          <p style={{ fontSize: '12.5px', color: 'var(--muted)', margin: '3px 0 0' }}>
+            Tick each action once it’s filed at the IPO. Every tick is recorded in the firm-wide compliance audit trail.{' '}
+            <span
+              onClick={onOpenAuditTrail}
+              style={{ color: 'var(--accent)', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}
+            >
+              View audit trail
+            </span>
           </p>
         </div>
 
-        {/* Metric Badges */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        {/* 4 Summary Cards Across Top */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' }}>
+          {/* 1. Overdue */}
           <div
-            onClick={() => setFilterUrgency('OVERDUE')}
+            onClick={() => setFilterUrgency(filterUrgency === 'OVERDUE' ? 'ALL' : 'OVERDUE')}
             style={{
-              padding: '6px 12px',
+              padding: '12px 16px',
               borderRadius: '8px',
-              background: '#FEE2E2',
-              color: '#DC2626',
-              fontSize: '12px',
-              fontWeight: 800,
+              border: filterUrgency === 'OVERDUE' ? '1.5px solid #DC2626' : '1px solid var(--line)',
+              background: filterUrgency === 'OVERDUE' ? 'rgba(220, 38, 38, 0.08)' : 'var(--page)',
               cursor: 'pointer',
-              border: filterUrgency === 'OVERDUE' ? '2px solid #DC2626' : '1px solid transparent',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              transition: 'all 0.15s ease',
             }}
           >
-            {overdueCount} Overdue
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+              Overdue
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 900, color: overdueCount > 0 ? '#DC2626' : 'var(--ink)', lineHeight: 1.1 }}>
+              {overdueCount}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
+              Past the statutory date
+            </div>
           </div>
 
+          {/* 2. Due in 7 days */}
           <div
-            onClick={() => setFilterUrgency('NEXT_7')}
+            onClick={() => setFilterUrgency(filterUrgency === 'NEXT_7' ? 'ALL' : 'NEXT_7')}
             style={{
-              padding: '6px 12px',
+              padding: '12px 16px',
               borderRadius: '8px',
-              background: '#FEF3C7',
-              color: '#D97706',
-              fontSize: '12px',
-              fontWeight: 800,
+              border: filterUrgency === 'NEXT_7' ? '1.5px solid #EA580C' : '1px solid var(--line)',
+              background: filterUrgency === 'NEXT_7' ? 'rgba(234, 88, 12, 0.08)' : 'var(--page)',
               cursor: 'pointer',
-              border: filterUrgency === 'NEXT_7' ? '2px solid #D97706' : '1px solid transparent',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              transition: 'all 0.15s ease',
             }}
           >
-            {next7Count} Due in 7 Days
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+              Due in 7 days
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 900, color: next7Count > 0 ? '#EA580C' : 'var(--ink)', lineHeight: 1.1 }}>
+              {next7Count}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
+              File this week
+            </div>
           </div>
 
+          {/* 3. Pending */}
           <div
-            onClick={() => setFilterUrgency('PENDING')}
+            onClick={() => setFilterUrgency(filterUrgency === 'PENDING' ? 'ALL' : 'PENDING')}
             style={{
-              padding: '6px 12px',
+              padding: '12px 16px',
               borderRadius: '8px',
-              background: '#EFF6FF',
-              color: '#2563EB',
-              fontSize: '12px',
-              fontWeight: 800,
+              border: filterUrgency === 'PENDING' ? '1.5px solid #2563EB' : '1px solid var(--line)',
+              background: filterUrgency === 'PENDING' ? 'rgba(37, 99, 235, 0.08)' : 'var(--page)',
               cursor: 'pointer',
-              border: filterUrgency === 'PENDING' ? '2px solid #2563EB' : '1px solid transparent',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              transition: 'all 0.15s ease',
             }}
           >
-            {pendingCount} Pending Total
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+              Pending
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 900, color: '#2563EB', lineHeight: 1.1 }}>
+              {pendingCount}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
+              All open actions
+            </div>
           </div>
 
+          {/* 4. Completed */}
           <div
-            onClick={() => setFilterUrgency('COMPLETED')}
+            onClick={() => setFilterUrgency(filterUrgency === 'COMPLETED' ? 'ALL' : 'COMPLETED')}
             style={{
-              padding: '6px 12px',
+              padding: '12px 16px',
               borderRadius: '8px',
-              background: '#ECFDF5',
-              color: '#059669',
-              fontSize: '12px',
-              fontWeight: 800,
+              border: filterUrgency === 'COMPLETED' ? '1.5px solid #059669' : '1px solid var(--line)',
+              background: filterUrgency === 'COMPLETED' ? 'rgba(5, 150, 105, 0.08)' : 'var(--page)',
               cursor: 'pointer',
-              border: filterUrgency === 'COMPLETED' ? '2px solid #059669' : '1px solid transparent',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '2px',
+              transition: 'all 0.15s ease',
             }}
           >
-            {completedCount} Completed
+            <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+              Completed
+            </div>
+            <div style={{ fontSize: '24px', fontWeight: 900, color: '#059669', lineHeight: 1.1 }}>
+              {completedCount}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
+              Filed and ticked off
+            </div>
           </div>
         </div>
       </div>
@@ -349,7 +397,7 @@ export default function DeadlinesTab({
       {/* Filter and Search Bar */}
       <div
         style={{
-          padding: '12px 20px',
+          padding: '12px 22px',
           borderBottom: '1px solid var(--line)',
           background: 'var(--surface)',
           display: 'flex',
@@ -364,7 +412,7 @@ export default function DeadlinesTab({
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--muted)' }} />
           <input
             type="text"
-            placeholder="Search code, action, drafter..."
+            placeholder="Search deadlines..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
@@ -380,28 +428,29 @@ export default function DeadlinesTab({
           />
         </div>
 
-        {/* Category Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        {/* Category Filter Pills Matching Reference UI Design Page 2 */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
           {[
-            { id: 'ALL', label: 'All Statutory Types' },
-            { id: 'CS', label: 'Complete Spec (CS)' },
-            { id: 'FER', label: 'FER Objections' },
+            { id: 'ALL', label: 'All types' },
+            { id: 'CS', label: 'Complete spec (CS)' },
+            { id: 'FER', label: 'FER objections' },
             { id: 'WS', label: 'Hearing WS' },
             { id: 'FORMS', label: 'Forms 1 & 26' },
-            { id: 'RENEWALS', label: 'Annuity Renewals' },
+            { id: 'RENEWALS', label: 'Annuity renewals' },
           ].map((cat) => (
             <button
               key={cat.id}
               onClick={() => setFilterCategory(cat.id)}
               style={{
-                padding: '5px 10px',
+                padding: '6px 12px',
                 borderRadius: '6px',
                 border: 'none',
                 background: filterCategory === cat.id ? 'var(--accent)' : 'var(--page)',
                 color: filterCategory === cat.id ? '#fff' : 'var(--muted)',
-                fontSize: '11px',
+                fontSize: '11.5px',
                 fontWeight: filterCategory === cat.id ? 800 : 600,
                 cursor: 'pointer',
+                transition: 'all 0.15s ease',
               }}
             >
               {cat.label}
@@ -411,15 +460,50 @@ export default function DeadlinesTab({
       </div>
 
       {/* Action Checklist Items List */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 22px' }}>
         {filteredItems.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: 'var(--muted)' }}>
-            <CheckCircle2 size={36} color="#10B981" style={{ margin: '0 auto 12px' }} />
-            <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--ink)' }}>
-              All Caught Up!
+          <div style={{ textAlign: 'center', padding: '60px 20px', maxWidth: '440px', margin: '0 auto' }}>
+            <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--ink)', marginBottom: '8px' }}>
+              You’re all caught up
             </div>
-            <div style={{ fontSize: '12px', marginTop: '4px' }}>
-              No pending statutory deadline actions matching the active filters.
+            <div style={{ fontSize: '13px', color: 'var(--muted)', lineHeight: '1.5', marginBottom: '20px' }}>
+              No pending statutory actions match any statutory type. New deadlines appear here automatically as matters progress.
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+              {onNavigateToCalendar && (
+                <button
+                  onClick={onNavigateToCalendar}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '7px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--surface)',
+                    color: 'var(--ink)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  View calendar
+                </button>
+              )}
+              {onNavigateToPortfolio && (
+                <button
+                  onClick={onNavigateToPortfolio}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '7px',
+                    border: 'none',
+                    background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                    color: '#fff',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Back to portfolio
+                </button>
+              )}
             </div>
           </div>
         ) : (

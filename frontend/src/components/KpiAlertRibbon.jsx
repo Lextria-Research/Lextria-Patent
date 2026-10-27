@@ -19,6 +19,8 @@ export default function KpiAlertRibbon({
   allRecords = [],
   onSelectDrafter,
   selectedDrafterFilter = null,
+  onOpenReassign = null,
+  onNavigateToFormalities = null,
 }) {
   const [showMatrix, setShowMatrix] = useState(true);
   const now = new Date();
@@ -156,126 +158,95 @@ export default function KpiAlertRibbon({
         (r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === drafter.toLowerCase()
       );
       const metrics = calculateMetrics(drafterCases);
+      
+      // Calculate quality and performance metrics matching tracking guidelines
+      const completed = metrics.totalGreen || 0;
+      const active = Math.max(0, metrics.totalCases - completed);
+      const staleCount = drafterCases.filter((r) => {
+        if (!r.client_commitment_date) return false;
+        const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+        return diff < -7 && !r.is_abandoned;
+      }).length;
+      
+      const problemCases = drafterCases.filter((r) => {
+        const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? r.classification.split(',').map((s) => s.trim()) : []);
+        return rTags.some((t) => ['ticket raised', 'critical'].includes(t.toLowerCase())) || Boolean(r.issue && r.issue.trim());
+      }).length;
+
+      const rejections = problemCases;
+      const rejRate = drafterCases.length > 0 ? Math.round((rejections / drafterCases.length) * 100) : 0;
+      const score = Math.max(20, Math.min(100, Math.round(((completed * 2 + active * 0.8 - rejections * 1.5) / (drafterCases.length || 1)) * 30 + 55)));
+
       return {
         drafter,
         ...metrics,
+        completed,
+        active,
+        staleCount,
+        rejections,
+        rejRate,
+        score,
       };
     });
-  }, [allRecords, records, userRole]);
+  }, [allRecords, records, userRole, now]);
 
   // =========================================================================
-  // RENDER 1: DRAFTER COCKPIT (Requirement 1 & 2 for Drafter)
+  // RENDER 1: DRAFTER COCKPIT (Matching Reference UI Design PDF)
   // =========================================================================
   if (userRole === 'DRAFTER') {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
-        {/* Top Drafter Command Strip */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
+        {/* Drafter Cockpit Title Banner */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <h1 style={{ fontSize: '22px', fontWeight: 900, margin: 0, color: 'var(--ink)', letterSpacing: '-0.3px' }}>
+              Drafting cockpit
+            </h1>
+            <span
+              style={{
+                fontSize: '11.5px',
+                fontWeight: 700,
+                padding: '3px 9px',
+                borderRadius: '12px',
+                background: 'rgba(139, 92, 246, 0.12)',
+                color: '#7C3AED',
+              }}
+            >
+              Patent Associate view
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--muted)' }}>
+            Docket triage, client delivery commitments and roadblock diagnosis for your <strong>{m.totalCases}</strong> assigned matters. Total handling <strong>{m.totalCases} cases</strong>
+          </p>
+        </div>
+
+        {/* STAGE PIPELINE & TRIAGE STRIP */}
         <div
           style={{
             background: 'var(--surface)',
             borderRadius: '10px',
             border: '1px solid var(--line)',
-            padding: '14px 18px',
+            padding: '12px 18px',
             boxShadow: 'var(--shadow-card)',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: '16px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <div
-                style={{
-                  width: '40px',
-                  height: '40px',
-                  borderRadius: '50%',
-                  background: 'linear-gradient(135deg, #8B5CF6, #6D28D9)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '15px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: '0 2px 8px rgba(139, 92, 246, 0.35)',
-                }}
-              >
-                {currentDrafterName ? currentDrafterName.slice(0, 2).toUpperCase() : 'DR'}
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: 'var(--ink)' }}>
-                    {currentDrafterName ? `${currentDrafterName}'s Drafting Cockpit` : 'Drafter Command Dashboard'}
-                  </h3>
-                  <span
-                    style={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '12px',
-                      background: 'rgba(139, 92, 246, 0.12)',
-                      color: '#7C3AED',
-                    }}
-                  >
-                    Patent Associate View
-                  </span>
-                </div>
-                <p style={{ margin: 0, fontSize: '12px', color: 'var(--muted)' }}>
-                  Active docket triage, client delivery commitments, and matter roadblock diagnosis
-                </p>
-              </div>
-            </div>
-
-            {/* Total Cases Handling Badge */}
-            <div
-              onClick={() => onSelectFilter(null)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                background: !activeFilter ? 'rgba(37, 99, 235, 0.12)' : 'var(--page)',
-                border: `1.5px solid ${!activeFilter ? '#2563EB' : 'var(--line)'}`,
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-              title="Click to view all your assigned cases"
-            >
-              <Layers size={16} color="#2563EB" />
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase' }}>
-                  Total Handling
-                </div>
-                <div style={{ fontSize: '18px', fontWeight: 800, color: '#2563EB', lineHeight: 1 }}>
-                  {m.totalCases} Cases
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Middle Row: Stage & Specification Filters (PS, CS, PS-CS, FER, WS) & Triage Colors */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: '10px',
-              borderTop: '1px solid var(--line)',
-              flexWrap: 'wrap',
-              gap: '12px',
-            }}
-          >
-            {/* Specification breakdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', marginRight: '4px' }}>
-                Stages:
-              </span>
+          {/* Left: STAGE PIPELINE */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              STAGE PIPELINE
+            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {[
-                { id: 'spec_ps', label: 'PS', count: m.psCount, color: '#3A86FF', bg: 'rgba(58, 134, 255, 0.1)' },
-                { id: 'spec_cs', label: 'CS', count: m.csCount, color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)' },
-                { id: 'spec_ps_cs', label: 'PS-CS', count: m.psCsCount, color: '#8B5CF6', bg: 'rgba(139, 92, 246, 0.1)' },
-                { id: 'stage_fer', label: 'FER', count: m.ferCount, color: '#EC4899', bg: 'rgba(236, 72, 153, 0.1)' },
-                { id: 'stage_ws', label: 'WS', count: m.wsCount, color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)' },
+                { id: 'spec_ps', label: 'PS', count: m.psCount },
+                { id: 'spec_cs', label: 'CS', count: m.csCount },
+                { id: 'spec_ps_cs', label: 'PS-CS', count: m.psCsCount },
+                { id: 'stage_fer', label: 'FER', count: m.ferCount },
+                { id: 'stage_ws', label: 'WS', count: m.wsCount },
               ].map((st) => {
                 const isAct = activeFilter === st.id;
                 return (
@@ -283,266 +254,305 @@ export default function KpiAlertRibbon({
                     key={st.id}
                     onClick={() => onSelectFilter(isAct ? null : st.id)}
                     style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      border: `1.5px solid ${isAct ? st.color : 'var(--line)'}`,
-                      background: isAct ? st.bg : 'var(--page)',
-                      color: isAct ? st.color : 'var(--ink)',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
                       display: 'flex',
+                      flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '5px',
+                      padding: '6px 14px',
+                      borderRadius: '7px',
+                      border: `1.5px solid ${isAct ? '#2563EB' : 'var(--line)'}`,
+                      background: isAct ? 'rgba(37, 99, 235, 0.08)' : 'var(--page)',
+                      cursor: 'pointer',
+                      minWidth: '56px',
                       transition: 'all 0.15s ease',
                     }}
                   >
-                    <span>{st.label}</span>
-                    <span
-                      style={{
-                        padding: '1px 5px',
-                        borderRadius: '10px',
-                        background: st.color,
-                        color: '#fff',
-                        fontSize: '10px',
-                        fontWeight: 800,
-                      }}
-                    >
+                    <span style={{ fontSize: '11px', fontWeight: 700, color: isAct ? '#2563EB' : 'var(--muted)' }}>
+                      {st.label}
+                    </span>
+                    <span style={{ fontSize: '16px', fontWeight: 800, color: isAct ? '#2563EB' : 'var(--ink)', lineHeight: 1.2 }}>
                       {st.count}
                     </span>
                   </button>
                 );
               })}
             </div>
+          </div>
 
-            {/* Triage color breakdown (Purple, Orange, Yellow) */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', textTransform: 'uppercase', marginRight: '4px' }}>
-                Triage Colors:
-              </span>
-              {[
-                { id: 'color_purple', label: 'Purple (Drafting)', count: m.totalPurple, color: '#8A4FFF', bg: 'rgba(138, 79, 255, 0.15)', dot: '#8A4FFF' },
-                { id: 'color_orange', label: 'Orange (Signoff)', count: m.totalOrange, color: '#EA580C', bg: 'rgba(234, 88, 12, 0.15)', dot: '#EA580C' },
-                { id: 'color_yellow', label: 'Yellow (Query)', count: m.totalYellow, color: '#D97706', bg: 'rgba(217, 119, 6, 0.15)', dot: '#D97706' },
-              ].map((c) => {
-                const isAct = activeFilter === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => onSelectFilter(isAct ? null : c.id)}
-                    style={{
-                      padding: '4px 10px',
-                      borderRadius: '6px',
-                      border: `1.5px solid ${isAct ? c.color : 'var(--line)'}`,
-                      background: isAct ? c.bg : 'var(--page)',
-                      color: isAct ? c.color : 'var(--ink)',
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      transition: 'all 0.15s ease',
-                    }}
-                  >
-                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: c.dot }} />
-                    <span>{c.label}:</span>
-                    <strong>{c.count}</strong>
-                  </button>
-                );
-              })}
+          {/* Right: TRIAGE */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--muted)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>
+              TRIAGE
+            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '14px',
+                background: 'var(--page)',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                border: '1px solid var(--line)',
+              }}
+            >
+              <div
+                onClick={() => onSelectFilter(activeFilter === 'color_purple' ? null : 'color_purple')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                title="Drafting in progress (Purple)"
+              >
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#8A4FFF' }} />
+                <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>Drafting</span>
+                <strong style={{ fontSize: '13.5px', color: '#8A4FFF' }}>{m.totalPurple}</strong>
+              </div>
+              <div style={{ width: '1px', height: '14px', background: 'var(--line)' }} />
+              <div
+                onClick={() => onSelectFilter(activeFilter === 'color_orange' ? null : 'color_orange')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                title="Sent to inventor / Awaiting sign-off (Orange)"
+              >
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#EA580C' }} />
+                <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>Sign-off</span>
+                <strong style={{ fontSize: '13.5px', color: '#EA580C' }}>{m.totalOrange}</strong>
+              </div>
+              <div style={{ width: '1px', height: '14px', background: 'var(--line)' }} />
+              <div
+                onClick={() => onSelectFilter(activeFilter === 'color_yellow' ? null : 'color_yellow')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                title="Inventor query / clarifications (Yellow)"
+              >
+                <span style={{ width: '9px', height: '9px', borderRadius: '50%', background: '#D97706' }} />
+                <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>Query</span>
+                <strong style={{ fontSize: '13.5px', color: '#D97706' }}>{m.totalYellow}</strong>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Actionable KPI Cards Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))', gap: '12px' }}>
-          {/* 1. Near Commitment Days (Client Delivery Due) */}
+        {/* 4 Large Summary Cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+          {/* Card 1: Near client commitments */}
           <div
             onClick={() => onSelectFilter(activeFilter === 'commitments_near' ? null : 'commitments_near')}
             style={{
-              padding: '12px 16px',
+              padding: '14px 18px',
               borderRadius: '8px',
-              background: activeFilter === 'commitments_near' ? 'rgba(234, 88, 12, 0.15)' : 'var(--surface)',
+              background: activeFilter === 'commitments_near' ? 'rgba(234, 88, 12, 0.12)' : 'var(--surface)',
               border: `1.5px solid ${activeFilter === 'commitments_near' ? '#EA580C' : 'var(--line)'}`,
+              boxShadow: 'var(--shadow-card)',
               cursor: 'pointer',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: activeFilter === 'commitments_near' ? '0 0 12px rgba(234, 88, 12, 0.25)' : 'var(--shadow-card)',
-              transition: 'all 0.2s ease',
+              flexDirection: 'column',
+              gap: '6px',
+              transition: 'all 0.15s ease',
             }}
           >
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Near Client Commitments
-              </div>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', marginTop: '3px' }}>
-                <span style={{ fontSize: '24px', fontWeight: 800, color: '#EA580C', lineHeight: 1 }}>
-                  {m.nearCommitmentCount}
-                </span>
-                {m.overdueCommitmentCount > 0 && (
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      padding: '2px 6px',
-                      borderRadius: '8px',
-                      background: '#FEE2E2',
-                      color: '#DC2626',
-                      border: '1px solid #FCA5A5',
-                    }}
-                  >
-                    🚨 {m.overdueCommitmentCount} Overdue (SPOC Alerted)
-                  </span>
-                )}
-              </div>
-              <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '4px' }}>
-                Delivery due to client in ≤ 7 days
-              </div>
+            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
+              Near client commitments
             </div>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                background: 'rgba(234, 88, 12, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#EA580C',
-              }}
-            >
-              <Target size={20} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span style={{ fontSize: '28px', fontWeight: 800, color: '#EA580C', lineHeight: 1 }}>
+                {m.nearCommitmentCount}
+              </span>
+              {m.overdueCommitmentCount > 0 ? (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#FEE2E2',
+                    color: '#DC2626',
+                    border: '1px solid #FCA5A5',
+                  }}
+                >
+                  {m.overdueCommitmentCount} overdue · SPOC alerted
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#ECFDF5',
+                    color: '#059669',
+                  }}
+                >
+                  On schedule
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+              Delivery due to client in ≤ 7 days
             </div>
           </div>
 
-          {/* 2. My Problem Radar (Tickets & Roadblocks) */}
+          {/* Card 2: Problems & client tickets */}
           <div
             onClick={() => onSelectFilter(activeFilter === 'problems' ? null : 'problems')}
             style={{
-              padding: '12px 16px',
+              padding: '14px 18px',
               borderRadius: '8px',
-              background: activeFilter === 'problems' ? 'rgba(220, 38, 38, 0.15)' : 'var(--surface)',
+              background: activeFilter === 'problems' ? 'rgba(220, 38, 38, 0.12)' : 'var(--surface)',
               border: `1.5px solid ${activeFilter === 'problems' ? '#DC2626' : 'var(--line)'}`,
+              boxShadow: 'var(--shadow-card)',
               cursor: 'pointer',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: activeFilter === 'problems' ? '0 0 12px rgba(220, 38, 38, 0.25)' : 'var(--shadow-card)',
-              transition: 'all 0.2s ease',
+              flexDirection: 'column',
+              gap: '6px',
+              transition: 'all 0.15s ease',
             }}
           >
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Problems & Client Tickets
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#DC2626', marginTop: '3px', lineHeight: 1 }}>
-                {m.problemCount}
-              </div>
-              <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '4px' }}>
-                Active support tickets or blocker issues
-              </div>
+            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
+              Problems & client tickets
             </div>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                background: 'rgba(220, 38, 38, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#DC2626',
-              }}
-            >
-              <AlertCircle size={20} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span style={{ fontSize: '28px', fontWeight: 800, color: m.problemCount > 0 ? '#DC2626' : '#10B981', lineHeight: 1 }}>
+                {m.problemCount}
+              </span>
+              {m.problemCount === 0 ? (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#ECFDF5',
+                    color: '#059669',
+                  }}
+                >
+                  All clear
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#FEE2E2',
+                    color: '#DC2626',
+                    border: '1px solid #FCA5A5',
+                  }}
+                >
+                  {m.problemCount} active blocker{m.problemCount > 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+              Active support tickets or blocker issues
             </div>
           </div>
 
-          {/* 3. Statutory Critical (< 7 Days) */}
+          {/* Card 3: Statutory critical · < 7 days */}
           <div
             onClick={() => onSelectFilter(activeFilter === 'critical' ? null : 'critical')}
             style={{
-              padding: '12px 16px',
+              padding: '14px 18px',
               borderRadius: '8px',
-              background: activeFilter === 'critical' ? 'rgba(194, 59, 46, 0.15)' : 'var(--surface)',
+              background: activeFilter === 'critical' ? 'rgba(194, 59, 46, 0.12)' : 'var(--surface)',
               border: `1.5px solid ${activeFilter === 'critical' ? '#C23B2E' : 'var(--line)'}`,
+              boxShadow: 'var(--shadow-card)',
               cursor: 'pointer',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: activeFilter === 'critical' ? '0 0 12px rgba(194, 59, 46, 0.25)' : 'var(--shadow-card)',
-              transition: 'all 0.2s ease',
+              flexDirection: 'column',
+              gap: '6px',
+              transition: 'all 0.15s ease',
             }}
           >
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                Statutory Critical (&lt; 7 Days)
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#C23B2E', marginTop: '3px', lineHeight: 1 }}>
-                {m.criticalCount}
-              </div>
-              <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '4px' }}>
-                Section 9 / 21 statutory cutoff dates
-              </div>
+            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
+              Statutory critical · &lt; 7 days
             </div>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                background: 'rgba(194, 59, 46, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#C23B2E',
-              }}
-            >
-              <AlertTriangle size={20} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span style={{ fontSize: '28px', fontWeight: 800, color: m.criticalCount > 0 ? '#C23B2E' : '#10B981', lineHeight: 1 }}>
+                {m.criticalCount}
+              </span>
+              {m.criticalCount === 0 ? (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#ECFDF5',
+                    color: '#059669',
+                  }}
+                >
+                  All clear
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#FEE2E2',
+                    color: '#DC2626',
+                    border: '1px solid #FCA5A5',
+                  }}
+                >
+                  Urgent action required
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+              Section 9 / 21 statutory cut-off dates
             </div>
           </div>
 
-          {/* 4. Complete Specification Due (60 Days) */}
+          {/* Card 4: CS due · 60 days */}
           <div
             onClick={() => onSelectFilter(activeFilter === 'cs_due' ? null : 'cs_due')}
             style={{
-              padding: '12px 16px',
+              padding: '14px 18px',
               borderRadius: '8px',
-              background: activeFilter === 'cs_due' ? 'rgba(201, 138, 44, 0.15)' : 'var(--surface)',
+              background: activeFilter === 'cs_due' ? 'rgba(201, 138, 44, 0.12)' : 'var(--surface)',
               border: `1.5px solid ${activeFilter === 'cs_due' ? '#C98A2C' : 'var(--line)'}`,
+              boxShadow: 'var(--shadow-card)',
               cursor: 'pointer',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              boxShadow: activeFilter === 'cs_due' ? '0 0 12px rgba(201, 138, 44, 0.25)' : 'var(--shadow-card)',
-              transition: 'all 0.2s ease',
+              flexDirection: 'column',
+              gap: '6px',
+              transition: 'all 0.15s ease',
             }}
           >
-            <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px' }}>
-                CS Due (60 Days)
-              </div>
-              <div style={{ fontSize: '24px', fontWeight: 800, color: '#C98A2C', marginTop: '3px', lineHeight: 1 }}>
-                {m.csDueCount}
-              </div>
-              <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '4px' }}>
-                Section 9(1) 12-month clock
-              </div>
+            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
+              CS due · 60 days
             </div>
-            <div
-              style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                background: 'rgba(201, 138, 44, 0.12)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#C98A2C',
-              }}
-            >
-              <Clock size={20} />
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <span style={{ fontSize: '28px', fontWeight: 800, color: m.csDueCount > 0 ? '#C98A2C' : '#10B981', lineHeight: 1 }}>
+                {m.csDueCount}
+              </span>
+              {m.csDueCount === 0 ? (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#ECFDF5',
+                    color: '#059669',
+                  }}
+                >
+                  All clear
+                </span>
+              ) : (
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: '#FEF3C7',
+                    color: '#D97706',
+                  }}
+                >
+                  Filing due soon
+                </span>
+              )}
+            </div>
+            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+              Section 9(1) 12-month clock
             </div>
           </div>
         </div>
@@ -568,7 +578,7 @@ export default function KpiAlertRibbon({
         {/* Paralegal Full Edit Notice Banner */}
         <div
           style={{
-            padding: '10px 16px',
+            padding: '12px 18px',
             borderRadius: '8px',
             background: 'rgba(16, 185, 129, 0.1)',
             border: '1px solid rgba(16, 185, 129, 0.3)',
@@ -577,17 +587,42 @@ export default function KpiAlertRibbon({
             justifyContent: 'space-between',
             fontSize: '12.5px',
             color: '#065F46',
+            flexWrap: 'wrap',
+            gap: '10px',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontWeight: 600 }}>
-            <Shield size={16} color="#059669" />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: 600 }}>
+            <Shield size={18} color="#059669" />
             <span>
-              <strong>Paralegal Docketing Authority:</strong> All paralegal associates have full access to edit statutory dates, upload IPO filing receipts (CBR), update application numbers, and mark checklist actions complete.
+              <strong>Paralegal Docketing Authority:</strong> Full clearance to log IPO filings, enter official CBR & application numbers, audit Form 1/26 compliance, track RFE 31-month clocks, and resolve discrepancies.
             </span>
           </div>
-          <span style={{ fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '10px', background: '#059669', color: '#fff' }}>
-            Full Portfolio Edit Mode
-          </span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {onNavigateToFormalities && (
+              <button
+                onClick={onNavigateToFormalities}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: '#059669',
+                  color: '#fff',
+                  fontSize: '11.5px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                }}
+              >
+                Open Formalities Docket →
+              </button>
+            )}
+            <span style={{ fontSize: '11px', fontWeight: 700, padding: '3px 9px', borderRadius: '10px', background: 'rgba(5, 150, 105, 0.18)', color: '#047857' }}>
+              Full Docketing Authority
+            </span>
+          </div>
         </div>
 
         {/* Paralegal Formalities Ribbon */}
@@ -854,13 +889,17 @@ export default function KpiAlertRibbon({
                   <th style={{ padding: '8px 10px', textAlign: 'center' }}>🟣 PURPLE</th>
                   <th style={{ padding: '8px 10px', textAlign: 'center' }}>🟠 ORANGE</th>
                   <th style={{ padding: '8px 10px', textAlign: 'center' }}>🟡 YELLOW</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>PROBLEMS</th>
-                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>ACTION</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>COMPLETED</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>REJ RATE</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>SCORE</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'center' }}>STATUS / FLAGS</th>
+                  <th style={{ padding: '8px 10px', textAlign: 'right' }}>ACTIONS</th>
                 </tr>
               </thead>
               <tbody>
                 {drafterMatrix.map((dm) => {
                   const isFiltered = selectedDrafterFilter && selectedDrafterFilter.toLowerCase() === dm.drafter.toLowerCase();
+                  const hasWarning = dm.staleCount > 0 || dm.rejRate > 30;
                   return (
                     <tr
                       key={dm.drafter}
@@ -943,36 +982,96 @@ export default function KpiAlertRibbon({
                         {dm.totalYellow}
                       </td>
 
+                      <td style={{ padding: '10px 10px', textAlign: 'center', fontWeight: 700, color: '#10B981' }}>
+                        {dm.completed}
+                      </td>
+
                       <td style={{ padding: '10px 10px', textAlign: 'center' }}>
-                        {dm.problemCount > 0 ? (
-                          <span style={{ padding: '2px 6px', borderRadius: '8px', background: '#FEF2F2', color: '#DC2626', fontWeight: 800, fontSize: '11px', border: '1px solid #FCA5A5' }}>
-                            {dm.problemCount} Alert
-                          </span>
-                        ) : (
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>0</span>
-                        )}
+                        <span
+                          style={{
+                            padding: '2px 6px',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            background: dm.rejRate > 30 ? '#FEE2E2' : '#F0FDF4',
+                            color: dm.rejRate > 30 ? '#DC2626' : '#15803D',
+                          }}
+                        >
+                          {dm.rejRate}%
+                        </span>
+                      </td>
+
+                      <td style={{ padding: '10px 10px', textAlign: 'center', fontWeight: 800, color: '#1E3A8A' }}>
+                        {dm.score}
+                      </td>
+
+                      <td style={{ padding: '10px 10px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', flexWrap: 'wrap' }}>
+                          {dm.staleCount > 0 && (
+                            <span
+                              style={{ padding: '2px 5px', borderRadius: '4px', background: '#FEE2E2', color: '#B91C1C', fontSize: '10px', fontWeight: 700 }}
+                              title={`${dm.staleCount} matters with no movement for 7+ days`}
+                            >
+                              🔴 Stale ({dm.staleCount})
+                            </span>
+                          )}
+                          {dm.rejRate > 30 && (
+                            <span
+                              style={{ padding: '2px 5px', borderRadius: '4px', background: '#FEF3C7', color: '#B45309', fontSize: '10px', fontWeight: 700 }}
+                              title="Rejection rate above 30%"
+                            >
+                              ⚠️ High Rej
+                            </span>
+                          )}
+                          {!hasWarning && (
+                            <span style={{ color: '#059669', fontSize: '10.5px', fontWeight: 700 }}>
+                              ✅ On Track
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       <td style={{ padding: '10px 10px', textAlign: 'right' }}>
-                        <button
-                          onClick={() => {
-                            if (onSelectDrafter) {
-                              onSelectDrafter(isFiltered ? null : dm.drafter);
-                            }
-                          }}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: '6px',
-                            border: `1px solid ${isFiltered ? '#2563EB' : 'var(--line)'}`,
-                            background: isFiltered ? '#2563EB' : 'var(--page)',
-                            color: isFiltered ? '#fff' : 'var(--ink)',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {isFiltered ? 'Viewing Cases ✓' : 'Inspect Cases →'}
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                          <button
+                            onClick={() => {
+                              if (onSelectDrafter) {
+                                onSelectDrafter(isFiltered ? null : dm.drafter);
+                              }
+                            }}
+                            style={{
+                              padding: '4px 8px',
+                              borderRadius: '5px',
+                              border: `1px solid ${isFiltered ? '#2563EB' : 'var(--line)'}`,
+                              background: isFiltered ? '#2563EB' : 'var(--page)',
+                              color: isFiltered ? '#fff' : 'var(--ink)',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                            }}
+                            title="Filter portfolio to this drafter"
+                          >
+                            {isFiltered ? 'Viewing ✓' : 'Inspect'}
+                          </button>
+                          {onOpenReassign && (
+                            <button
+                              onClick={() => onOpenReassign(dm.drafter)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: '5px',
+                                border: '1px solid var(--line)',
+                                background: 'var(--surface)',
+                                color: 'var(--accent)',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                              title="Reassign matters from this drafter"
+                            >
+                              Reassign
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   );

@@ -5,6 +5,7 @@ import {
   ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import DEFAULT_CLIENTS from '../data/clients.json';
 
 const DRAFTERS = [
   'Anusha', 'Ayush', 'Abhishek', 'Fiona',
@@ -34,10 +35,12 @@ export default function EditApplicationModal({
   onClose,
   record,
   onUpdate,
-  clients = [],
+  clients: clientsProp = [],
   tags = []
 }) {
   if (!isOpen || !record) return null;
+
+  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -75,12 +78,36 @@ export default function EditApplicationModal({
   });
 
   const [activeTab, setActiveTab] = useState('BASIC'); // BASIC, DATES, FORMS, NOTES
+  const [selectedClientId, setSelectedClientId] = useState('');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearchQuery) return clients;
+    const q = clientSearchQuery.toLowerCase();
+    return clients.filter(
+      (c) =>
+        (c.client_code || '').toLowerCase().includes(q) ||
+        (c.client_name || '').toLowerCase().includes(q)
+    );
+  }, [clients, clientSearchQuery]);
+
+  const selectedClient = useMemo(() => {
+    return clients.find((c) => c.id === selectedClientId) || null;
+  }, [clients, selectedClientId]);
 
   useEffect(() => {
     if (record) {
       const rTags = Array.isArray(record.tags) ? record.tags : (record.classification ? [record.classification] : []);
+      // Interconnected client matching from core.clients
+      const matched = clients.find((c) => {
+        if (record.applicant_name && c.client_name && (record.applicant_name.toLowerCase().includes(c.client_name.toLowerCase()) || c.client_name.toLowerCase().includes(record.applicant_name.toLowerCase()))) return true;
+        if (record.project_code && c.client_code && record.project_code.toUpperCase().startsWith(c.client_code.toUpperCase())) return true;
+        return false;
+      });
+      setSelectedClientId(matched ? matched.id : '');
+
       setFormData({
         title: record.title || '',
         application_number: record.application_number || '',
@@ -417,15 +444,110 @@ export default function EditApplicationModal({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Applicant Name (Interconnected Client)
+                    Interconnected Client (core.clients)
                   </label>
+                  <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                    <input
+                      type="text"
+                      value={clientSearchQuery}
+                      onChange={(e) => setClientSearchQuery(e.target.value)}
+                      placeholder="Search 200+ clients..."
+                      style={{
+                        flex: 1,
+                        padding: '6px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
+                      }}
+                    />
+                    {clientSearchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setClientSearchQuery('')}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          color: 'var(--muted)',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => {
+                      const cId = e.target.value;
+                      setSelectedClientId(cId);
+                      const found = clients.find((c) => c.id === cId);
+                      if (found) {
+                        setFormData((prev) => ({
+                          ...prev,
+                          applicant_name: found.client_name,
+                        }));
+                      }
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1.5px solid #2563EB',
+                      background: 'var(--page)',
+                      fontSize: '13px',
+                      fontWeight: 600,
+                    }}
+                  >
+                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {clients.length}) --</option>
+                    {filteredClients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
+                      </option>
+                    ))}
+                  </select>
+
+                  {selectedClient && (
+                    <div
+                      style={{
+                        marginTop: '8px',
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        background: 'rgba(37, 99, 235, 0.08)',
+                        border: '1px solid rgba(37, 99, 235, 0.2)',
+                        fontSize: '11.5px',
+                        color: '#1D4ED8',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 800 }}>
+                          {selectedClient.client_code && `[${selectedClient.client_code}] `}{selectedClient.client_name}
+                        </span>
+                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#2563EB', color: '#fff' }}>
+                          Interconnected ✓
+                        </span>
+                      </div>
+                      {selectedClient.entity_type && (
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Entity: <strong>{selectedClient.entity_type}</strong>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <input
                     type="text"
                     name="applicant_name"
                     value={formData.applicant_name}
                     onChange={handleChange}
+                    placeholder="Applicant Name..."
                     style={{
                       width: '100%',
+                      marginTop: '8px',
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px solid var(--line)',

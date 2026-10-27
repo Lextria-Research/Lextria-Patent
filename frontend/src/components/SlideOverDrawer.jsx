@@ -5,6 +5,7 @@ import {
   Tag as TagIcon, Upload, Download, Trash2, Plus, Target, Paperclip, Send, AlertOctagon,
   FileCheck, HelpCircle
 } from 'lucide-react';
+import DEFAULT_CLIENTS from '../data/clients.json';
 
 export default function SlideOverDrawer({
   record,
@@ -12,14 +13,40 @@ export default function SlideOverDrawer({
   onSaveManualNotes,
   onUpdate,
   tags = [],
+  clients: clientsProp = [],
+  allRecords = [],
   onOpenEdit,
   onOpenTimeline,
   auditLogs = []
 }) {
   if (!record) return null;
 
+  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
+
   const [copiedField, setCopiedField] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // overview, work, timeline, forms, inventors, notes, audit
+
+  // Cross-reference client against core.clients
+  const matchedClient = React.useMemo(() => {
+    if (!clients || clients.length === 0) return null;
+    return clients.find((c) => {
+      if (record.applicant_name && c.client_name && (record.applicant_name.toLowerCase().includes(c.client_name.toLowerCase()) || c.client_name.toLowerCase().includes(record.applicant_name.toLowerCase()))) return true;
+      if (record.project_code && c.client_code && record.project_code.toUpperCase().startsWith(c.client_code.toUpperCase())) return true;
+      return false;
+    }) || null;
+  }, [record, clients]);
+
+  // Count total matters in firm for this client
+  const clientMattersCount = React.useMemo(() => {
+    if (!matchedClient || !allRecords || allRecords.length === 0) return 0;
+    const code = (matchedClient.client_code || '').toUpperCase();
+    const name = (matchedClient.client_name || '').toLowerCase();
+    return allRecords.filter((r) => {
+      if (r.project_code && code && r.project_code.toUpperCase().startsWith(code)) return true;
+      if (r.applicant_name && r.applicant_name.toLowerCase().includes(name)) return true;
+      return false;
+    }).length;
+  }, [matchedClient, allRecords]);
 
   // Client Delivery Commitment state
   const [commitmentDate, setCommitmentDate] = useState(record.client_commitment_date || '');
@@ -381,6 +408,99 @@ export default function SlideOverDrawer({
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Interconnected Client Dossier from core.clients */}
+            <div
+              style={{
+                borderRadius: '8px',
+                border: '1.5px solid #2563EB',
+                background: 'rgba(37, 99, 235, 0.04)',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '6px',
+                      background: 'rgba(37, 99, 235, 0.15)',
+                      color: '#2563EB',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <Building size={18} />
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                      Interconnected Client Dossier
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      Cross-referenced with Lextria Core Suite (<code>core.clients</code>)
+                    </div>
+                  </div>
+                </div>
+
+                <span
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '3px 8px',
+                    borderRadius: '10px',
+                    background: matchedClient ? '#2563EB' : 'var(--line)',
+                    color: matchedClient ? '#fff' : 'var(--muted)',
+                  }}
+                >
+                  {matchedClient ? 'Connected ✓' : 'Unmatched'}
+                </span>
+              </div>
+
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                  gap: '10px',
+                  padding: '12px',
+                  borderRadius: '6px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>Legal Client Name</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--ink)', marginTop: '2px' }}>
+                    {matchedClient?.client_name || record.applicant_name || 'Manipal Academy of Higher Education'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>Client Code (Prefix)</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#2563EB', marginTop: '2px' }}>
+                    {matchedClient?.client_code || record.project_code?.replace(/[0-9]/g, '') || 'MAHE'}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>Entity Classification</div>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)', marginTop: '2px' }}>
+                    {matchedClient?.entity_type || (record.is_mahe ? 'University / Educational' : 'Corporate')}
+                  </div>
+                </div>
+
+                <div>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>Firm Portfolio Volume</div>
+                  <div style={{ fontSize: '12.5px', fontWeight: 800, color: '#059669', marginTop: '2px' }}>
+                    {clientMattersCount > 0 ? `${clientMattersCount} matters in firm` : 'Active Client'}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* 1. Client Delivery Commitment Tracking Panel */}
             <div
               style={{

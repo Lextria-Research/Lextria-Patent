@@ -12,11 +12,15 @@ import MasterTimelineModal from './components/MasterTimelineModal';
 import AuthModal, { USER_ACCOUNTS } from './components/AuthModal';
 import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
+import FormalitiesDocket from './components/FormalitiesDocket';
+import QuickDocketModal from './components/QuickDocketModal';
+import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
 import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
 import { supabase, patentDb, coreDb } from './lib/supabase';
+import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings,
   Plus, Download, UserCheck, Shield, Briefcase, Scale,
@@ -37,7 +41,7 @@ export default function App() {
   const [records, setRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeKpiFilter, setActiveKpiFilter] = useState(null);
-  const [activeNavTab, setActiveNavTab] = useState('PORTFOLIO'); // PORTFOLIO, DEADLINES, CALENDAR
+  const [activeNavTab, setActiveNavTab] = useState('PORTFOLIO'); // PORTFOLIO, FORMALITIES, DEADLINES, CALENDAR
   
   // Modals state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -49,6 +53,11 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [timelineRecord, setTimelineRecord] = useState(null);
+  const [isQuickDocketOpen, setIsQuickDocketOpen] = useState(false);
+  const [quickDocketRecord, setQuickDocketRecord] = useState(null);
+  const [isReassignOpen, setIsReassignOpen] = useState(false);
+  const [reassignSourceDrafter, setReassignSourceDrafter] = useState(null);
+  const [reassignRecord, setReassignRecord] = useState(null);
   const [toast, setToast] = useState(null);
   const [selectedDrafterFilter, setSelectedDrafterFilter] = useState(null);
 
@@ -62,7 +71,16 @@ export default function App() {
   });
 
   // Interconnected Clients State from core.clients (Requirement 12)
-  const [clients, setClients] = useState([]);
+  const [clients, setClients] = useState(() => {
+    try {
+      const saved = localStorage.getItem('patent_cached_clients');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_CLIENTS;
+  });
 
   // Tags State (Requirement 10)
   const [tags, setTags] = useState(() => {
@@ -167,13 +185,30 @@ export default function App() {
       try {
         const { data, error } = await coreDb
           .from('clients')
-          .select('id, client_code, client_name')
+          .select('id, client_code, client_name, entity_type, email, phone, gstin, pan, billing_address, state_code, workdrive_folder_id')
           .order('client_name');
         if (!error && data && data.length > 0) {
           setClients(data);
+          try {
+            localStorage.setItem('patent_cached_clients', JSON.stringify(data));
+          } catch {}
+          return;
         }
       } catch (e) {
-        console.warn('Could not load core.clients directly:', e);
+        console.warn('Could not load core.clients directly from Supabase:', e);
+      }
+
+      // Fallback to static asset if network was delayed
+      try {
+        const resp = await fetch('/clients.json');
+        if (resp.ok) {
+          const staticClients = await resp.json();
+          if (Array.isArray(staticClients) && staticClients.length > 0) {
+            setClients(staticClients);
+          }
+        }
+      } catch (e) {
+        console.warn('Could not load static clients.json:', e);
       }
     }
     fetchClients();
@@ -576,6 +611,99 @@ export default function App() {
     showToast(`Exported ${dataToExport.length} matters to Excel.`);
   };
 
+  // ==========================================
+  // SUPER ADMIN / PARALEGAL: QUICK DOCKETING & REASSIGNMENT
+  // ==========================================
+  const handleOpenQuickDocket = (rec = null) => {
+    setQuickDocketRecord(rec);
+    setIsQuickDocketOpen(true);
+  };
+
+  const handleOpenReassign = (param = null) => {
+    if (typeof param === 'string') {
+      setReassignSourceDrafter(param);
+      setReassignRecord(null);
+    } else if (Array.isArray(param)) {
+      if (param.length === 1) {
+        setReassignRecord(param[0]);
+        setReassignSourceDrafter(param[0].assigned_to || null);
+      } else {
+        setReassignRecord(null);
+        setReassignSourceDrafter(param[0]?.assigned_to || null);
+      }
+    } else if (param && typeof param === 'object') {
+      setReassignRecord(param);
+      setReassignSourceDrafter(param.assigned_to || null);
+    } else {
+      setReassignRecord(null);
+      setReassignSourceDrafter(null);
+    }
+    setIsReassignOpen(true);
+  };
+
+  const handleReassignBatch = (projectCodes, targetDrafter, reason, notes) => {
+    const updatedTimestamp = new Date().toISOString();
+
+    // 1. Immediate optimistic UI state update
+    setRecords((prev) =>
+      prev.map((r) => {
+        if (projectCodes.includes(r.project_code)) {
+          return {
+            ...r,
+            assigned_to: targetDrafter,
+            reassignment_reason: reason,
+            reassignment_notes: notes || null,
+            updated_at: updatedTimestamp,
+          };
+        }
+        return r;
+      })
+    );
+
+    // 2. Persist in local storage overrides immediately
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      projectCodes.forEach((code) => {
+        const existing = records.find((r) => r.project_code === code) || {};
+        overrides[code] = {
+          ...existing,
+          assigned_to: targetDrafter,
+          reassignment_reason: reason,
+          reassignment_notes: notes || null,
+          updated_at: updatedTimestamp,
+        };
+        recordAuditLog(
+          'REASSIGN_MATTER',
+          code,
+          `Reassigned from ${existing.assigned_to || 'Unassigned'} to ${targetDrafter}. Reason: ${reason}.${notes ? ` Notes: ${notes}` : ''}`,
+          'assigned_to',
+          existing.assigned_to,
+          targetDrafter
+        );
+      });
+      localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+    } catch (e) {
+      console.warn('Failed to update local overrides for reassignment:', e);
+    }
+
+    showToast(
+      `Successfully transferred ${projectCodes.length} matter(s) to ${targetDrafter}.`,
+      'success'
+    );
+
+    // 3. Background non-blocking sync with Supabase
+    (async () => {
+      try {
+        await patentDb
+          .from('applications')
+          .update({ assigned_to: targetDrafter })
+          .in('project_code', projectCodes);
+      } catch (err) {
+        console.warn('Background Supabase reassignment sync notice:', err);
+      }
+    })();
+  };
+
   return (
     <div
       style={{
@@ -671,7 +799,7 @@ export default function App() {
             border: '1px solid var(--line)',
           }}
         >
-          {/* Tab 1: Portfolio Master */}
+          {/* Tab 1: Portfolio Master / Drafting Cockpit */}
           <button
             onClick={() => setActiveNavTab('PORTFOLIO')}
             style={{
@@ -691,8 +819,34 @@ export default function App() {
             }}
           >
             <FolderKanban size={15} color={activeNavTab === 'PORTFOLIO' ? 'var(--accent)' : 'currentColor'} />
-            Portfolio Master
+            {currentUser.role === 'DRAFTER' ? 'Drafting Cockpit' : 'Portfolio Master'}
           </button>
+
+          {/* Tab: Formalities Docket (Only for Paralegal & Super Admin) */}
+          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setActiveNavTab('FORMALITIES')}
+              style={{
+                padding: '7px 16px',
+                borderRadius: '7px',
+                border: 'none',
+                background: activeNavTab === 'FORMALITIES' ? 'var(--surface)' : 'transparent',
+                color: activeNavTab === 'FORMALITIES' ? 'var(--ink)' : 'var(--muted)',
+                fontSize: '12.5px',
+                fontWeight: activeNavTab === 'FORMALITIES' ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: activeNavTab === 'FORMALITIES' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+              title="Rule 135/137 petitions, Form 9/18 RFE clock, IPO discrepancies & Sec 53 renewals"
+            >
+              <Shield size={15} color={activeNavTab === 'FORMALITIES' ? '#059669' : 'currentColor'} />
+              Formalities Docket
+            </button>
+          )}
 
           {/* Tab 2: Deadlines Checklist (Requirement 8) */}
           <button
@@ -715,7 +869,7 @@ export default function App() {
             title="Action-based statutory checklist where you tick completed filings"
           >
             <CheckSquare size={15} color={activeNavTab === 'DEADLINES' ? '#10B981' : 'currentColor'} />
-            Deadlines Checklist
+            Statutory Deadlines
           </button>
 
           {/* Tab 3: Calendar View (Requirement 14) */}
@@ -745,6 +899,53 @@ export default function App() {
 
         {/* Right Header Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {/* Quick Docketing Desk Button (Paralegal & Super Admin) */}
+          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => handleOpenQuickDocket()}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '7px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #059669, #047857)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+              }}
+              title="Quick Docket: record IPO Application No, CBR receipt, Form 1/26 and prosecution dates"
+            >
+              <CheckSquare size={14} /> Quick Docket
+            </button>
+          )}
+
+          {/* Reassign Button (Super Admin) */}
+          {currentUser.role === 'SUPER_ADMIN' && (
+            <button
+              onClick={() => handleOpenReassign()}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '7px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: '#2563EB',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+              title="Rebalance workload across associate drafters"
+            >
+              <UserCheck size={14} /> Reassign
+            </button>
+          )}
+
           {/* New Application Button */}
           <button
             onClick={() => setIsCreateOpen(true)}
@@ -946,6 +1147,8 @@ export default function App() {
               allRecords={records}
               selectedDrafterFilter={selectedDrafterFilter}
               onSelectDrafter={(drafter) => setSelectedDrafterFilter(drafter)}
+              onOpenReassign={(drafter) => handleOpenReassign(drafter)}
+              onNavigateToFormalities={() => setActiveNavTab('FORMALITIES')}
             />
 
             {/* Super Admin Drafter Filter Context Banner */}
@@ -1003,12 +1206,28 @@ export default function App() {
                 onOpenCreate={() => setIsCreateOpen(true)}
                 onOpenEdit={(rec) => setEditingRecord(rec)}
                 onOpenTimeline={(rec) => setTimelineRecord(rec)}
+                onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
+                onOpenReassign={(item) => handleOpenReassign(item)}
                 userRole={currentUser.role}
                 selectedDrafter={currentUser.drafterName}
                 clients={clients}
                 tags={tags}
               />
             </div>
+          </div>
+        )}
+
+        {/* VIEW: FORMALITIES DOCKET (Paralegal & Super Admin) */}
+        {activeNavTab === 'FORMALITIES' && (
+          <div style={{ flex: 1, overflow: 'hidden' }}>
+            <FormalitiesDocket
+              records={roleFilteredRecords}
+              currentUser={currentUser}
+              onOpenDrawer={(rec) => setSelectedRecord(rec)}
+              onOpenEdit={(rec) => setEditingRecord(rec)}
+              onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
+              onOpenTimeline={(rec) => setTimelineRecord(rec)}
+            />
           </div>
         )}
 
@@ -1021,6 +1240,8 @@ export default function App() {
               onOpenDrawer={(rec) => setSelectedRecord(rec)}
               onOpenTimeline={(rec) => setTimelineRecord(rec)}
               onActionComplete={handleDeadlineActionComplete}
+              onNavigateToCalendar={() => setActiveNavTab('CALENDAR')}
+              onNavigateToPortfolio={() => setActiveNavTab('PORTFOLIO')}
             />
           </div>
         )}
@@ -1033,6 +1254,7 @@ export default function App() {
               currentUser={currentUser}
               onOpenDrawer={(rec) => setSelectedRecord(rec)}
               onOpenTimeline={(rec) => setTimelineRecord(rec)}
+              onNavigateToDeadlines={() => setActiveNavTab('DEADLINES')}
             />
           </div>
         )}
@@ -1046,6 +1268,8 @@ export default function App() {
           onSaveManualNotes={handleSaveManualNotes}
           onUpdate={handleUpdateApplication}
           tags={tags}
+          clients={clients}
+          allRecords={records}
           onOpenEdit={(rec) => setEditingRecord(rec)}
           onOpenTimeline={(rec) => setTimelineRecord(rec)}
           auditLogs={auditLogs.filter((l) => l.project_code === selectedRecord.project_code)}
@@ -1123,6 +1347,33 @@ export default function App() {
         isOpen={isImporterOpen}
         onClose={() => setIsImporterOpen(false)}
         onImportSuccess={handleImportSuccess}
+      />
+
+      {/* Quick Docketing Desk Modal (Paralegal / Super Admin) */}
+      <QuickDocketModal
+        isOpen={isQuickDocketOpen}
+        onClose={() => {
+          setIsQuickDocketOpen(false);
+          setQuickDocketRecord(null);
+        }}
+        record={quickDocketRecord}
+        allRecords={records}
+        clients={clients}
+        onUpdate={handleUpdateApplication}
+      />
+
+      {/* Reassign Matter Modal (Super Admin) */}
+      <ReassignMatterModal
+        isOpen={isReassignOpen}
+        onClose={() => {
+          setIsReassignOpen(false);
+          setReassignRecord(null);
+          setReassignSourceDrafter(null);
+        }}
+        initialDrafter={reassignSourceDrafter}
+        initialRecord={reassignRecord}
+        allRecords={records}
+        onReassignBatch={handleReassignBatch}
       />
 
       {/* Enhanced Live Due Board TV Mode (Requirement 16) */}

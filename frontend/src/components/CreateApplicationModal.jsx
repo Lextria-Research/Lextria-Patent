@@ -5,6 +5,7 @@ import {
   ExternalLink, CheckCircle2, Shield, AlertTriangle, Clock
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import DEFAULT_CLIENTS from '../data/clients.json';
 
 const DRAFTERS = [
   'Anusha', 'Ayush', 'Abhishek', 'Fiona',
@@ -41,10 +42,12 @@ export default function CreateApplicationModal({
   onClose,
   onCreate,
   existingCodes = [],
-  clients = [],
+  clients: clientsProp = [],
   tags = []
 }) {
   if (!isOpen) return null;
+
+  const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
 
   // Auto-generate next candidate project code e.g. AR432
   const defaultCode = () => {
@@ -85,8 +88,23 @@ export default function CreateApplicationModal({
   });
 
   const [selectedClientId, setSelectedClientId] = useState('');
+  const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+
+  const filteredClients = useMemo(() => {
+    if (!clientSearchQuery) return clients;
+    const q = clientSearchQuery.toLowerCase();
+    return clients.filter(
+      (c) =>
+        (c.client_code || '').toLowerCase().includes(q) ||
+        (c.client_name || '').toLowerCase().includes(q)
+    );
+  }, [clients, clientSearchQuery]);
+
+  const selectedClient = useMemo(() => {
+    return clients.find((c) => c.id === selectedClientId) || null;
+  }, [clients, selectedClientId]);
 
   // Live Statutory Deadline Calculations (Requirements 4, 5, 6)
   const statutoryCalculations = useMemo(() => {
@@ -110,11 +128,29 @@ export default function CreateApplicationModal({
 
     const found = clients.find((c) => c.id === cId);
     if (found) {
-      setFormData((prev) => ({
-        ...prev,
-        applicant_name: found.client_name,
-        is_mahe: found.client_name.toLowerCase().includes('manipal') || found.client_name.toLowerCase().includes('mahe'),
-      }));
+      const isMahe =
+        (found.client_code || '').toUpperCase() === 'MAHE' ||
+        found.client_name.toLowerCase().includes('manipal') ||
+        found.client_name.toLowerCase().includes('mahe');
+
+      let suggestedEntity = 'OTHER';
+      if (isMahe) suggestedEntity = 'EDUCATIONAL_INSTITUTION';
+      else if (found.entity_type === 'STARTUP') suggestedEntity = 'STARTUP';
+      else if (found.entity_type === 'LARGE') suggestedEntity = 'LARGE';
+
+      setFormData((prev) => {
+        let newProjectCode = prev.project_code;
+        if ((!newProjectCode || newProjectCode === 'AR' || newProjectCode.startsWith('PAT-')) && found.client_code) {
+          newProjectCode = `${found.client_code}-01`;
+        }
+        return {
+          ...prev,
+          applicant_name: found.client_name,
+          is_mahe: isMahe,
+          entity_category: suggestedEntity,
+          project_code: newProjectCode,
+        };
+      });
     }
   };
 
@@ -374,6 +410,40 @@ export default function CreateApplicationModal({
                 <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                   Select Client (Interconnected from core.clients)
                 </label>
+                <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                  <input
+                    type="text"
+                    value={clientSearchQuery}
+                    onChange={(e) => setClientSearchQuery(e.target.value)}
+                    placeholder="Search 200+ clients by name or code..."
+                    style={{
+                      flex: 1,
+                      padding: '6px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      color: 'var(--ink)',
+                      fontSize: '12px',
+                    }}
+                  />
+                  {clientSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setClientSearchQuery('')}
+                      style={{
+                        padding: '4px 8px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--muted)',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
                 <select
                   value={selectedClientId}
                   onChange={handleClientSelect}
@@ -381,16 +451,57 @@ export default function CreateApplicationModal({
                     width: '100%',
                     padding: '8px 12px',
                     borderRadius: '6px',
-                    border: '1px solid var(--line)',
+                    border: '1.5px solid #2563EB',
                     background: 'var(--page)',
                     fontSize: '13px',
+                    fontWeight: 600,
                   }}
                 >
-                  <option value="">-- Choose Existing Client ({clients.length}) --</option>
-                  {clients.map((c) => (
-                    <option key={c.id} value={c.id}>{c.client_name}</option>
+                  <option value="">-- Choose Existing Client ({filteredClients.length} of {clients.length} Available) --</option>
+                  {filteredClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
+                    </option>
                   ))}
                 </select>
+
+                {selectedClient && (
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      background: 'rgba(37, 99, 235, 0.08)',
+                      border: '1px solid rgba(37, 99, 235, 0.2)',
+                      fontSize: '11.5px',
+                      color: '#1D4ED8',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 800 }}>
+                        {selectedClient.client_code && `[${selectedClient.client_code}] `}{selectedClient.client_name}
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 700,
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          background: '#2563EB',
+                          color: '#fff',
+                        }}
+                      >
+                        Interconnected ✓
+                      </span>
+                    </div>
+                    {selectedClient.entity_type && (
+                      <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                        Entity: <strong>{selectedClient.entity_type}</strong>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <input
                   type="text"
                   name="applicant_name"
