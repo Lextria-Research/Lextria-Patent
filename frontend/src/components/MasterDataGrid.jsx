@@ -14,14 +14,6 @@ import {
 import { getStatusColor } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
-export const VIEW_PRESETS = {
-  ALL_MASTER: 'All Master View',
-  MAHE_TTO: 'MAHE / TTO Reporting',
-  EXTERNAL_PORTFOLIO: 'External Portfolio',
-  WORKSHOP_TRIAGE: 'Workshop / IDF Triage',
-  DEADLINES_BOTTLENECK: 'Deadlines & Bottlenecks',
-};
-
 export default function MasterDataGrid({
   records = [],
   onSelectRecord,
@@ -42,7 +34,6 @@ export default function MasterDataGrid({
   tags = [],
 }) {
   const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
-  const [currentPreset, setCurrentPreset] = useState(VIEW_PRESETS.ALL_MASTER);
   const [globalFilter, setGlobalFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('ALL');
   const [tagFilter, setTagFilter] = useState('ALL');
@@ -146,17 +137,6 @@ export default function MasterDataGrid({
       }
     }
 
-    // Apply Preset Filter
-    if (currentPreset === VIEW_PRESETS.MAHE_TTO) {
-      data = data.filter((r) => r.is_mahe);
-    } else if (currentPreset === VIEW_PRESETS.EXTERNAL_PORTFOLIO) {
-      data = data.filter((r) => r.record_category === 'EXTERNAL_TAKEOVER' || (r.project_code && (r.project_code.startsWith('EX-') || r.project_code.startsWith('GR'))));
-    } else if (currentPreset === VIEW_PRESETS.WORKSHOP_TRIAGE) {
-      data = data.filter((r) => r.record_category === 'WORKSHOP_IDF' || (r.project_code && ['DA', 'KM', 'MB', 'MS', 'MI'].some((p) => r.project_code.startsWith(p))));
-    } else if (currentPreset === VIEW_PRESETS.DEADLINES_BOTTLENECK) {
-      data = data.filter((r) => r.cs_deadline || r.fer_reply_deadline || r.ws_deadline || r.f1_status === 'Delayed' || r.f26_status === 'Delayed');
-    }
-
     // Client dropdown filter (Interconnected with core.clients / applicant_name)
     if (clientFilter !== 'ALL') {
       data = data.filter((r) => {
@@ -213,7 +193,7 @@ export default function MasterDataGrid({
     }
 
     return data;
-  }, [records, activeKpiFilter, currentPreset, clientFilter, tagFilter, statusFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
+  }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
 
   // Unique statuses for filter dropdown
   const statusOptions = useMemo(() => {
@@ -592,144 +572,41 @@ export default function MasterDataGrid({
       boxShadow: 'var(--shadow-card)',
       overflow: 'hidden'
     }}>
-      {/* Top Presets & Controls Bar */}
+      {/* Top Search, Filters & Action Toolbar */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '12px 18px',
         borderBottom: '1px solid var(--line)',
-        background: 'var(--glass-bg)',
-        backdropFilter: 'blur(8px)',
-        flexWrap: 'wrap',
-        gap: '12px'
-      }}>
-        {/* Preset Tabs */}
-        <div style={{ display: 'flex', gap: '6px', background: 'var(--page)', padding: '3px', borderRadius: '8px' }}>
-          {Object.values(VIEW_PRESETS).map((preset) => (
-            <button
-              key={preset}
-              onClick={() => setCurrentPreset(preset)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '6px',
-                border: 'none',
-                background: currentPreset === preset ? 'var(--surface)' : 'transparent',
-                color: currentPreset === preset ? 'var(--ink)' : 'var(--muted)',
-                fontWeight: currentPreset === preset ? 700 : 500,
-                fontSize: '12px',
-                cursor: 'pointer',
-                boxShadow: currentPreset === preset ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              {preset}
-            </button>
-          ))}
-        </div>
-
-        {/* Action Buttons: Create, Import, Export Report */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {onOpenCreate && (
-            <button
-              onClick={onOpenCreate}
-              style={{
-                padding: '6px 14px',
-                borderRadius: '6px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
-                color: '#fff',
-                fontSize: '12px',
-                fontWeight: 800,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
-              }}
-            >
-              <Plus size={14} /> New Application
-            </button>
-          )}
-
-          <button
-            onClick={onOpenImport}
-            style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              fontSize: '12px',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <Upload size={14} /> Smart Import
-          </button>
-
-          {/* Export Report (Opens ExportReportModal for customizable export) */}
-          <button
-            onClick={() => onOpenExportReport && onOpenExportReport(selectedRowsList.length > 0 ? selectedRowsList : filteredData)}
-            style={{
-              padding: '6px 14px',
-              borderRadius: '6px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #059669, #047857)',
-              color: '#fff',
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
-            }}
-            title="Customizable Columns Export & Bulk Report"
-          >
-            <Download size={14} /> Export Report
-          </button>
-        </div>
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '10px 18px',
-        borderBottom: '1px solid var(--line)',
         background: 'var(--surface)',
         gap: '12px',
         flexWrap: 'wrap'
       }}>
-        {/* Global Search */}
-        <div style={{ position: 'relative', width: '280px' }}>
-          <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--muted)' }} />
-          <input
-            type="text"
-            placeholder="Search code, app no, drafter, title..."
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            style={{
-              width: '100%',
-              padding: '8px 10px 8px 34px',
-              borderRadius: '6px',
-              border: '1px solid var(--line)',
-              background: 'var(--page)',
-              color: 'var(--ink)',
-              fontSize: '12px',
-              outline: 'none',
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
+        {/* Left Side: Global Search + Filter Dropdowns */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', flex: 1, minWidth: '320px' }}>
+          {/* Global Search */}
+          <div style={{ position: 'relative', width: '280px' }}>
+            <Search size={15} style={{ position: 'absolute', left: '10px', top: '10px', color: 'var(--muted)' }} />
+            <input
+              type="text"
+              placeholder="Search code, app no, drafter, title..."
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 10px 8px 34px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--page)',
+                color: 'var(--ink)',
+                fontSize: '12px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+          </div>
 
-        {/* Dropdown Filters: Client, Tag, Status, and KPI notice */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
           {activeKpiFilter && (
             <div style={{
               display: 'flex',
@@ -821,9 +698,75 @@ export default function MasterDataGrid({
             ))}
           </select>
 
-          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600 }}>
+          <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
             {filteredData.length} records
           </span>
+        </div>
+
+        {/* Right Side: Action Buttons: Create, Import, Export Report */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {onOpenCreate && (
+            <button
+              onClick={onOpenCreate}
+              style={{
+                padding: '7px 14px',
+                borderRadius: '6px',
+                border: 'none',
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
+                color: '#fff',
+                fontSize: '12px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
+              }}
+            >
+              <Plus size={14} /> New Application
+            </button>
+          )}
+
+          <button
+            onClick={onOpenImport}
+            style={{
+              padding: '7px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: 'var(--surface)',
+              color: 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <Upload size={14} /> Smart Import
+          </button>
+
+          {/* Export Report (Opens ExportReportModal for customizable export) */}
+          <button
+            onClick={() => onOpenExportReport && onOpenExportReport(selectedRowsList.length > 0 ? selectedRowsList : filteredData)}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '6px',
+              border: 'none',
+              background: 'linear-gradient(135deg, #059669, #047857)',
+              color: '#fff',
+              fontSize: '12px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+            }}
+            title="Customizable Columns Export & Bulk Report"
+          >
+            <Download size={14} /> Export Report
+          </button>
         </div>
       </div>
 
