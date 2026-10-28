@@ -422,6 +422,51 @@ export default function SettingsModal({
                   </span>
                 </div>
 
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '12px', fontWeight: 800 }}>
+                      WorkDrive Workspace & Folder URL
+                    </label>
+                    <a
+                      href={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontSize: '11.5px',
+                        color: '#2563EB',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        background: '#EFF6FF',
+                        border: '1px solid #BFDBFE'
+                      }}
+                    >
+                      Open WorkDrive Folder <ExternalLink size={12} />
+                    </a>
+                  </div>
+                  <input
+                    type="url"
+                    value={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
+                    onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, workspaceFolderUrl: e.target.value })}
+                    placeholder="https://workdrive.zoho.com/workspace/patents"
+                    style={{
+                      width: '100%',
+                      padding: '9px 12px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '13px',
+                    }}
+                  />
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                    Central enterprise folder URL for storing and synchronizing matter folders.
+                  </span>
+                </div>
+
                 {/* Storage Policies & In-Dashboard Viewer Toggles */}
                 <div
                   style={{
