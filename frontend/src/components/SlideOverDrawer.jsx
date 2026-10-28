@@ -1293,67 +1293,7 @@ export default function SlideOverDrawer({
         {/* DOCS VAULT TAB (Zoho WorkDrive Storage & In-Dashboard Document Viewing) */}
         {activeTab === 'work' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            {/* 1. Zoho WorkDrive Cloud Vault Connection Banner */}
-            <div style={{
-              padding: '14px 18px',
-              borderRadius: '8px',
-              background: 'rgba(37, 99, 235, 0.05)',
-              border: '1px solid rgba(37, 99, 235, 0.2)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              flexWrap: 'wrap',
-              gap: '12px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '8px',
-                  background: 'rgba(37, 99, 235, 0.12)',
-                  color: '#2563EB',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}>
-                  <Cloud size={20} />
-                </div>
-                <div>
-                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span>Zoho WorkDrive Vault: {record.project_code}</span>
-                    <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' }}>
-                      ● Live Cloud Sync
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
-                    All files are stored and managed directly in Zoho WorkDrive. The dashboard fetches and displays documents here for viewing and downloading.
-                  </div>
-                </div>
-              </div>
-
-              <a
-                href={record.workdrive_folder_url || workdriveLink || `https://workdrive.zoho.com/workspace/patents/${record.project_code}`}
-                target="_blank"
-                rel="noreferrer"
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid rgba(37, 99, 235, 0.3)',
-                  background: 'var(--surface)',
-                  color: '#2563EB',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  textDecoration: 'none',
-                }}
-              >
-                <ExternalLink size={13} /> Open Folder in WorkDrive
-              </a>
-            </div>
-
-            {/* 2. Specification Content (Abstract & Claims) */}
+            {/* 1. Specification Content (Abstract & Claims) */}
             <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1483,15 +1423,15 @@ export default function SlideOverDrawer({
               </div>
             </div>
 
-            {/* 3. Zoho WorkDrive Documents List & Viewer Interface */}
+            {/* Documents List & Viewer Interface */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-                    WorkDrive Synced Documents ({filteredDocuments.length})
+                    Application Documents ({filteredDocuments.length})
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                    Fetched directly from Zoho WorkDrive for viewing and download
+                    Available for viewing and download
                   </span>
                 </div>
 
