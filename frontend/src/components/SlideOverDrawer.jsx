@@ -896,61 +896,7 @@ export default function SlideOverDrawer({
               </div>
             </div>
 
-            {/* Ecosystem Cross-Links Banner */}
-            <div style={{
-              padding: '14px 16px',
-              borderRadius: '8px',
-              background: 'rgba(58, 134, 255, 0.08)',
-              border: '1px solid rgba(58, 134, 255, 0.25)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '8px'
-            }}>
-              <div style={{ fontSize: '12px', fontWeight: 700, color: '#3A86FF', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Shield size={14} /> UNIFIED LEXTRIA ECOSYSTEM BRIDGES
-              </div>
-              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                <a
-                  href={`https://ip-ledger.lextriaresearch.com/matters/${record.project_code}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: '12px',
-                    color: '#3A86FF',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    background: 'var(--surface)',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(58, 134, 255, 0.3)'
-                  }}
-                >
-                  Sync Fee Milestones in IP Ledger <ExternalLink size={12} />
-                </a>
 
-                <a
-                  href={`https://litigator.lextriaresearch.com/cases?search=${record.project_code}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: '12px',
-                    color: '#8A4FFF',
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    background: 'var(--surface)',
-                    padding: '4px 10px',
-                    borderRadius: '6px',
-                    border: '1px solid rgba(138, 79, 255, 0.3)'
-                  }}
-                >
-                  Link Oppositions in Litigator <ExternalLink size={12} />
-                </a>
-              </div>
-            </div>
 
             {/* Post-Dating Section 17 Status (Requirement 2) */}
             {(() => {
