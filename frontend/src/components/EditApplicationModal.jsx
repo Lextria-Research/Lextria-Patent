@@ -50,6 +50,18 @@ export default function EditApplicationModal({
     return (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
   });
 
+  // Sync when clientsProp updates or loads asynchronously
+  useEffect(() => {
+    if (Array.isArray(clientsProp) && clientsProp.length > 0) {
+      setInternalClients(clientsProp);
+    }
+  }, [clientsProp]);
+
+  // Guaranteed non-empty client list fallback to DEFAULT_CLIENTS (211 clients)
+  const effectiveClients = useMemo(() => {
+    return (internalClients && internalClients.length > 0) ? internalClients : DEFAULT_CLIENTS;
+  }, [internalClients]);
+
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -96,18 +108,18 @@ export default function EditApplicationModal({
   const [error, setError] = useState(null);
 
   const filteredClients = useMemo(() => {
-    if (!clientSearchQuery) return internalClients;
+    if (!clientSearchQuery) return effectiveClients;
     const q = clientSearchQuery.toLowerCase();
-    return internalClients.filter(
+    return effectiveClients.filter(
       (c) =>
         (c.client_code || '').toLowerCase().includes(q) ||
         (c.client_name || '').toLowerCase().includes(q)
     );
-  }, [internalClients, clientSearchQuery]);
+  }, [effectiveClients, clientSearchQuery]);
 
   const selectedClient = useMemo(() => {
-    return internalClients.find((c) => c.id === selectedClientId) || null;
-  }, [internalClients, selectedClientId]);
+    return effectiveClients.find((c) => c.id === selectedClientId) || null;
+  }, [effectiveClients, selectedClientId]);
 
   // Section 17 Post-Dating leeway calculations
   const postDateValidation = useMemo(() => {
@@ -133,7 +145,7 @@ export default function EditApplicationModal({
     if (record) {
       const rTags = Array.isArray(record.tags) ? record.tags : (record.classification ? [record.classification] : []);
       // Interconnected client matching from core.clients
-      const matched = internalClients.find((c) => {
+      const matched = effectiveClients.find((c) => {
         if (record.applicant_name && c.client_name && (record.applicant_name.toLowerCase().includes(c.client_name.toLowerCase()) || c.client_name.toLowerCase().includes(record.applicant_name.toLowerCase()))) return true;
         if (record.project_code && c.client_code && record.project_code.toUpperCase().startsWith(c.client_code.toUpperCase())) return true;
         return false;
@@ -177,7 +189,7 @@ export default function EditApplicationModal({
         selectedTags: rTags,
       });
     }
-  }, [record, internalClients]);
+  }, [record, effectiveClients]);
 
   // Live Statutory Deadline Calculations (Requirements 4, 5, 6)
   const statutoryCalculations = useMemo(() => {
@@ -562,7 +574,7 @@ export default function EditApplicationModal({
                     onChange={(e) => {
                       const cId = e.target.value;
                       setSelectedClientId(cId);
-                      const found = internalClients.find((c) => c.id === cId);
+                      const found = effectiveClients.find((c) => c.id === cId);
                       if (found) {
                         setFormData((prev) => ({
                           ...prev,
@@ -580,7 +592,7 @@ export default function EditApplicationModal({
                       fontWeight: 600,
                     }}
                   >
-                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {internalClients.length}) --</option>
+                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {effectiveClients.length} Available) --</option>
                     {filteredClients.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}

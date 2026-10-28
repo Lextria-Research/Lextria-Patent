@@ -1,5 +1,5 @@
 // frontend/src/components/CreateApplicationModal.jsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   X, Plus, FileText, Calendar, User, Building, Tag as TagIcon,
   ExternalLink, CheckCircle2, Shield, AlertTriangle, Clock, IndianRupee,
@@ -58,6 +58,18 @@ export default function CreateApplicationModal({
     return (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
   });
 
+  // Sync when clientsProp updates or loads asynchronously
+  useEffect(() => {
+    if (Array.isArray(clientsProp) && clientsProp.length > 0) {
+      setInternalClients(clientsProp);
+    }
+  }, [clientsProp]);
+
+  // Guaranteed non-empty client list fallback to DEFAULT_CLIENTS (211 clients)
+  const effectiveClients = useMemo(() => {
+    return (internalClients && internalClients.length > 0) ? internalClients : DEFAULT_CLIENTS;
+  }, [internalClients]);
+
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
 
   // Auto-generate next candidate project code e.g. AR432
@@ -106,18 +118,18 @@ export default function CreateApplicationModal({
   const [error, setError] = useState(null);
 
   const filteredClients = useMemo(() => {
-    if (!clientSearchQuery) return internalClients;
+    if (!clientSearchQuery) return effectiveClients;
     const q = clientSearchQuery.toLowerCase();
-    return internalClients.filter(
+    return effectiveClients.filter(
       (c) =>
         (c.client_code || '').toLowerCase().includes(q) ||
         (c.client_name || '').toLowerCase().includes(q)
     );
-  }, [internalClients, clientSearchQuery]);
+  }, [effectiveClients, clientSearchQuery]);
 
   const selectedClient = useMemo(() => {
-    return internalClients.find((c) => c.id === selectedClientId) || null;
-  }, [internalClients, selectedClientId]);
+    return effectiveClients.find((c) => c.id === selectedClientId) || null;
+  }, [effectiveClients, selectedClientId]);
 
   // Section 17 Post-Dating leeway calculations
   const postDateValidation = useMemo(() => {
@@ -173,7 +185,7 @@ export default function CreateApplicationModal({
     setSelectedClientId(cId);
     if (!cId) return;
 
-    const found = internalClients.find((c) => c.id === cId);
+    const found = effectiveClients.find((c) => c.id === cId);
     if (found) {
       const isMahe =
         (found.client_code || '').toUpperCase() === 'MAHE' ||
@@ -560,7 +572,7 @@ export default function CreateApplicationModal({
                     fontWeight: 600,
                   }}
                 >
-                  <option value="">-- Choose Existing Client ({filteredClients.length} of {internalClients.length} Available) --</option>
+                  <option value="">-- Choose Existing Client ({filteredClients.length} of {effectiveClients.length} Available) --</option>
                   {filteredClients.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}

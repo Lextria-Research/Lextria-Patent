@@ -197,7 +197,7 @@ export default function App() {
           .from('clients')
           .select('id, client_code, client_name, entity_type, email, phone, gstin, pan, billing_address, state_code, workdrive_folder_id')
           .order('client_name');
-        if (!error && data && data.length > 0) {
+        if (!error && Array.isArray(data) && data.length > 0) {
           setClients(data);
           try {
             localStorage.setItem('patent_cached_clients', JSON.stringify(data));
@@ -215,11 +215,15 @@ export default function App() {
           const staticClients = await resp.json();
           if (Array.isArray(staticClients) && staticClients.length > 0) {
             setClients(staticClients);
+            return;
           }
         }
       } catch (e) {
         console.warn('Could not load static clients.json:', e);
       }
+
+      // Ultimate fallback: DEFAULT_CLIENTS (211 interconnected firm clients)
+      setClients((prev) => (Array.isArray(prev) && prev.length > 0 ? prev : DEFAULT_CLIENTS));
     }
     fetchClients();
   }, []);
@@ -1376,6 +1380,7 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
+        currentUser={currentUser}
         tags={tags}
         onSaveTags={(updatedTags) => {
           setTags(updatedTags);
