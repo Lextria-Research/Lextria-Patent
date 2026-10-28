@@ -2,8 +2,8 @@
 import React, { useState, useMemo } from 'react';
 import {
   Shield, AlertTriangle, Clock, CheckCircle2, User, Users,
-  Calendar, ArrowRight, ExternalLink, Filter, ChevronDown,
-  ChevronRight, RefreshCw, Layers, Briefcase, UserCheck, Search
+  Calendar, ArrowRight, ExternalLink, Filter, ChevronDown, ChevronUp,
+  ChevronRight, RefreshCw, Layers, Briefcase, UserCheck, Search, Target
 } from 'lucide-react';
 
 // The 8 official firm drafters from the reference design document
@@ -84,6 +84,98 @@ export default function AdminTeamOverview({
 }) {
   const [selectedDrafter, setSelectedDrafter] = useState(null);
   const [selectedCellInfo, setSelectedCellInfo] = useState(null);
+  const [showMatrix, setShowMatrix] = useState(true);
+
+  // Macro Drafter Capacity & Triage Matrix
+  const drafterMatrix = useMemo(() => {
+    const drafterNames = [
+      'Anusha', 'Ayush', 'Abhishek', 'Fiona',
+      'Pramith', 'Pratham', 'Thanush', 'Thilak', 'Pranav Bhat'
+    ];
+    const now = new Date();
+
+    return drafterNames.map((drafter) => {
+      const drafterCases = records.filter(
+        (r) => r.assigned_to && r.assigned_to.trim().toLowerCase().includes(drafter.toLowerCase())
+      );
+
+      let psCount = 0;
+      let csCount = 0;
+      let psCsCount = 0;
+      let ferCount = 0;
+      let wsCount = 0;
+      let nearCommitmentCount = 0;
+      let overdueCommitmentCount = 0;
+      let totalPurple = 0;
+      let totalOrange = 0;
+      let totalYellow = 0;
+      let totalGreen = 0;
+
+      drafterCases.forEach((r) => {
+        if (r.is_abandoned) return;
+        const spec = (r.specification_type || '').toUpperCase();
+        if (spec === 'PS') psCount++;
+        else if (spec === 'CS') csCount++;
+        else if (spec.includes('PS') && spec.includes('CS')) psCsCount++;
+
+        if (r.fer_notice_date || r.fer_reply_deadline) ferCount++;
+        if (r.hearing_date || r.ws_deadline) wsCount++;
+
+        if (r.client_commitment_date) {
+          const diffDays = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+          if (diffDays < 0) {
+            overdueCommitmentCount++;
+            nearCommitmentCount++;
+          } else if (diffDays <= 7) {
+            nearCommitmentCount++;
+          }
+        }
+
+        const color = (r.color_code_status || '').toUpperCase();
+        if (color === 'PURPLE') totalPurple++;
+        else if (color === 'ORANGE') totalOrange++;
+        else if (color === 'YELLOW') totalYellow++;
+        else if (color === 'GREEN') totalGreen++;
+      });
+
+      const completed = totalGreen;
+      const active = Math.max(0, drafterCases.length - completed);
+
+      const staleCount = drafterCases.filter((r) => {
+        if (!r.client_commitment_date) return false;
+        const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
+        return diff < -7 && !r.is_abandoned;
+      }).length;
+
+      const problemCases = drafterCases.filter((r) => {
+        const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? r.classification.split(',').map((s) => s.trim()) : []);
+        return rTags.some((t) => ['ticket raised', 'critical'].includes(t.toLowerCase())) || Boolean(r.issue && r.issue.trim());
+      }).length;
+
+      const rejections = problemCases;
+      const rejRate = drafterCases.length > 0 ? Math.round((rejections / drafterCases.length) * 100) : 0;
+      const score = Math.max(20, Math.min(100, Math.round(((completed * 2 + active * 0.8 - rejections * 1.5) / (drafterCases.length || 1)) * 30 + 55)));
+
+      return {
+        drafter,
+        totalCases: drafterCases.length,
+        psCount,
+        csCount,
+        psCsCount,
+        ferCount,
+        wsCount,
+        nearCommitmentCount,
+        overdueCommitmentCount,
+        totalPurple,
+        totalOrange,
+        totalYellow,
+        completed,
+        rejRate,
+        score,
+        staleCount,
+      };
+    });
+  }, [records]);
 
   // Compute live statistics from master records
   const liveStats = useMemo(() => {
@@ -1027,6 +1119,361 @@ export default function AdminTeamOverview({
             </tbody>
           </table>
         </div>
+      </div>
+
+      {/* 4. DRAFTER CAPACITY, CLIENT COMMITMENTS & PROBLEM TRIAGE MATRIX (ALL DRAFTERS) */}
+      <div
+        style={{
+          marginTop: '36px',
+          marginBottom: '28px',
+          background: '#ffffff',
+          borderRadius: '12px',
+          border: '1.5px solid #e2e8f0',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Header Bar */}
+        <div
+          onClick={() => setShowMatrix(!showMatrix)}
+          style={{
+            padding: '16px 22px',
+            background: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
+            borderBottom: showMatrix ? '1.5px solid #e2e8f0' : 'none',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            userSelect: 'none',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div
+              style={{
+                width: '34px',
+                height: '34px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #1E3A8A, #2563EB)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+              }}
+            >
+              <Target size={18} />
+            </div>
+            <div>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                Drafter Capacity, Client Commitments & Problem Triage Matrix
+              </div>
+              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '1px' }}>
+                Firm-wide macro view across associates: active docket loads, PS / CS / FER / WS stages, commitments & triage status
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span
+              style={{
+                padding: '4px 10px',
+                borderRadius: '20px',
+                background: '#EFF6FF',
+                color: '#2563EB',
+                fontSize: '11.5px',
+                fontWeight: 700,
+                border: '1px solid #DBEAFE',
+              }}
+            >
+              {drafterMatrix.length} Associates Tracked
+            </span>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                color: '#475569',
+                fontSize: '12.5px',
+                fontWeight: 700,
+              }}
+            >
+              <span>{showMatrix ? 'Collapse' : 'Expand'}</span>
+              {showMatrix ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+        </div>
+
+        {/* Matrix Table */}
+        {showMatrix && (
+          <div style={{ overflowX: 'auto', background: '#ffffff' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
+              <thead>
+                <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0', color: '#475569', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <th style={{ padding: '12px 18px', minWidth: '150px' }}>Drafter</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'center', minWidth: '95px' }}>Total Cases</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '60px' }}>PS</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '60px' }}>CS</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '65px' }}>PS-CS</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '60px' }}>FER</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '60px' }}>WS</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', minWidth: '170px' }}>Near Commitments</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '70px', color: '#8A4FFF' }}>🟣 Purple</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '70px', color: '#EA580C' }}>🟠 Orange</th>
+                  <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '70px', color: '#D97706' }}>🟡 Yellow</th>
+                  <th style={{ padding: '12px 12px', textAlign: 'center', minWidth: '90px' }}>Completed</th>
+                  <th style={{ padding: '12px 12px', textAlign: 'center', minWidth: '85px' }}>Rej Rate</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'center', minWidth: '100px' }}>Quality Score</th>
+                  <th style={{ padding: '12px 16px', textAlign: 'center', minWidth: '130px' }}>Status / Flags</th>
+                  <th style={{ padding: '12px 18px', textAlign: 'right', minWidth: '150px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {drafterMatrix.map((dm) => {
+                  const hasWarning = dm.staleCount > 0 || dm.rejRate > 30;
+                  return (
+                    <tr
+                      key={dm.drafter}
+                      style={{
+                        borderBottom: '1px solid #F1F5F9',
+                        transition: 'background 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      {/* Drafter Name */}
+                      <td style={{ padding: '12px 18px', fontWeight: 800, color: '#0F172A' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
+                          <span
+                            style={{
+                              width: '28px',
+                              height: '28px',
+                              borderRadius: '50%',
+                              background: '#EFF6FF',
+                              color: '#2563EB',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              border: '1.5px solid #DBEAFE',
+                            }}
+                          >
+                            {dm.drafter.slice(0, 2).toUpperCase()}
+                          </span>
+                          <span style={{ fontSize: '13px' }}>{dm.drafter}</span>
+                        </div>
+                      </td>
+
+                      {/* Total Cases */}
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 900, color: '#2563EB' }}>
+                          {dm.totalCases}
+                        </span>
+                      </td>
+
+                      {/* PS */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 600, color: '#334155' }}>
+                        {dm.psCount}
+                      </td>
+
+                      {/* CS */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 600, color: '#334155' }}>
+                        {dm.csCount}
+                      </td>
+
+                      {/* PS-CS */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 600, color: '#334155' }}>
+                        {dm.psCsCount}
+                      </td>
+
+                      {/* FER */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                        {dm.ferCount > 0 ? (
+                          <span style={{ padding: '2px 7px', borderRadius: '4px', background: '#FCE7F3', color: '#BE185D', fontWeight: 800, fontSize: '11.5px' }}>
+                            {dm.ferCount}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94A3B8' }}>0</span>
+                        )}
+                      </td>
+
+                      {/* WS */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center' }}>
+                        {dm.wsCount > 0 ? (
+                          <span style={{ padding: '2px 7px', borderRadius: '4px', background: '#FEF3C7', color: '#B45309', fontWeight: 800, fontSize: '11.5px' }}>
+                            {dm.wsCount}
+                          </span>
+                        ) : (
+                          <span style={{ color: '#94A3B8' }}>0</span>
+                        )}
+                      </td>
+
+                      {/* Near Commitments (Properly Spaced & Formatted) */}
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'nowrap', whiteSpace: 'nowrap' }}>
+                          {dm.overdueCommitmentCount > 0 && (
+                            <span
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                fontWeight: 800,
+                                fontSize: '11px',
+                                background: '#FEE2E2',
+                                color: '#DC2626',
+                                border: '1px solid #FCA5A5',
+                              }}
+                            >
+                              {dm.overdueCommitmentCount} Overdue
+                            </span>
+                          )}
+                          {dm.nearCommitmentCount > 0 ? (
+                            <span
+                              style={{
+                                padding: '3px 8px',
+                                borderRadius: '5px',
+                                fontWeight: 700,
+                                fontSize: '11px',
+                                background: '#FFEDD5',
+                                color: '#C2410C',
+                                border: '1px solid #FDBA74',
+                              }}
+                            >
+                              {dm.nearCommitmentCount} Due in 7d
+                            </span>
+                          ) : (
+                            <span style={{ color: '#16A34A', fontSize: '11.5px', fontWeight: 700 }}>
+                              ✓ On Track
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Triage: Purple */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 800, color: '#8A4FFF', fontSize: '13px' }}>
+                        {dm.totalPurple}
+                      </td>
+
+                      {/* Triage: Orange */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 800, color: '#EA580C', fontSize: '13px' }}>
+                        {dm.totalOrange}
+                      </td>
+
+                      {/* Triage: Yellow */}
+                      <td style={{ padding: '12px 10px', textAlign: 'center', fontWeight: 800, color: '#D97706', fontSize: '13px' }}>
+                        {dm.totalYellow}
+                      </td>
+
+                      {/* Completed */}
+                      <td style={{ padding: '12px 12px', textAlign: 'center' }}>
+                        <span style={{ fontWeight: 800, color: '#10B981', fontSize: '13px' }}>
+                          {dm.completed}
+                        </span>
+                      </td>
+
+                      {/* Rej Rate */}
+                      <td style={{ padding: '12px 12px', textAlign: 'center' }}>
+                        <span
+                          style={{
+                            padding: '3px 8px',
+                            borderRadius: '5px',
+                            fontWeight: 700,
+                            fontSize: '11px',
+                            background: dm.rejRate > 30 ? '#FEE2E2' : '#F0FDF4',
+                            color: dm.rejRate > 30 ? '#DC2626' : '#15803D',
+                            border: `1px solid ${dm.rejRate > 30 ? '#FCA5A5' : '#BBF7D0'}`,
+                          }}
+                        >
+                          {dm.rejRate}%
+                        </span>
+                      </td>
+
+                      {/* Score */}
+                      <td style={{ padding: '12px 14px', textAlign: 'center' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                          <span style={{ fontWeight: 900, color: '#1E3A8A', fontSize: '13px' }}>
+                            {dm.score}/100
+                          </span>
+                          <div style={{ width: '48px', height: '4px', background: '#E2E8F0', borderRadius: '2px', overflow: 'hidden' }}>
+                            <div style={{ width: `${dm.score}%`, height: '100%', background: dm.score >= 80 ? '#10B981' : '#F59E0B' }} />
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Status / Flags */}
+                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', flexWrap: 'wrap', justifyContent: 'center' }}>
+                          {dm.staleCount > 0 && (
+                            <span
+                              style={{ padding: '2px 6px', borderRadius: '4px', background: '#FEE2E2', color: '#B91C1C', fontSize: '10.5px', fontWeight: 800, border: '1px solid #FCA5A5' }}
+                              title={`${dm.staleCount} matters with no movement for 7+ days`}
+                            >
+                              🔴 Stale ({dm.staleCount})
+                            </span>
+                          )}
+                          {dm.rejRate > 30 && (
+                            <span
+                              style={{ padding: '2px 6px', borderRadius: '4px', background: '#FEF3C7', color: '#B45309', fontSize: '10.5px', fontWeight: 800, border: '1px solid #FDE68A' }}
+                              title="Rejection rate above 30%"
+                            >
+                              ⚠️ High Rej
+                            </span>
+                          )}
+                          {!hasWarning && (
+                            <span style={{ color: '#059669', fontSize: '11px', fontWeight: 800, background: '#ECFDF5', padding: '2px 8px', borderRadius: '4px', border: '1px solid #A7F3D0' }}>
+                              ✓ On Track
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      {/* Actions */}
+                      <td style={{ padding: '12px 18px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            onClick={() => onNavigateToPortfolio && onNavigateToPortfolio(dm.drafter)}
+                            style={{
+                              padding: '5px 11px',
+                              borderRadius: '6px',
+                              border: '1px solid #BFDBFE',
+                              background: '#EFF6FF',
+                              color: '#1D4ED8',
+                              fontSize: '11.5px',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            title={`Filter portfolio grid to ${dm.drafter}`}
+                          >
+                            Inspect
+                          </button>
+                          {onOpenReassign && (
+                            <button
+                              onClick={() => onOpenReassign(dm.drafter)}
+                              style={{
+                                padding: '5px 11px',
+                                borderRadius: '6px',
+                                border: '1px solid #E2E8F0',
+                                background: '#FFFFFF',
+                                color: '#475569',
+                                fontSize: '11.5px',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                transition: 'all 0.15s ease',
+                              }}
+                              title={`Reassign matters from ${dm.drafter}`}
+                            >
+                              Reassign
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* 7. FOOTER DISCLAIMER & SUMMARY */}

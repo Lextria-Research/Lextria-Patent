@@ -1229,12 +1229,7 @@ export default function App() {
                   else if (filterOrMatter === 'AWAITING_SIGNOFF') setActiveKpiFilter('READY_FOR_REVIEW');
                   else if (filterOrMatter === 'OPEN_QUERIES') setActiveKpiFilter('WAITING_CLIENT_DATA');
                   else {
-                    const isDrafter = ['Thanush', 'Ayush', 'Amith', 'Pratham', 'Abhishek', 'Thilak', 'Anusha', 'Pramith'].some(
-                      (name) => name.toLowerCase() === filterOrMatter.toLowerCase()
-                    );
-                    if (isDrafter) {
-                      setSelectedDrafterFilter(filterOrMatter);
-                    }
+                    setSelectedDrafterFilter(filterOrMatter);
                   }
                 }
                 setActiveNavTab('PORTFOLIO');
