@@ -472,3 +472,4 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
     </div>
   );
 }
+

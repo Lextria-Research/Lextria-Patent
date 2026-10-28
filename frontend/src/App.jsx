@@ -13,6 +13,7 @@ import AuthModal, { USER_ACCOUNTS } from './components/AuthModal';
 import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
 import FormalitiesDocket from './components/FormalitiesDocket';
+import AdminTeamOverview from './components/AdminTeamOverview';
 import QuickDocketModal from './components/QuickDocketModal';
 import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
@@ -24,7 +25,7 @@ import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings,
   Plus, Download, UserCheck, Shield, Briefcase, Scale,
-  Sparkles, CheckCircle2, AlertTriangle, Layers
+  Sparkles, CheckCircle2, AlertTriangle, Layers, Users
 } from 'lucide-react';
 
 const DEFAULT_TAGS = [
@@ -41,7 +42,16 @@ export default function App() {
   const [records, setRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [activeKpiFilter, setActiveKpiFilter] = useState(null);
-  const [activeNavTab, setActiveNavTab] = useState('PORTFOLIO'); // PORTFOLIO, FORMALITIES, DEADLINES, CALENDAR
+  const [activeNavTab, setActiveNavTab] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('patent_current_user');
+      if (savedUser) {
+        const u = JSON.parse(savedUser);
+        if (u.role === 'DRAFTER') return 'PORTFOLIO';
+      }
+    } catch {}
+    return 'TEAM_OVERVIEW'; // Default for Super Admin & Paralegal
+  });
   
   // Modals state
   const [isAuthOpen, setIsAuthOpen] = useState(false);
@@ -812,6 +822,32 @@ export default function App() {
             border: '1px solid var(--line)',
           }}
         >
+          {/* Tab 0: Team Overview (Patent Admin & Super Admin) */}
+          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => setActiveNavTab('TEAM_OVERVIEW')}
+              style={{
+                padding: '7px 16px',
+                borderRadius: '7px',
+                border: 'none',
+                background: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--surface)' : 'transparent',
+                color: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--ink)' : 'var(--muted)',
+                fontSize: '12.5px',
+                fontWeight: activeNavTab === 'TEAM_OVERVIEW' ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                boxShadow: activeNavTab === 'TEAM_OVERVIEW' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+                transition: 'all 0.15s ease',
+              }}
+              title="Executive team workload, 14-day capacity heatmap & urgent deliveries across all 8 drafters"
+            >
+              <Users size={15} color={activeNavTab === 'TEAM_OVERVIEW' ? '#2563EB' : 'currentColor'} />
+              Team Overview
+            </button>
+          )}
+
           {/* Tab 1: Portfolio Master / Drafting Cockpit */}
           <button
             onClick={() => setActiveNavTab('PORTFOLIO')}
@@ -1147,6 +1183,37 @@ export default function App() {
           overflow: 'hidden',
         }}
       >
+        {/* VIEW 0: TEAM OVERVIEW (Paralegal / Patent Admin & Super Admin) */}
+        {activeNavTab === 'TEAM_OVERVIEW' && (
+          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <AdminTeamOverview
+              records={records}
+              currentUser={currentUser}
+              onOpenDrawer={(rec) => setSelectedRecord(rec)}
+              onOpenEdit={(rec) => setEditingRecord(rec)}
+              onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
+              onOpenReassign={(drafter) => handleOpenReassign(drafter)}
+              onNavigateToPortfolio={(filterOrMatter) => {
+                if (filterOrMatter) {
+                  if (filterOrMatter === 'OVERDUE') setActiveKpiFilter('OVERDUE_CLIENT_DATE');
+                  else if (filterOrMatter === 'DUE_7D') setActiveKpiFilter('DUE_NEXT_7_DAYS');
+                  else if (filterOrMatter === 'AWAITING_SIGNOFF') setActiveKpiFilter('READY_FOR_REVIEW');
+                  else if (filterOrMatter === 'OPEN_QUERIES') setActiveKpiFilter('WAITING_CLIENT_DATA');
+                  else {
+                    const isDrafter = ['Thanush', 'Ayush', 'Amith', 'Pratham', 'Abhishek', 'Thilak', 'Anusha', 'Pramith'].some(
+                      (name) => name.toLowerCase() === filterOrMatter.toLowerCase()
+                    );
+                    if (isDrafter) {
+                      setSelectedDrafterFilter(filterOrMatter);
+                    }
+                  }
+                }
+                setActiveNavTab('PORTFOLIO');
+              }}
+            />
+          </div>
+        )}
+
         {/* VIEW 1: PORTFOLIO MASTER */}
         {activeNavTab === 'PORTFOLIO' && (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
@@ -1296,6 +1363,11 @@ export default function App() {
         currentUser={currentUser}
         onSelectUser={(user) => {
           setCurrentUser(user);
+          if (user.role === 'PARALEGAL' || user.role === 'SUPER_ADMIN') {
+            setActiveNavTab('TEAM_OVERVIEW');
+          } else {
+            setActiveNavTab('PORTFOLIO');
+          }
           showToast(`Logged in as ${user.name} (${user.roleLabel})`);
         }}
       />

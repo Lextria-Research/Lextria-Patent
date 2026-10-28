@@ -403,3 +403,4 @@ export function formatINR(val) {
   if (val === 0) return '₹0 (Free)';
   return `₹${Number(val).toLocaleString('en-IN')}`;
 }
+

@@ -60,6 +60,17 @@ export const USER_ACCOUNTS = [
     department: 'Patent Drafting',
   },
   {
+    id: 'amith',
+    name: 'Amith',
+    email: 'amith@lextria.in',
+    role: 'DRAFTER',
+    drafterName: 'Amith',
+    roleLabel: 'Patent Associate & Drafter',
+    initials: 'AM',
+    color: '#3B82F6',
+    department: 'Patent Drafting',
+  },
+  {
     id: 'fiona',
     name: 'Fiona',
     email: 'fiona@lextria.in',
