@@ -433,8 +433,11 @@ export default function App() {
     const merged = { ...existing, ...updatedFields };
     const statutory = calculateAllStatutoryDeadlines(merged);
 
+    const newCode = (updatedFields.project_code && updatedFields.project_code.trim()) || projectCode;
+
     const finalizedRecord = {
       ...merged,
+      project_code: newCode,
       cs_deadline: statutory.cs_deadline,
       form_1_deadline: statutory.form_1_deadline,
       form_26_deadline: statutory.form_26_deadline,
@@ -455,10 +458,25 @@ export default function App() {
       setSelectedRecord(finalizedRecord);
     }
 
-    // 2. Persist to local storage overrides immediately
+    // 2. Persist to local storage overrides immediately and migrate if code changed
     try {
       const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
-      overrides[projectCode] = finalizedRecord;
+      if (newCode !== projectCode) {
+        delete overrides[projectCode];
+        try {
+          const invOld = localStorage.getItem(`patent_inventors_${projectCode}`);
+          if (invOld) {
+            localStorage.setItem(`patent_inventors_${newCode}`, invOld);
+            localStorage.removeItem(`patent_inventors_${projectCode}`);
+          }
+          const miscOld = localStorage.getItem(`patent_misc_forms_${projectCode}`);
+          if (miscOld) {
+            localStorage.setItem(`patent_misc_forms_${newCode}`, miscOld);
+            localStorage.removeItem(`patent_misc_forms_${projectCode}`);
+          }
+        } catch {}
+      }
+      overrides[newCode] = finalizedRecord;
       localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
     } catch (e) {
       console.warn('Failed to save to localStorage overrides:', e);

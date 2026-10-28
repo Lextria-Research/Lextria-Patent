@@ -66,6 +66,7 @@ export default function EditApplicationModal({
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
 
   const [formData, setFormData] = useState({
+    project_code: record ? (record.project_code || '') : '',
     title: '',
     application_number: '',
     patent_number: '',
@@ -192,6 +193,7 @@ export default function EditApplicationModal({
       setSelectedClientId(matched ? matched.id : '');
 
       setFormData({
+        project_code: record.project_code || '',
         title: record.title || '',
         application_number: record.application_number || '',
         patent_number: record.patent_number || '',
@@ -277,7 +279,11 @@ export default function EditApplicationModal({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
+    if (!formData.project_code || !formData.project_code.trim()) {
+      setError('Project Code cannot be empty.');
+      return;
+    }
+    if (!formData.title || !formData.title.trim()) {
       setError('Title cannot be empty.');
       return;
     }
@@ -294,6 +300,7 @@ export default function EditApplicationModal({
     const summary = inventorsList.map((i) => i.name).join(', ');
     const payload = {
       ...formData,
+      project_code: formData.project_code.trim(),
       inventors: inventorsList,
       inventors_summary: summary || formData.inventors_summary,
       misc_forms: miscForms,
@@ -376,7 +383,7 @@ export default function EditApplicationModal({
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <h2 style={{ fontSize: '17px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                  Edit Application: {record.project_code}
+                  Edit Application: {formData.project_code || record.project_code}
                 </h2>
                 <span
                   style={{
@@ -493,7 +500,35 @@ export default function EditApplicationModal({
                 />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px', color: 'var(--ink)' }}>
+                    Project Code *
+                  </label>
+                  <input
+                    type="text"
+                    name="project_code"
+                    value={formData.project_code}
+                    onChange={handleChange}
+                    placeholder="e.g. AAIS77"
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      border: '1.5px solid var(--accent, #2563EB)',
+                      background: 'var(--page)',
+                      color: 'var(--ink)',
+                      fontSize: '13px',
+                      fontWeight: 800,
+                      boxSizing: 'border-box',
+                    }}
+                    required
+                  />
+                  <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px' }}>
+                    Docket / Project ID
+                  </div>
+                </div>
+
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
                     Application Number (IPO)
@@ -503,15 +538,21 @@ export default function EditApplicationModal({
                     name="application_number"
                     value={formData.application_number}
                     onChange={handleChange}
+                    placeholder="e.g. 202641012345"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px solid var(--line)',
                       background: 'var(--page)',
+                      color: 'var(--ink)',
                       fontSize: '13px',
+                      boxSizing: 'border-box',
                     }}
                   />
+                  <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px' }}>
+                    Official 12-digit number
+                  </div>
                 </div>
 
                 <div>
@@ -523,15 +564,21 @@ export default function EditApplicationModal({
                     name="patent_number"
                     value={formData.patent_number}
                     onChange={handleChange}
+                    placeholder="e.g. 456789"
                     style={{
                       width: '100%',
                       padding: '8px 12px',
                       borderRadius: '6px',
                       border: '1px solid var(--line)',
                       background: 'var(--page)',
+                      color: 'var(--ink)',
                       fontSize: '13px',
+                      boxSizing: 'border-box',
                     }}
                   />
+                  <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px' }}>
+                    Granted patent certificate
+                  </div>
                 </div>
 
                 <div>
@@ -548,13 +595,18 @@ export default function EditApplicationModal({
                       borderRadius: '6px',
                       border: '1px solid var(--line)',
                       background: 'var(--page)',
+                      color: 'var(--ink)',
                       fontSize: '13px',
+                      boxSizing: 'border-box',
                     }}
                   >
                     {SPEC_TYPES.map((t) => (
                       <option key={t.value} value={t.value}>{t.label}</option>
                     ))}
                   </select>
+                  <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px' }}>
+                    Filing category
+                  </div>
                 </div>
               </div>
 
@@ -678,22 +730,28 @@ export default function EditApplicationModal({
                     </div>
                   )}
 
-                  <input
-                    type="text"
-                    name="applicant_name"
-                    value={formData.applicant_name}
-                    onChange={handleChange}
-                    placeholder="Applicant Name..."
-                    style={{
-                      width: '100%',
-                      marginTop: '8px',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
+                  <div style={{ marginTop: '8px' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '3px' }}>
+                      Custom / Override Applicant Name
+                    </label>
+                    <input
+                      type="text"
+                      name="applicant_name"
+                      value={formData.applicant_name}
+                      onChange={handleChange}
+                      placeholder="Applicant Name..."
+                      style={{
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        color: 'var(--ink)',
+                        fontSize: '13px',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
                 </div>
 
                 <div>

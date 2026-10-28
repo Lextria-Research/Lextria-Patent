@@ -505,6 +505,28 @@ export default function SlideOverDrawer({
               {copiedField === 'code' ? <Check size={14} color="var(--ok-fg)" /> : <Copy size={14} />}
             </button>
 
+            {onOpenEdit && (
+              <button
+                type="button"
+                onClick={() => onOpenEdit(record)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  color: 'var(--accent)',
+                  padding: '2px 4px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  fontSize: '11px',
+                  fontWeight: 600,
+                  gap: '3px'
+                }}
+                title="Edit Project Code / Application Details"
+              >
+                <Edit3 size={11} /> Edit Code
+              </button>
+            )}
+
             <span style={{
               fontSize: '11px',
               padding: '2px 8px',
