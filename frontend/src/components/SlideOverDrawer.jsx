@@ -567,7 +567,6 @@ export default function SlideOverDrawer({
           { id: 'overview', label: 'Overview' },
           { id: 'work', label: 'Docs Vault' },
           { id: 'timeline', label: 'Prosecution Timeline' },
-          { id: 'forms', label: 'Statutory Forms' },
           { id: 'inventors', label: 'Applicants & Inventors' },
           { id: 'notes', label: 'Senior Notes & Action' },
           { id: 'audit', label: 'History & Audit' },
@@ -1392,46 +1391,52 @@ export default function SlideOverDrawer({
           </div>
         )}
 
-        {/* TIMELINE TAB */}
+        {/* TIMELINE & STATUTORY FORMS TAB */}
         {activeTab === 'timeline' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>Statutory Prosecution Stepper</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', paddingLeft: '24px' }}>
-              <div style={{
-                position: 'absolute',
-                left: '7px',
-                top: '10px',
-                bottom: '10px',
-                width: '2px',
-                background: 'var(--line)'
-              }} />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {/* 1. Statutory Prosecution Stepper */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ink)' }}>Statutory Prosecution Stepper</div>
+                <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>Live Lifecycle Progression</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', position: 'relative', paddingLeft: '24px' }}>
+                <div style={{
+                  position: 'absolute',
+                  left: '7px',
+                  top: '10px',
+                  bottom: '10px',
+                  width: '2px',
+                  background: 'var(--line)'
+                }} />
 
-              {steps.map((st, idx) => (
-                <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div style={{
-                    position: 'absolute',
-                    left: '-24px',
-                    width: '16px',
-                    height: '16px',
-                    borderRadius: '50%',
-                    background: st.done ? 'var(--ok-fg)' : (st.current ? 'var(--warn-fg)' : 'var(--line)'),
-                    border: '3px solid var(--surface)'
-                  }} />
-                  <div style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 600, fontSize: '13px', color: st.done ? 'var(--ink)' : 'var(--muted)' }}>{st.label}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{st.date || (st.done ? 'Completed' : 'Pending')}</span>
+                {steps.map((st, idx) => (
+                  <div key={idx} style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{
+                      position: 'absolute',
+                      left: '-24px',
+                      width: '16px',
+                      height: '16px',
+                      borderRadius: '50%',
+                      background: st.done ? 'var(--ok-fg)' : (st.current ? 'var(--warn-fg)' : 'var(--line)'),
+                      border: '3px solid var(--surface)'
+                    }} />
+                    <div style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', background: 'var(--page)', border: '1px solid var(--line)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ fontWeight: 600, fontSize: '13px', color: st.done ? 'var(--ink)' : 'var(--muted)' }}>{st.label}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>{st.date || (st.done ? 'Completed' : 'Pending')}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
 
-        {/* FORMS TAB */}
-        {activeTab === 'forms' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Divider */}
+            <div style={{ height: '1px', background: 'var(--line)' }} />
+
+            {/* 2. Comprehensive Statutory Forms Matrix */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>Comprehensive Statutory Forms Matrix</div>
             
             {/* Form 1 Card */}
@@ -1596,6 +1601,7 @@ export default function SlideOverDrawer({
                 </span>
               </div>
             ))}
+            </div>
           </div>
         )}
 

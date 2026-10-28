@@ -423,9 +423,8 @@ export default function EditApplicationModal({
         >
           {[
             { id: 'BASIC', label: '1. Basic Info & Triage' },
-            { id: 'DATES', label: '2. Prosecution Dates & Post-Date' },
-            { id: 'FORMS', label: '3. Statutory Forms (1, 26, 3, 18)' },
-            { id: 'NOTES', label: '4. Internal Notes & Actions' },
+            { id: 'DATES', label: '2. Prosecution Timeline & Statutory Forms' },
+            { id: 'NOTES', label: '3. Internal Notes & Actions' },
           ].map((t) => (
             <button
               key={t.id}
@@ -1410,12 +1409,19 @@ export default function EditApplicationModal({
                   </div>
                 );
               })()}
-            </div>
-          )}
 
-          {/* TAB 3: STATUTORY FORMS */}
-          {activeTab === 'FORMS' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              {/* Divider between Dates and Statutory Forms */}
+              <div style={{ height: '1px', background: 'var(--line)', margin: '12px 0 6px 0' }} />
+
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                  Statutory Forms Filings & Petitions
+                </span>
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                  Mandatory & Miscellaneous Form Submissions
+                </span>
+              </div>
+
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
@@ -1599,7 +1605,7 @@ export default function EditApplicationModal({
             </div>
           )}
 
-          {/* TAB 4: INTERNAL NOTES & ACTIONS */}
+          {/* TAB 3: INTERNAL NOTES & ACTIONS */}
           {activeTab === 'NOTES' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               <div>
