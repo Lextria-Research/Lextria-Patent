@@ -678,44 +678,60 @@ export default function CreateApplicationModal({
             <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', marginBottom: '12px' }}>
               3. Drafter Assignment & Prosecution Phase Status
             </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: '14px', alignItems: 'flex-start', marginBottom: '8px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+            {/* Assigned Drafter */}
+            <div style={{ marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
                   Assigned Drafter *
                 </label>
+                <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+                  Responsible patent agent/drafter for this matter
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <select
                   name="assigned_to"
                   value={formData.assigned_to}
                   onChange={handleChange}
                   style={{
+                    maxWidth: '360px',
                     width: '100%',
                     padding: '8px 12px',
                     borderRadius: '6px',
-                    border: '1px solid var(--line)',
+                    border: '1.5px solid #2563EB',
                     background: 'var(--page)',
                     fontSize: '13px',
                     fontWeight: 700,
+                    color: 'var(--ink)',
                   }}
                 >
                   {DRAFTERS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d} value={d}>
+                      👤 {d}
+                    </option>
                   ))}
                 </select>
-                <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', display: 'block' }}>
-                  Responsible patent agent/drafter for this matter.
+                <span style={{ fontSize: '11px', color: 'var(--muted)', background: 'var(--page)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+                  Assigned Associate: <strong>{formData.assigned_to || 'Unassigned'}</strong>
                 </span>
               </div>
+            </div>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
+            {/* Prosecution Status (Full Width) */}
+            <div style={{ marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
                   Select Prosecution Status (Organized into 7 Statutory Phases)
                 </label>
-                <PhasedStatusSelector
-                  value={formData.current_status}
-                  onChange={handleStatusChange}
-                  applicationType={formData.specification_type}
-                />
+                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                  Select from 33 statutory phases or search directly
+                </span>
               </div>
+              <PhasedStatusSelector
+                value={formData.current_status}
+                onChange={handleStatusChange}
+                applicationType={formData.specification_type}
+              />
             </div>
           </div>
 
