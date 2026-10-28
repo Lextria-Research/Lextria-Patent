@@ -1,5 +1,5 @@
 // frontend/src/components/MiscFormsManager.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   FileText, Plus, CheckCircle2, Clock, AlertTriangle, ArrowRight,
   Trash2, Shield, Calendar, Check, ExternalLink, ChevronRight, FileCheck
@@ -31,6 +31,21 @@ export default function MiscFormsManager({
   const [editingFormItem, setEditingFormItem] = useState(null);
   const [editCbr, setEditCbr] = useState('');
   const [editFilingDate, setEditFilingDate] = useState('');
+
+  // Available Form 30 entries filtered by selected fee mode
+  const availableForm30Entries = useMemo(() => {
+    return FORM_30_ENTRIES.filter((e) => {
+      if (e.feeCategory === 'BOTH') return true;
+      return e.feeCategory === feeMode;
+    });
+  }, [feeMode]);
+
+  const currentSubtypeObj = useMemo(() => {
+    if (selectedMainType === 'FORM_13') {
+      return FORM_13_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_13_SUBTYPES[0];
+    }
+    return FORM_30_ENTRIES.find((s) => s.id === selectedSubtype) || availableForm30Entries[0] || FORM_30_ENTRIES[0];
+  }, [selectedMainType, selectedSubtype, availableForm30Entries]);
 
   // Handle adding new miscellaneous form
   const handleCreate = (e) => {
@@ -501,7 +516,8 @@ export default function MiscFormsManager({
                     type="button"
                     onClick={() => {
                       setSelectedMainType('FORM_30');
-                      setSelectedSubtype('ENTRY_52_ADJOURNMENT');
+                      setFeeMode('WITH_FEE');
+                      setSelectedSubtype('ENTRY_S142_3_RESPONSE');
                       setTargetNumber(record.application_number || '');
                     }}
                     style={{
@@ -523,23 +539,37 @@ export default function MiscFormsManager({
               {/* Form 30 Specific: Radio buttons With Fee vs Without Fee (From Reference Screenshots) */}
               {selectedMainType === 'FORM_30' && (
                 <div style={{ padding: '10px 12px', borderRadius: '6px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: 'var(--ink)' }}>
                       <input
                         type="radio"
                         name="fee_mode"
                         checked={feeMode === 'WITH_FEE'}
-                        onChange={() => setFeeMode('WITH_FEE')}
+                        onChange={() => {
+                          setFeeMode('WITH_FEE');
+                          const hasWith = FORM_30_ENTRIES.some((e) => e.id === selectedSubtype && (e.feeCategory === 'WITH_FEE' || e.feeCategory === 'BOTH'));
+                          if (!hasWith) {
+                            setSelectedSubtype('ENTRY_S142_3_RESPONSE');
+                            setTargetNumber(record.application_number || '');
+                          }
+                        }}
                       />
                       With Fee
                     </label>
 
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', color: 'var(--ink)' }}>
                       <input
                         type="radio"
                         name="fee_mode"
                         checked={feeMode === 'WITHOUT_FEE'}
-                        onChange={() => setFeeMode('WITHOUT_FEE')}
+                        onChange={() => {
+                          setFeeMode('WITHOUT_FEE');
+                          const hasWithout = FORM_30_ENTRIES.some((e) => e.id === selectedSubtype && (e.feeCategory === 'WITHOUT_FEE' || e.feeCategory === 'BOTH'));
+                          if (!hasWithout) {
+                            setSelectedSubtype('ENTRY_49A_WIPO_DAS');
+                            setTargetNumber(record.application_number || '');
+                          }
+                        }}
                       />
                       Without Fee
                     </label>
@@ -550,7 +580,7 @@ export default function MiscFormsManager({
               {/* Specific Subtype Selector */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '6px' }}>
-                  {selectedMainType === 'FORM_13' ? 'Select Form 13 Action Flow *' : 'Select Form 30 First Schedule Entry *'}
+                  {selectedMainType === 'FORM_13' ? 'Select Form 13 Action Flow *' : 'Select Form *'}
                 </label>
                 <select
                   value={selectedSubtype}
@@ -581,25 +611,43 @@ export default function MiscFormsManager({
                       </option>
                     ))
                   ) : (
-                    FORM_30_ENTRIES.map((e) => (
+                    availableForm30Entries.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.code}
                       </option>
                     ))
                   )}
                 </select>
+
+                {/* Blue confirmation text matching IPO portal screenshots */}
+                {selectedMainType === 'FORM_30' && currentSubtypeObj && (
+                  <div style={{
+                    color: '#0284c7',
+                    fontWeight: 700,
+                    fontSize: '12.5px',
+                    marginTop: '8px',
+                    padding: '8px 12px',
+                    background: 'rgba(2, 132, 199, 0.08)',
+                    borderRadius: '5px',
+                    border: '1px solid rgba(2, 132, 199, 0.25)',
+                    wordBreak: 'break-word',
+                    lineHeight: '1.45'
+                  }}>
+                    {currentSubtypeObj.description || currentSubtypeObj.code}
+                  </div>
+                )}
               </div>
 
               {/* Target Application or Patent Number */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
-                  {selectedSubtype === 'ENTRY_19_23_RESTORATION' ? 'Patent Number *' : 'Application Number *'}
+                  {currentSubtypeObj?.numberFieldLabel || (selectedSubtype === 'ENTRY_19_23_RESTORATION' ? 'Patent Number *' : 'Application Number *')}
                 </label>
                 <input
                   type="text"
                   value={targetNumber}
                   onChange={(e) => setTargetNumber(e.target.value)}
-                  placeholder="e.g. 202441019532"
+                  placeholder={currentSubtypeObj?.numberField === 'patent_number' ? 'e.g. 543210' : 'e.g. 202441019532'}
                   style={{
                     width: '100%',
                     padding: '8px 10px',
@@ -805,3 +853,4 @@ export default function MiscFormsManager({
     </div>
   );
 }
+

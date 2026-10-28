@@ -80,56 +80,121 @@ export const FORM_13_SUBTYPES = [
 ];
 
 export const FORM_30_ENTRIES = [
+  // --- WITH FEE OPTIONS (IPO First Schedule & Section 142) ---
+  {
+    id: 'ENTRY_S142_3_RESPONSE',
+    code: 'S142(3)=>Response to office action',
+    shortLabel: 'S142(3): Response to office action',
+    description: 'S142(3)=>Response to office action',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    rule: 'Section 142(3)',
+    feeCategory: 'WITH_FEE',
+    defaultFeeMode: 'WITH_FEE'
+  },
   {
     id: 'ENTRY_52_ADJOURNMENT',
     code: 'Schedule_1_Entry_Number 52=>Request for adjournment of hearing under rule 129A (for each adjournment)',
     shortLabel: 'Entry 52: Adjournment of hearing under Rule 129A',
-    description: 'Request for adjournment of hearing under rule 129A (for each adjournment)',
+    description: 'Schedule_1_Entry_Number 52=>Request for adjournment of hearing under rule 129A (for each adjournment)',
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     rule: 'Rule 129A',
+    feeCategory: 'WITH_FEE',
     defaultFeeMode: 'WITH_FEE'
   },
   {
     id: 'ENTRY_46_PETITION',
     code: 'Schedule_1_Entry_Number 46=>On petition not otherwise provided for',
     shortLabel: 'Entry 46: Petition not otherwise provided for (Rule 137)',
-    description: 'On petition not otherwise provided for (Rule 137 / general condonation / miscellaneous petition)',
+    description: 'Schedule_1_Entry_Number 46=>On petition not otherwise provided for',
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     rule: 'Rule 137 / Schedule 1 Entry 46',
+    feeCategory: 'WITH_FEE',
     defaultFeeMode: 'WITH_FEE'
   },
   {
     id: 'ENTRY_41_1_CERTIFIED_COPY',
     code: 'Schedule_1_Entry_Number 41 (1)=>(i) On request for certified copies under section 72 or for certificate under section 147 and rule 133(1)',
     shortLabel: 'Entry 41(1): Certified copies under Section 72 / Rule 133(1)',
-    description: 'On request for certified copies under section 72 or for certificate under section 147 and rule 133(1)',
+    description: 'Schedule_1_Entry_Number 41 (1)=>(i) On request for certified copies under section 72 or for certificate under section 147 and rule 133(1)',
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     rule: 'Section 72 & Rule 133(1)',
+    feeCategory: 'WITH_FEE',
     defaultFeeMode: 'WITH_FEE'
   },
   {
     id: 'ENTRY_41_2_CERTIFIED_COPY',
     code: 'Schedule_1_Entry_Number 41 (2)=>(ii) On request for certified copies under section 72 or for certificate under section 147 and rule 133(2)',
     shortLabel: 'Entry 41(2): Certified copies under Section 72 / Rule 133(2)',
-    description: 'On request for certified copies under section 72 or for certificate under section 147 and rule 133(2)',
+    description: 'Schedule_1_Entry_Number 41 (2)=>(ii) On request for certified copies under section 72 or for certificate under section 147 and rule 133(2).',
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     rule: 'Section 72 & Rule 133(2)',
+    feeCategory: 'WITH_FEE',
     defaultFeeMode: 'WITH_FEE'
   },
   {
     id: 'ENTRY_19_23_RESTORATION',
     code: 'Schedule_1_Entry_Number 19,23=>Additional fee for restoration under section 60, 61(3) and rule 86(1)',
     shortLabel: 'Entry 19, 23: Additional fee for restoration (Sec 60, 61(3))',
-    description: 'Additional fee for restoration under section 60, 61(3) and rule 86(1)',
+    description: 'Schedule_1_Entry_Number 19,23=>Additional fee for restoration under section 60, 61(3) and rule 86(1)',
     numberField: 'patent_number',
     numberFieldLabel: 'Patent Number',
     rule: 'Section 60, 61(3) & Rule 86(1)',
+    feeCategory: 'WITH_FEE',
     defaultFeeMode: 'WITH_FEE'
   },
+
+  // --- WITHOUT FEE OPTIONS (IPO Portal Submissions) ---
+  {
+    id: 'ENTRY_49A_WIPO_DAS',
+    code: 'Schedule_1_Entry_Number 49A=>For preparation of certified copy of priority document and e-transmission through WIPO DAS',
+    shortLabel: 'Entry 49A: Certified copy of priority doc & e-transmission through WIPO DAS',
+    description: 'Schedule_1_Entry_Number 49A=>For preparation of certified copy of priority document and e-transmission through WIPO DAS',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    rule: 'First Schedule Entry 49A & WIPO DAS',
+    feeCategory: 'WITHOUT_FEE',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+  {
+    id: 'ENTRY_R21_PRIORITY_DOC',
+    code: 'R21(1), R21(3)=>Submission of certified copy of priority document',
+    shortLabel: 'R21(1), R21(3): Submission of certified copy of priority document',
+    description: 'R21(1), R21(3)=>Submission of certified copy of priority document',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    rule: 'Rule 21(1) & 21(3)',
+    feeCategory: 'WITHOUT_FEE',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+  {
+    id: 'ENTRY_S25_1_R55_4_APPLICANT',
+    code: 'S25(1)/ R55(4)=>Submission of documents by applicant in Pre-grant opposition',
+    shortLabel: 'S25(1)/ R55(4): Submission of documents by applicant in Pre-grant opposition',
+    description: 'S25(1)/ R55(4)=>Submission of documents by applicant in Pre-grant opposition',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    rule: 'Section 25(1) & Rule 55(4)',
+    feeCategory: 'WITHOUT_FEE',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+  {
+    id: 'ENTRY_S25_1_R55_1_OPPONENT',
+    code: 'S25(1)/ R55(1)=>Submission of documents by opponent in Pre-grant opposition',
+    shortLabel: 'S25(1)/ R55(1): Submission of documents by opponent in Pre-grant opposition',
+    description: 'S25(1)/ R55(1)=>Submission of documents by opponent in Pre-grant opposition',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    rule: 'Section 25(1) & Rule 55(1)',
+    feeCategory: 'WITHOUT_FEE',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+
+  // --- GENERAL / OTHER ---
   {
     id: 'ENTRY_OTHER',
     code: 'Other Form 30 Miscellaneous Petition',
@@ -138,6 +203,7 @@ export const FORM_30_ENTRIES = [
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     rule: 'First Schedule, Patent Rules 2003',
+    feeCategory: 'BOTH',
     defaultFeeMode: 'WITH_FEE'
   }
 ];
