@@ -1,6 +1,6 @@
 // frontend/src/constants/miscFormsConstants.js
 /**
- * Miscellaneous Statutory Forms (Form 13, Form 6, Form 16, Form 30 & Form 27)
+ * Miscellaneous Statutory Forms (Form 13, Form 6, Form 16, Form 30, Form 27 & Form 4)
  * Includes official First Schedule entries, fee options, and 4-step prosecution flow:
  * 1. Need confirmation/requirement by the client
  * 2. Sent for filing (triggers 3-day inventor/client ack deadline)
@@ -115,6 +115,18 @@ export const MISC_FORM_MAIN_TYPES = [
     tag: 'F27',
     timing: 'Post-Grant / Triennial',
     description: 'Commercial working of invention under Section 146(2) & Rule 131; runs parallel with Section 53 renewals'
+  },
+  {
+    id: 'FORM_4',
+    label: 'Form 4',
+    name: 'Form 4 (Extension of Time & Condonation of Delay)',
+    shortTitle: 'Form 4',
+    badgeBg: 'rgba(239, 68, 68, 0.15)',
+    badgeFg: '#DC2626',
+    badgeBorder: 'rgba(239, 68, 68, 0.3)',
+    tag: 'F4',
+    timing: 'Pre/Post Grant',
+    description: 'Request for extension of time or condonation of delay (Section 53(2), 142(4), Rules 12(5), 13(6), 24B(6), 24C(11), 80(1A), 130, 131, 138)'
   }
 ];
 
@@ -234,6 +246,147 @@ export const FORM_27_SUBTYPES = [
   }
 ];
 
+
+export const FORM_4_SUBTYPES = [
+  {
+    id: 'FORM_4_S53_2_R80_1A',
+    label: 'Extension u/s 53(2) and u/r 80(1A) [Subsequent Renewals]',
+    shortLabel: 'u/s 53(2) & u/r 80(1A) [Subsequent Renewals]',
+    code: 'Extension u/s 53(2) and u/r 80(1A) [Subsequent Renewals]',
+    rule: 'Section 53(2) & Rule 80(1A)',
+    duration: 'Up to 6 Months',
+    timing: 'Post-Grant (Year 3 to Year 20)',
+    description: 'Extension of time for payment of annual maintenance renewal fee (annuities) for Year 3 onwards to prevent patent lapse under Section 53(2) and Rule 80(1A).',
+    conditions: 'Request on Form 4 must be filed within the 6-month extension window from the annual anniversary date, accompanied by the annual renewal fee and monthly extension fee.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'patent_number',
+    numberFieldLabel: 'Patent Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R24B_6',
+    label: 'Extension u/r 24B(6)/24B(5)',
+    shortLabel: 'u/r 24B(6)/24B(5) [FER Response - Ordinary]',
+    code: 'Extension u/r 24B(6)/24B(5)',
+    rule: 'Rule 24B(6) read with Rule 24B(5)',
+    duration: 'Up to 3 Months',
+    timing: 'Examination Stage (Ordinary Examination)',
+    description: 'Extension of time for putting an application in order for grant or responding to the First Examination Report (FER) under ordinary examination (Section 21 & Rule 24B).',
+    conditions: 'Form 4 must be filed prior to the expiry of the standard 6-month FER deadline. Extends response window up to total 9 months from the date of the FER.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R24C_11',
+    label: 'Extension u/r 24C(11)',
+    shortLabel: 'u/r 24C(11) [FER Response - Expedited]',
+    code: 'Extension u/r 24C(11)',
+    rule: 'Rule 24C(11) read with Rule 24C(10)',
+    duration: 'Up to 3 Months',
+    timing: 'Examination Stage (Expedited Route - Form 18A)',
+    description: 'Extension of time to overcome objections and respond to the First Examination Report (FER) under the Expedited Examination procedure (Form 18A).',
+    conditions: 'Form 4 must be filed before the initial 6-month expedited FER period expires. Extends the response window up to 9 months.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R130',
+    label: 'Extension u/r 130',
+    shortLabel: 'u/r 130 [Review of Controller Decision / Ex-Parte Order]',
+    code: 'Extension u/r 130',
+    rule: 'Rule 130 & Section 77(1)(f)/(g)',
+    duration: 'Not exceeding 1 Month',
+    timing: 'Post-Decision / Opposition / Hearing',
+    description: 'Extension of time for filing an application for review of Controller decision or setting aside of ex-parte order on Form 24 beyond the standard 1-month window.',
+    conditions: 'Form 4 petition must explain genuine grounds and reasons for delay to the Controller, accompanied by prescribed fee.',
+    feeInfo: 'Statutory extension fee: ₹1,000 (Natural person / Startup / Small entity / Edu) | ₹4,000 (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_S142_4_R80_1A',
+    label: '142(4) and u/r 80(1A) [First Renewal upon Grant]',
+    shortLabel: '142(4) & u/r 80(1A) [First Renewal upon Grant]',
+    code: '142(4) and u/r 80(1A) [First Renewal upon Grant]',
+    rule: 'Section 142(4) & Rule 80(1A)',
+    duration: 'Up to 6 Months (Total 9 Months from date of recordal)',
+    timing: 'Post-Grant (First Annuity Backlog)',
+    description: 'Extension of time for payment of accumulated backlog renewal fees when patent is granted more than 2 years from filing date under Section 142(4) & Rule 80(1A).',
+    conditions: 'Standard period is 3 months from the date of recordal in the Register of Patents; Form 4 allows extension up to 9 months from the date of recordal.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'patent_number',
+    numberFieldLabel: 'Patent Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R13_6',
+    label: 'Extension u/r 13(6)',
+    shortLabel: 'u/r 13(6) [Declaration of Inventorship Form 5]',
+    code: 'Extension u/r 13(6)',
+    rule: 'Rule 13(6)',
+    duration: 'Up to 1 Month (Extendable under Rule 138 up to 6 Months)',
+    timing: 'Complete Specification Filing Stage',
+    description: 'Extension of time for submitting Declaration as to Inventorship (Form 5) beyond 1 month from filing complete specification or Indian national phase entry.',
+    conditions: 'Form 4 must be filed with the prescribed monthly extension fee before or during the extension window.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R12_5',
+    label: 'Extension u/r 12(5) NEW',
+    shortLabel: 'u/r 12(5) [Foreign Filings Form 3 / Section 8] NEW',
+    code: 'Extension u/r 12(5)',
+    isNew: true,
+    rule: 'Rule 12(5) (Patents Amendment Rules 2024)',
+    duration: 'Up to 3 Months',
+    timing: 'Post-FER Examination Stage',
+    description: 'Extension of time or condonation of delay for filing updated statement and undertaking regarding corresponding foreign patent applications (Form 3 / Section 8).',
+    conditions: 'Introduced by 2024 Amendments: updated Form 3 details are due within 3 months of FER; extendable up to 3 months via Form 4 with prescribed monthly fee.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R131',
+    label: 'Extension u/r 131 NEW',
+    shortLabel: 'u/r 131 [Statement of Working Form 27] NEW',
+    code: 'Extension u/r 131',
+    isNew: true,
+    rule: 'Rule 131(2) Proviso (Patents Amendment Rules 2024)',
+    duration: 'Up to 3 Months',
+    timing: 'Triennial Commercial Working Stage',
+    description: 'Extension of time for submitting the triennial Statement of Working of Patent (Form 27) under amended Rule 131(2).',
+    conditions: 'Form 4 petition to extend the September 30 filing deadline by up to 3 months for the relevant 3-year financial block.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'patent_number',
+    numberFieldLabel: 'Patent Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_4_R138',
+    label: 'u/r 138 NEW',
+    shortLabel: 'u/r 138 [Omnibus Extension / Condonation] NEW',
+    code: 'u/r 138',
+    isNew: true,
+    rule: 'Rule 138 (Patents Amendment Rules 2024)',
+    duration: 'Up to 6 Months (Cumulative)',
+    timing: 'Any Stage under the Rules',
+    description: 'Omnibus discretionary power of the Controller to extend time specified or condone delay for doing any act or taking any proceeding under the Patent Rules.',
+    conditions: 'Substituted in 2024: Applicable to any procedural timeline under the Rules (except hard-coded statutory limits in the Act). May be requested multiple times sequentially within a cumulative 6-month limit on Form 4.',
+    feeInfo: 'Statutory monthly extension fee: ₹1,000/mo (Natural person / Startup / Small entity / Edu) | ₹4,000/mo (Large entity)',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  }
+];
 
 export const FORM_30_ENTRIES = [
   // --- WITH FEE OPTIONS (IPO First Schedule & Section 142) ---

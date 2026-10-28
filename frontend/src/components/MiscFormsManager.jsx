@@ -13,6 +13,7 @@ import {
   FORM_6_SUBTYPES,
   FORM_16_SUBTYPES,
   FORM_27_SUBTYPES,
+  FORM_4_SUBTYPES,
   FORM_30_ENTRIES,
   getMiscFormStatusInfo,
   getMainFormTypeInfo
@@ -66,6 +67,9 @@ export default function MiscFormsManager({
     }
     if (selectedMainType === 'FORM_27') {
       return FORM_27_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_27_SUBTYPES[0];
+    }
+    if (selectedMainType === 'FORM_4') {
+      return FORM_4_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_4_SUBTYPES[0];
     }
     return FORM_30_ENTRIES.find((s) => s.id === selectedSubtype) || availableForm30Entries[0] || FORM_30_ENTRIES[0];
   }, [selectedMainType, selectedSubtype, availableForm30Entries]);
@@ -162,7 +166,7 @@ export default function MiscFormsManager({
           <Shield size={16} color="var(--accent)" />
           <div>
             <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-              Miscellaneous Forms Tracker (Form 13, 6, 16, 30 & Form 27)
+              Miscellaneous Forms Tracker (Form 13, 6, 16, 30, 27 & Form 4)
             </div>
             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
               Dedicated lifecycle: Need Confirmation ➔ Sent for Filing (3-Day Ack) ➔ Filed ➔ Updated by Patent Office
@@ -582,7 +586,7 @@ export default function MiscFormsManager({
               background: 'var(--surface)',
               borderRadius: '12px',
               width: '100%',
-              maxWidth: '560px',
+              maxWidth: '720px', maxHeight: '90vh', overflowY: 'auto',
               padding: '20px',
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
               border: '1px solid var(--line)',
@@ -636,6 +640,10 @@ export default function MiscFormsManager({
                             setSelectedSubtype('FORM_27_TRIENNIAL');
                             setTargetNumber(record.patent_number || record.application_number || '');
                             setFeeMode('WITHOUT_FEE');
+                          } else if (mainType.id === 'FORM_4') {
+                            setSelectedSubtype('FORM_4_R24B_6');
+                            setTargetNumber(record.application_number || record.patent_number || '');
+                            setFeeMode('WITH_FEE');
                           } else {
                             setSelectedSubtype('ENTRY_S142_3_RESPONSE');
                             setTargetNumber(record.application_number || '');
@@ -683,6 +691,125 @@ export default function MiscFormsManager({
                 </div>
               )}
 
+              {/* Dedicated Form 4 (Request for Extension of Time or Condonation of Delay) UI */}
+              {selectedMainType === 'FORM_4' && (
+                <div style={{
+                  padding: '14px',
+                  borderRadius: '8px',
+                  background: 'var(--page)',
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)', fontStyle: 'italic', letterSpacing: '-0.2px' }}>
+                      REQUEST FOR EXTENSION OF TIME OR CONDONATION OF DELAY - Form 4
+                    </div>
+                    <span style={{ fontSize: '10.5px', color: 'var(--accent)', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                      Fee: ₹1,000/mo (Edu/Startup/Natural) | ₹4,000/mo (Others)
+                    </span>
+                  </div>
+
+                  {/* 3-Column Radio Grid as shown in official IPO portal */}
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '10px 14px',
+                    fontSize: '11.5px',
+                  }}>
+                    {FORM_4_SUBTYPES.map((s) => {
+                      const isChecked = selectedSubtype === s.id;
+                      return (
+                        <label
+                          key={s.id}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '6px',
+                            cursor: 'pointer',
+                            color: isChecked ? 'var(--ink)' : 'var(--muted)',
+                            fontWeight: isChecked ? 700 : 500,
+                            lineHeight: 1.35,
+                          }}
+                        >
+                          <input
+                            type="radio"
+                            name="form_4_subtype_radio"
+                            checked={isChecked}
+                            onChange={() => {
+                              setSelectedSubtype(s.id);
+                              if (s.numberField === 'patent_number') {
+                                setTargetNumber(record.patent_number || '');
+                              } else {
+                                setTargetNumber(record.application_number || '');
+                              }
+                            }}
+                            style={{ marginTop: '2px', accentColor: '#DC2626' }}
+                          />
+                          <span>
+                            {s.code}{' '}
+                            {s.isNew && (
+                              <span style={{
+                                background: 'linear-gradient(90deg, #10B981, #EC4899, #F59E0B)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                fontWeight: 900,
+                                fontSize: '10.5px',
+                                marginLeft: '3px',
+                                letterSpacing: '0.5px'
+                              }}>
+                                NEW
+                              </span>
+                            )}
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Detailed context card for selected Form 4 option */}
+                  {currentSubtypeObj && selectedMainType === 'FORM_4' && (
+                    <div style={{
+                      marginTop: '4px',
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      background: 'rgba(220, 38, 38, 0.05)',
+                      border: '1px solid rgba(220, 38, 38, 0.2)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '4px',
+                      fontSize: '11.5px',
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                        <span style={{ fontWeight: 800, color: '#DC2626' }}>
+                          Rule: {currentSubtypeObj.rule}
+                        </span>
+                        <span style={{
+                          padding: '1px 8px',
+                          borderRadius: '10px',
+                          fontSize: '10.5px',
+                          fontWeight: 800,
+                          background: '#DC2626',
+                          color: '#fff',
+                        }}>
+                          Duration: {currentSubtypeObj.duration}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--ink)', fontWeight: 600 }}>
+                        {currentSubtypeObj.description}
+                      </div>
+                      <div style={{ color: 'var(--muted)', fontSize: '11px' }}>
+                        <strong>Conditions:</strong> {currentSubtypeObj.conditions}
+                      </div>
+                      <div style={{ color: 'var(--muted)', fontSize: '11px' }}>
+                        <strong>Fee:</strong> {currentSubtypeObj.feeInfo}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Form 30 Specific: Radio buttons With Fee vs Without Fee (From Reference Screenshots) */}
               {selectedMainType === 'FORM_30' && (
                 <div style={{ padding: '10px 12px', borderRadius: '6px', background: 'var(--page)', border: '1px solid var(--line)' }}>
@@ -724,7 +851,8 @@ export default function MiscFormsManager({
                 </div>
               )}
 
-              {/* Specific Subtype Selector */}
+              {/* Specific Subtype Selector (Hidden for Form 4 since dedicated radio grid is displayed) */}
+              {selectedMainType !== 'FORM_4' && (
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '6px' }}>
                   {selectedMainType === 'FORM_13' ? 'Select Form 13 Action Flow *' : 'Select Form *'}
@@ -739,6 +867,7 @@ export default function MiscFormsManager({
                     else if (selectedMainType === 'FORM_6') found = FORM_6_SUBTYPES.find((s) => s.id === val);
                     else if (selectedMainType === 'FORM_16') found = FORM_16_SUBTYPES.find((s) => s.id === val);
                     else if (selectedMainType === 'FORM_27') found = FORM_27_SUBTYPES.find((s) => s.id === val);
+                    else if (selectedMainType === 'FORM_4') found = FORM_4_SUBTYPES.find((s) => s.id === val);
                     else found = FORM_30_ENTRIES.find((s) => s.id === val);
 
                     if (found && found.numberField === 'patent_number') {
@@ -796,7 +925,7 @@ export default function MiscFormsManager({
                 </select>
 
                 {/* Blue confirmation text matching IPO portal screenshots */}
-                {currentSubtypeObj && (
+                {currentSubtypeObj && selectedMainType !== 'FORM_4' && (
                   <div style={{
                     color: '#0284c7',
                     fontWeight: 700,
@@ -813,6 +942,7 @@ export default function MiscFormsManager({
                   </div>
                 )}
               </div>
+              )}
 
               {/* Target Application or Patent Number */}
               <div>

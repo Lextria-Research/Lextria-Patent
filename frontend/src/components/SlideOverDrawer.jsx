@@ -309,6 +309,105 @@ export default function SlideOverDrawer({
     setTimeout(() => setCopiedField(null), 2000);
   };
 
+  const handleCopyAllDetails = () => {
+    const inventorsText = inventorsList && inventorsList.length > 0
+      ? inventorsList.map((inv, idx) => 
+          `  ${idx + 1}. ${inv.name}\n` +
+          `     Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}\n` +
+          `     Gender: ${inv.gender || 'N/A'} | Nationality: ${inv.nationality || 'N/A'} | Country of Residence: ${inv.country_of_residence || 'N/A'}\n` +
+          `     Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}`
+        ).join('\n\n')
+      : '  No inventors registered.';
+
+    const dossierText = [
+      `=================================================================`,
+      `PATENT APPLICATION DOSSIER: ${record.project_code || 'N/A'}`,
+      `=================================================================`,
+      `Docket Reference: ${record.project_code || 'N/A'}`,
+      `Application Number: ${record.application_number || 'Pending Assignment'}`,
+      `Patent Number: ${record.patent_number || 'Not Yet Granted'}`,
+      `Application Type: ${record.application_type || record.type || (record.cs_filing_date && record.ps_filing_date ? 'PS-CS' : (record.cs_filing_date ? 'CS' : 'PS'))}`,
+      `Current Status: ${record.current_status || 'Pending'}`,
+      `Jurisdiction: India (Indian Patent Office - IPO)`,
+      `Client Category: ${record.is_mahe ? 'MAHE (Educational Institution)' : 'Non-MAHE'}`,
+      ``,
+      `--- TITLE OF INVENTION ---`,
+      `${record.title || 'Untitled Invention'}`,
+      ``,
+      `--- APPLICANT / ASSIGNEE ---`,
+      `Applicant Name: ${applicantName || record.applicant_name || 'N/A'}`,
+      `Entity Classification: ${entityCategory || record.entity_category || 'Educational Institution'}`,
+      `Registered Address: ${applicantAddress || record.applicant_address || 'Address on file'}`,
+      `Contact Email: ${applicantEmail || record.applicant_email || 'N/A'}`,
+      `Contact Phone: ${applicantPhone || record.applicant_phone || 'N/A'}`,
+      ``,
+      `--- INVENTORS ROSTER (${inventorsList.length}) ---`,
+      inventorsText,
+      ``,
+      `--- ABSTRACT OF INVENTION ---`,
+      `${record.abstract || 'No abstract entered.'}`,
+      ``,
+      `--- PATENT CLAIMS ---`,
+      `${record.claims || 'No claims entered.'}`,
+      ``,
+      `--- KEY STATUTORY & PROSECUTION DATES ---`,
+      `- IDF Receipt Date: ${record.idf_date || 'N/A'}`,
+      `- Provisional Specification (PS) Filing Date: ${record.ps_filing_date || 'N/A'}`,
+      `- Complete Specification (CS) Filing Date: ${record.cs_filing_date || 'N/A'}`,
+      `- Section 11A Publication Date: ${record.publication_date || 'N/A'}`,
+      `- Request for Examination (Form 18/18A) Filing Date: ${record.form_18_filing_date || record.rfe_date || 'N/A'}`,
+      `- First Examination Report (FER) Issue Date: ${record.fer_notice_date || 'N/A'}`,
+      `- FER Response Deadline: ${record.fer_deadline || 'N/A'}`,
+      `- Hearing Date: ${record.hearing_date || 'N/A'}`,
+      `- Patent Grant Date: ${record.grant_date || 'N/A'}`,
+      `=================================================================`
+    ].join('\n');
+
+    copyToClipboard(dossierText, 'all_details');
+  };
+
+  const handleCopyApplicantDetails = () => {
+    const text = [
+      `APPLICANT DETAILS:`,
+      `Name: ${applicantName || record.applicant_name || 'N/A'}`,
+      `Entity Classification: ${entityCategory || record.entity_category || 'N/A'}`,
+      `Address: ${applicantAddress || record.applicant_address || 'Address on file'}`,
+      `Email: ${applicantEmail || record.applicant_email || 'N/A'}`,
+      `Phone: ${applicantPhone || record.applicant_phone || 'N/A'}`
+    ].join('\n');
+    copyToClipboard(text, 'applicant');
+  };
+
+  const handleCopyAllInventors = () => {
+    if (!inventorsList || inventorsList.length === 0) {
+      copyToClipboard('No inventors listed.', 'inventors_all');
+      return;
+    }
+    const text = [
+      `INVENTORS ROSTER (${inventorsList.length}):`,
+      ...inventorsList.map((inv, idx) => 
+        `${idx + 1}. ${inv.name}\n` +
+        `   Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}\n` +
+        `   Gender: ${inv.gender || 'N/A'} | Nationality: ${inv.nationality || 'N/A'} | Country of Residence: ${inv.country_of_residence || 'N/A'}\n` +
+        `   Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}`
+      )
+    ].join('\n\n');
+    copyToClipboard(text, 'inventors_all');
+  };
+
+  const handleCopySingleInventor = (inv, idx) => {
+    const text = [
+      `Inventor ${idx + 1}: ${inv.name}`,
+      `Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}`,
+      `Gender: ${inv.gender || 'N/A'}`,
+      `Nationality: ${inv.nationality || 'N/A'}`,
+      `Country of Residence: ${inv.country_of_residence || 'N/A'}`,
+      `Email: ${inv.email || 'N/A'}`,
+      `Phone: ${inv.phone || 'N/A'}`
+    ].join('\n');
+    copyToClipboard(text, `inv_${inv.id || idx}`);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -494,6 +593,28 @@ export default function SlideOverDrawer({
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <button
+            onClick={handleCopyAllDetails}
+            style={{
+              padding: '6px 12px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: copiedField === 'all_details' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+              color: copiedField === 'all_details' ? '#059669' : 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              transition: 'all 0.15s ease',
+            }}
+            title="Copy Complete Structured Patent Application Dossier (Title, Applicant, Inventors, Abstract, Claims, Dates)"
+          >
+            {copiedField === 'all_details' ? <Check size={14} color="#059669" /> : <Copy size={14} />}
+            {copiedField === 'all_details' ? 'Dossier Copied!' : 'Copy All Details'}
+          </button>
+
           {onOpenTimeline && (
             <button
               onClick={() => onOpenTimeline(record)}
@@ -597,6 +718,112 @@ export default function SlideOverDrawer({
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Quick Copy Action Bar */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '10px 14px',
+              borderRadius: '8px',
+              background: 'var(--surface)',
+              border: '1px solid var(--line)',
+              flexWrap: 'wrap',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <FileText size={16} color="var(--accent)" />
+                <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
+                  Quick Copy Tools
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={handleCopyAllDetails}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--line)',
+                    background: copiedField === 'all_details' ? 'rgba(16, 185, 129, 0.15)' : 'var(--page)',
+                    color: copiedField === 'all_details' ? '#059669' : 'var(--ink)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Copy full patent application dossier"
+                >
+                  {copiedField === 'all_details' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                  {copiedField === 'all_details' ? 'Dossier Copied!' : 'Copy All Details'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(record.title || '', 'title')}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--line)',
+                    background: copiedField === 'title' ? 'rgba(16, 185, 129, 0.15)' : 'var(--page)',
+                    color: copiedField === 'title' ? '#059669' : 'var(--ink)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Copy invention title"
+                >
+                  {copiedField === 'title' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                  {copiedField === 'title' ? 'Title Copied!' : 'Copy Title'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyApplicantDetails}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--line)',
+                    background: copiedField === 'applicant' ? 'rgba(16, 185, 129, 0.15)' : 'var(--page)',
+                    color: copiedField === 'applicant' ? '#059669' : 'var(--ink)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Copy applicant details"
+                >
+                  {copiedField === 'applicant' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                  {copiedField === 'applicant' ? 'Applicant Copied!' : 'Copy Applicant'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleCopyAllInventors}
+                  style={{
+                    padding: '5px 10px',
+                    borderRadius: '5px',
+                    border: '1px solid var(--line)',
+                    background: copiedField === 'inventors_all' ? 'rgba(16, 185, 129, 0.15)' : 'var(--page)',
+                    color: copiedField === 'inventors_all' ? '#059669' : 'var(--ink)',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '5px'
+                  }}
+                  title="Copy all inventors"
+                >
+                  {copiedField === 'inventors_all' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                  {copiedField === 'inventors_all' ? 'Inventors Copied!' : 'Copy Inventors'}
+                </button>
+              </div>
+            </div>
+
             {/* Interconnected Client Dossier from core.clients */}
             <div
               style={{
@@ -933,7 +1160,30 @@ export default function SlideOverDrawer({
             </div>
 
             <div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Invention Title</div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600, textTransform: 'uppercase' }}>Invention Title</div>
+                <button
+                  type="button"
+                  onClick={() => copyToClipboard(record.title || '', 'title')}
+                  style={{
+                    padding: '2px 8px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--line)',
+                    background: copiedField === 'title' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                    color: copiedField === 'title' ? '#059669' : 'var(--accent)',
+                    fontSize: '10.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                  title="Copy Invention Title"
+                >
+                  {copiedField === 'title' ? <Check size={11} color="#059669" /> : <Copy size={11} />}
+                  {copiedField === 'title' ? 'Copied Title' : 'Copy Title'}
+                </button>
+              </div>
               <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--ink)', marginTop: '4px', lineHeight: 1.4 }}>
                 {record.title}
               </div>
@@ -941,7 +1191,30 @@ export default function SlideOverDrawer({
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
               <div style={{ padding: '12px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-                <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>APPLICANT</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>APPLICANT</div>
+                  <button
+                    type="button"
+                    onClick={handleCopyApplicantDetails}
+                    style={{
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--line)',
+                      background: copiedField === 'applicant' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                      color: copiedField === 'applicant' ? '#059669' : 'var(--accent)',
+                      fontSize: '10px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}
+                    title="Copy Applicant Information"
+                  >
+                    {copiedField === 'applicant' ? <Check size={11} color="#059669" /> : <Copy size={11} />}
+                    {copiedField === 'applicant' ? 'Copied' : 'Copy'}
+                  </button>
+                </div>
                 <div style={{ fontWeight: 600, marginTop: '2px' }}>{record.applicant_name}</div>
                 <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '2px' }}>{record.applicant_address || 'Address on file'}</div>
               </div>
@@ -1104,11 +1377,25 @@ export default function SlideOverDrawer({
                     </span>
                     {record.abstract && (
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(record.abstract, 'abstract')}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '2px' }}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: copiedField === 'abstract' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                          color: copiedField === 'abstract' ? '#059669' : 'var(--accent)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
                         title="Copy Abstract"
                       >
-                        {copiedField === 'abstract' ? <Check size={13} color="var(--ok-fg)" /> : <Copy size={13} />}
+                        {copiedField === 'abstract' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                        {copiedField === 'abstract' ? 'Copied!' : 'Copy Abstract'}
                       </button>
                     )}
                   </div>
@@ -1137,11 +1424,25 @@ export default function SlideOverDrawer({
                     </span>
                     {record.claims && (
                       <button
+                        type="button"
                         onClick={() => copyToClipboard(record.claims, 'claims')}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--muted)', padding: '2px' }}
+                        style={{
+                          padding: '3px 8px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: copiedField === 'claims' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                          color: copiedField === 'claims' ? '#059669' : 'var(--accent)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px'
+                        }}
                         title="Copy Claims"
                       >
-                        {copiedField === 'claims' ? <Check size={13} color="var(--ok-fg)" /> : <Copy size={13} />}
+                        {copiedField === 'claims' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                        {copiedField === 'claims' ? 'Copied!' : 'Copy Claims'}
                       </button>
                     )}
                   </div>
@@ -1473,33 +1774,56 @@ export default function SlideOverDrawer({
                   <Building size={16} color="var(--accent)" />
                   <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>Applicant Organization Details</span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (onUpdate) {
-                      onUpdate(record.project_code, {
-                        applicant_name: applicantName,
-                        applicant_address: applicantAddress,
-                        entity_category: entityCategory,
-                        is_mahe: isMahe,
-                        applicant_email: applicantEmail,
-                        applicant_phone: applicantPhone,
-                      });
-                    }
-                  }}
-                  style={{
-                    padding: '5px 12px',
-                    borderRadius: '5px',
-                    border: 'none',
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Save Applicant Details
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCopyApplicantDetails}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '5px',
+                      border: '1px solid var(--line)',
+                      background: copiedField === 'applicant' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                      color: copiedField === 'applicant' ? '#059669' : 'var(--accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    title="Copy Applicant Organization Details"
+                  >
+                    {copiedField === 'applicant' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                    {copiedField === 'applicant' ? 'Copied!' : 'Copy Applicant Info'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (onUpdate) {
+                        onUpdate(record.project_code, {
+                          applicant_name: applicantName,
+                          applicant_address: applicantAddress,
+                          entity_category: entityCategory,
+                          is_mahe: isMahe,
+                          applicant_email: applicantEmail,
+                          applicant_phone: applicantPhone,
+                        });
+                      }
+                    }}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '5px',
+                      border: 'none',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Save Applicant Details
+                  </button>
+                </div>
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -1624,25 +1948,48 @@ export default function SlideOverDrawer({
                     Inventors Roster ({inventorsList.length})
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowAddInventor(!showAddInventor)}
-                  style={{
-                    padding: '5px 12px',
-                    borderRadius: '5px',
-                    border: '1px solid var(--line)',
-                    background: 'var(--surface)',
-                    color: 'var(--accent)',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                  }}
-                >
-                  <Plus size={12} /> Add Inventor
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <button
+                    type="button"
+                    onClick={handleCopyAllInventors}
+                    style={{
+                      padding: '5px 10px',
+                      borderRadius: '5px',
+                      border: '1px solid var(--line)',
+                      background: copiedField === 'inventors_all' ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                      color: copiedField === 'inventors_all' ? '#059669' : 'var(--accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                    title="Copy Complete Inventors Roster to clipboard"
+                  >
+                    {copiedField === 'inventors_all' ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                    {copiedField === 'inventors_all' ? 'Copied Roster!' : 'Copy All Inventors'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAddInventor(!showAddInventor)}
+                    style={{
+                      padding: '5px 12px',
+                      borderRadius: '5px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)',
+                      color: 'var(--accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Plus size={12} /> Add Inventor
+                  </button>
+                </div>
               </div>
 
               {/* Add Inventor Subform */}
@@ -1845,31 +2192,54 @@ export default function SlideOverDrawer({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = inventorsList.filter((_, i) => i !== idx);
-                          setInventorsList(updated);
-                          const summary = updated.map(i => i.name).join(', ');
-                          try {
-                            localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
-                          } catch {}
-                          if (onUpdate) {
-                            onUpdate(record.project_code, { inventors: updated, inventors_summary: summary });
-                          }
-                        }}
-                        style={{
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          border: '1px solid var(--line)',
-                          background: 'transparent',
-                          color: '#DC2626',
-                          cursor: 'pointer',
-                        }}
-                        title="Remove inventor"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleCopySingleInventor(inv, idx)}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--line)',
+                            background: copiedField === `inv_${inv.id || idx}` ? 'rgba(16, 185, 129, 0.15)' : 'var(--surface)',
+                            color: copiedField === `inv_${inv.id || idx}` ? '#059669' : 'var(--ink)',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}
+                          title="Copy this inventor's details"
+                        >
+                          {copiedField === `inv_${inv.id || idx}` ? <Check size={12} color="#059669" /> : <Copy size={12} />}
+                          {copiedField === `inv_${inv.id || idx}` ? 'Copied' : 'Copy'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = inventorsList.filter((_, i) => i !== idx);
+                            setInventorsList(updated);
+                            const summary = updated.map(i => i.name).join(', ');
+                            try {
+                              localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
+                            } catch {}
+                            if (onUpdate) {
+                              onUpdate(record.project_code, { inventors: updated, inventors_summary: summary });
+                            }
+                          }}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--line)',
+                            background: 'transparent',
+                            color: '#DC2626',
+                            cursor: 'pointer',
+                          }}
+                          title="Remove inventor"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
                     </div>
 
                     {/* Metadata Badges: Gender, Nationality, Country of Residence */}
