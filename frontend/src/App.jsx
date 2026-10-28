@@ -1111,32 +1111,7 @@ export default function App() {
               {currentUser.role === 'DRAFTER' ? 'Drafting Cockpit' : 'Portfolio Master'}
             </button>
 
-            {/* Tab: Formalities Docket (Only for Paralegal & Super Admin) */}
-            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
-              <button
-                onClick={() => setActiveNavTab('FORMALITIES')}
-                className="nav-tab-btn"
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: activeNavTab === 'FORMALITIES' ? 'var(--page)' : 'transparent',
-                  color: activeNavTab === 'FORMALITIES' ? 'var(--ink)' : 'var(--muted)',
-                  fontSize: '12px',
-                  fontWeight: activeNavTab === 'FORMALITIES' ? 800 : 600,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  borderBottom: activeNavTab === 'FORMALITIES' ? '2.5px solid #059669' : '2.5px solid transparent',
-                  transition: 'all 0.15s ease',
-                }}
-                title="Rule 135/137 petitions, Form 9/18 RFE clock, IPO discrepancies & Sec 53 renewals"
-              >
-                <Shield size={14} color={activeNavTab === 'FORMALITIES' ? '#059669' : 'currentColor'} />
-                Formalities Docket
-              </button>
-            )}
+
 
             {/* Tab 2: Deadlines Checklist */}
             <button
@@ -1277,7 +1252,7 @@ export default function App() {
               selectedDrafterFilter={selectedDrafterFilter}
               onSelectDrafter={(drafter) => setSelectedDrafterFilter(drafter)}
               onOpenReassign={(drafter) => handleOpenReassign(drafter)}
-              onNavigateToFormalities={() => setActiveNavTab('FORMALITIES')}
+              onNavigateToFormalities={null}
             />
 
             {/* Super Admin Drafter Filter Context Banner */}
@@ -1346,19 +1321,7 @@ export default function App() {
           </div>
         )}
 
-        {/* VIEW: FORMALITIES DOCKET (Paralegal & Super Admin) */}
-        {activeNavTab === 'FORMALITIES' && (
-          <div key="FORMALITIES" className="animate-tab-view" style={{ flex: 1, overflow: 'hidden' }}>
-            <FormalitiesDocket
-              records={roleFilteredRecords}
-              currentUser={currentUser}
-              onOpenDrawer={(rec) => setSelectedRecord(rec)}
-              onOpenEdit={(rec) => setEditingRecord(rec)}
-              onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
-              onOpenTimeline={(rec) => setTimelineRecord(rec)}
-            />
-          </div>
-        )}
+
 
         {/* VIEW 2: DEADLINES CHECKLIST (Requirement 8) */}
         {activeNavTab === 'DEADLINES' && (

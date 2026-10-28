@@ -1,5 +1,6 @@
 // frontend/src/components/CalendarView.jsx
 import React, { useState, useMemo } from 'react';
+import { addDays, addMonths, getUpcomingInventorUpdateCycle } from '../utils/statutoryDeadlines';
 import {
   Calendar as CalendarIcon, ChevronLeft, ChevronRight, Download,
   Share2, Clock, Filter, AlertTriangle, CheckCircle2, Shield,
@@ -79,6 +80,31 @@ export default function CalendarView({
       // Client Delivery Commitment (Prominent in Reference UI Design Page 3)
       if (r.client_commitment_date && !r.is_abandoned) {
         addEvent(r.client_commitment_date, 'COMMITMENT', 'Client delivery', '#EA580C');
+      }
+
+      // 3-Day Filing Acknowledgment to Inventor (Requirement 5)
+      const statusLower = (r.current_status || '').toLowerCase();
+      if (statusLower.includes('sent for filing') && !r.is_abandoned && !r.ack_sent_to_inventor_date) {
+        const ackDate = r.filing_ack_deadline || (r.sent_for_filing_date ? addDays(r.sent_for_filing_date, 3) : addDays(r.status_updated_at || r.updated_at || new Date(), 3));
+        addEvent(ackDate, 'INVENTOR_ACK', '3-Day Filing Ack Due', '#D97706');
+      }
+
+      // 6-Day FER Reply Draft Confirmation to Inventor (Requirement 6)
+      if ((statusLower.includes('fer received') || (r.fer_notice_date && !statusLower.includes('reply filed') && !statusLower.includes('hearing'))) && !r.is_abandoned && !r.fer_draft_sent_date) {
+        const ferRefDate = r.fer_notice_date || r.status_updated_at || r.updated_at || new Date();
+        const confirmDate = r.fer_draft_confirmation_deadline || addDays(ferRefDate, 6);
+        addEvent(confirmDate, 'FER_CONFIRM', '6-Day FER Draft Due', '#EA580C');
+      }
+
+      // Bi-Monthly Post-Filing Inventor Updates (Every 2 Months) (Requirement 7)
+      const earliestFiling = (r.ps_filing_date && r.cs_filing_date)
+        ? (new Date(r.ps_filing_date) <= new Date(r.cs_filing_date) ? r.ps_filing_date : r.cs_filing_date)
+        : (r.ps_filing_date || r.cs_filing_date);
+      if (earliestFiling && !r.is_abandoned && !r.grant_date) {
+        const cycleInfo = getUpcomingInventorUpdateCycle(earliestFiling, []);
+        if (cycleInfo && cycleInfo.dueDate) {
+          addEvent(cycleInfo.dueDate, 'INVENTOR_UPDATE', `Inventor Update (${cycleInfo.cycleMonths}M)`, '#6366F1');
+        }
       }
     });
 

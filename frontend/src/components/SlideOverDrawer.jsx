@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { getStatusColor } from '../constants/patentStatuses';
 import { getFormFee, formatINR } from '../utils/feeSchedule';
-import { validateSection17PostDating } from '../utils/statutoryDeadlines';
+import { validateSection17PostDating, addDays, addMonths, getUpcomingInventorUpdateCycle } from '../utils/statutoryDeadlines';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 export default function SlideOverDrawer({
@@ -193,34 +193,52 @@ export default function SlideOverDrawer({
   const [applicantEmail, setApplicantEmail] = useState(record.applicant_email || 'ipr.office@manipal.edu');
   const [applicantPhone, setApplicantPhone] = useState(record.applicant_phone || '+91 820 292 2400');
 
-  // Inventors state
+  // Inventors state with institution, gender, nationality, country of residence (Requirement 1)
   const [inventorsList, setInventorsList] = useState(() => {
     try {
       const saved = localStorage.getItem(`patent_inventors_${record.project_code}`);
       if (saved) return JSON.parse(saved);
     } catch {}
+    if (record.inventors && Array.isArray(record.inventors) && record.inventors.length > 0) {
+      return record.inventors;
+    }
     if (record.inventors_summary) {
-      return record.inventors_summary.split(',').map((inv, idx) => ({
+      return record.inventors_summary.split(/[,;\n]+/).filter(Boolean).map((inv, idx) => ({
         id: `inv_${idx + 1}`,
-        name: inv.trim(),
-        department: 'Department of Research & Innovation',
-        email: `${inv.trim().toLowerCase().replace(/\s+/g, '.')}@manipal.edu`,
-        phone: '+91 98450 XXXXX',
+        name: inv.trim().replace(/^\d+[\.\)]\s*/, ''),
+        institution: record.applicant_name || 'Manipal Academy of Higher Education (MAHE)',
+        gender: 'Male',
         nationality: 'Indian',
+        country_of_residence: 'India',
+        department: 'Department of Research & Innovation',
+        email: `${inv.trim().toLowerCase().replace(/[^a-z0-9]/g, '.')}@manipal.edu`,
+        phone: '+91 98450 XXXXX',
       }));
     }
     return [
       {
         id: 'inv_1',
         name: 'Dr. Principal Investigator',
+        institution: record.applicant_name || 'Manipal Academy of Higher Education (MAHE)',
+        gender: 'Male',
+        nationality: 'Indian',
+        country_of_residence: 'India',
         department: 'Biomedical & Engineering Sciences',
         email: 'pi.research@manipal.edu',
         phone: '+91 98450 12345',
-        nationality: 'Indian',
       }
     ];
   });
-  const [newInventor, setNewInventor] = useState({ name: '', department: '', email: '', phone: '', nationality: 'Indian' });
+  const [newInventor, setNewInventor] = useState({
+    name: '',
+    institution: record.applicant_name || 'Manipal Academy of Higher Education (MAHE)',
+    gender: 'Male',
+    nationality: 'Indian',
+    country_of_residence: 'India',
+    department: '',
+    email: '',
+    phone: '',
+  });
   const [showAddInventor, setShowAddInventor] = useState(false);
 
   // Editable manual fields state
@@ -1652,44 +1670,108 @@ export default function SlideOverDrawer({
                     gap: '10px',
                   }}
                 >
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
-                    Add New Inventor to Patent Application
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
+                    Add New Inventor (Institution, Gender, Nationality & Residence)
                   </span>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <input
-                      type="text"
-                      placeholder="Full Name (e.g. Dr. Rajesh Kumar)"
-                      value={newInventor.name}
-                      onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
-                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Department / Affiliation"
-                      value={newInventor.department}
-                      onChange={(e) => setNewInventor({ ...newInventor, department: e.target.value })}
-                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email Address"
-                      value={newInventor.email}
-                      onChange={(e) => setNewInventor({ ...newInventor, email: e.target.value })}
-                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
-                    />
-                    <input
-                      type="text"
-                      placeholder="Phone / Mobile"
-                      value={newInventor.phone}
-                      onChange={(e) => setNewInventor({ ...newInventor, phone: e.target.value })}
-                      style={{ padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', fontSize: '12px' }}
-                    />
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Full Name *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dr. Rajesh Kumar"
+                        value={newInventor.name}
+                        onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Institution / University *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Manipal Institute of Technology (MIT)"
+                        value={newInventor.institution}
+                        onChange={(e) => setNewInventor({ ...newInventor, institution: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Gender</label>
+                      <select
+                        value={newInventor.gender}
+                        onChange={(e) => setNewInventor({ ...newInventor, gender: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Nationality</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Indian"
+                        value={newInventor.nationality}
+                        onChange={(e) => setNewInventor({ ...newInventor, nationality: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Country of Residence</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. India"
+                        value={newInventor.country_of_residence}
+                        onChange={(e) => setNewInventor({ ...newInventor, country_of_residence: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Department / School</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Dept of Biotechnology"
+                        value={newInventor.department}
+                        onChange={(e) => setNewInventor({ ...newInventor, department: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Email Address</label>
+                      <input
+                        type="email"
+                        placeholder="e.g. inventor@institution.edu"
+                        value={newInventor.email}
+                        onChange={(e) => setNewInventor({ ...newInventor, email: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, marginBottom: '3px' }}>Phone / Mobile</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. +91 98450 12345"
+                        value={newInventor.phone}
+                        onChange={(e) => setNewInventor({ ...newInventor, phone: e.target.value })}
+                        style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                      />
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '6px' }}>
                     <button
                       type="button"
                       onClick={() => setShowAddInventor(false)}
-                      style={{ padding: '5px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11px', cursor: 'pointer' }}
+                      style={{ padding: '6px 12px', borderRadius: '5px', border: '1px solid var(--line)', background: 'transparent', color: 'var(--muted)', fontSize: '11px', cursor: 'pointer' }}
                     >
                       Cancel
                     </button>
@@ -1710,12 +1792,21 @@ export default function SlideOverDrawer({
                           localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
                         } catch {}
                         if (onUpdate) {
-                          onUpdate(record.project_code, { inventors_summary: summary });
+                          onUpdate(record.project_code, { inventors: updated, inventors_summary: summary });
                         }
-                        setNewInventor({ name: '', department: '', email: '', phone: '', nationality: 'Indian' });
+                        setNewInventor({
+                          name: '',
+                          institution: record.applicant_name || '',
+                          gender: 'Male',
+                          nationality: 'Indian',
+                          country_of_residence: 'India',
+                          department: '',
+                          email: '',
+                          phone: '',
+                        });
                         setShowAddInventor(false);
                       }}
-                      style={{ padding: '5px 12px', borderRadius: '5px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                      style={{ padding: '6px 14px', borderRadius: '5px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
                     >
                       Save Inventor
                     </button>
@@ -1724,7 +1815,7 @@ export default function SlideOverDrawer({
               )}
 
               {/* Inventors List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {inventorsList.map((inv, idx) => (
                   <div
                     key={inv.id || idx}
@@ -1734,65 +1825,217 @@ export default function SlideOverDrawer({
                       background: 'var(--page)',
                       border: '1px solid var(--line)',
                       display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      gap: '12px',
+                      flexDirection: 'column',
+                      gap: '8px',
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div
-                        style={{
-                          width: '28px',
-                          height: '28px',
-                          borderRadius: '50%',
-                          background: 'rgba(37, 99, 235, 0.12)',
-                          color: '#2563EB',
-                          fontWeight: 800,
-                          fontSize: '11px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div
+                          style={{
+                            width: '28px',
+                            height: '28px',
+                            borderRadius: '50%',
+                            background: 'rgba(37, 99, 235, 0.12)',
+                            color: '#2563EB',
+                            fontWeight: 800,
+                            fontSize: '11px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {idx + 1}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '13.5px', color: 'var(--ink)' }}>
+                            {inv.name}
+                          </div>
+                          <div style={{ fontSize: '11.5px', color: 'var(--accent)', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                            <Building size={12} /> {inv.institution || record.applicant_name || 'Institution not specified'}
+                          </div>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const updated = inventorsList.filter((_, i) => i !== idx);
+                          setInventorsList(updated);
+                          const summary = updated.map(i => i.name).join(', ');
+                          try {
+                            localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
+                          } catch {}
+                          if (onUpdate) {
+                            onUpdate(record.project_code, { inventors: updated, inventors_summary: summary });
+                          }
                         }}
+                        style={{
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--line)',
+                          background: 'transparent',
+                          color: '#DC2626',
+                          cursor: 'pointer',
+                        }}
+                        title="Remove inventor"
                       >
-                        {idx + 1}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '13px', color: 'var(--ink)' }}>
-                          {inv.name}
-                        </div>
-                        <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
-                          {inv.department} • {inv.email} • {inv.phone}
-                        </div>
-                      </div>
+                        <Trash2 size={13} />
+                      </button>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = inventorsList.filter((_, i) => i !== idx);
-                        setInventorsList(updated);
-                        const summary = updated.map(i => i.name).join(', ');
-                        try {
-                          localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(updated));
-                        } catch {}
-                        if (onUpdate) {
-                          onUpdate(record.project_code, { inventors_summary: summary });
-                        }
-                      }}
-                      style={{
-                        padding: '4px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--line)',
-                        background: 'transparent',
-                        color: '#DC2626',
-                        cursor: 'pointer',
-                      }}
-                      title="Remove inventor"
-                    >
-                      <Trash2 size={13} />
-                    </button>
+                    {/* Metadata Badges: Gender, Nationality, Country of Residence */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '11px' }}>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontWeight: 600 }}>
+                        Gender: <strong>{inv.gender || 'Not specified'}</strong>
+                      </span>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontWeight: 600 }}>
+                        Nationality: <strong>{inv.nationality || 'Indian'}</strong>
+                      </span>
+                      <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--ink)', fontWeight: 600 }}>
+                        Residence: <strong>{inv.country_of_residence || 'India'}</strong>
+                      </span>
+                      {inv.department && (
+                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--muted)' }}>
+                          {inv.department}
+                        </span>
+                      )}
+                      {inv.email && (
+                        <span style={{ padding: '2px 8px', borderRadius: '4px', background: 'var(--surface)', border: '1px solid var(--line)', color: 'var(--muted)' }}>
+                          {inv.email}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
+              </div>
+
+              {/* 3. Inventor Communication & Statutory Compliance Rules (Requirements 5, 6, 7) */}
+              <div
+                style={{
+                  marginTop: '12px',
+                  padding: '14px',
+                  borderRadius: '10px',
+                  background: 'var(--surface)',
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '12px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Shield size={16} color="var(--accent)" />
+                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>
+                    Inventor Communication & Tracking Schedule
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                  {/* 3-Day Filing Ack */}
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      background: (record.current_status || '').toLowerCase().includes('sent for filing') ? 'rgba(245, 158, 11, 0.1)' : 'var(--page)',
+                      border: `1px solid ${(record.current_status || '').toLowerCase().includes('sent for filing') ? 'rgba(245, 158, 11, 0.3)' : 'var(--line)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                        3-Day Filing Acknowledgment to Inventor
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                        Triggered on 'Sent for filing' for PS, CS, PS-CS, FER reply, WS
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: (record.current_status || '').toLowerCase().includes('sent for filing') ? '#F59E0B' : 'var(--line)',
+                        color: (record.current_status || '').toLowerCase().includes('sent for filing') ? '#fff' : 'var(--muted)',
+                      }}
+                    >
+                      {(record.current_status || '').toLowerCase().includes('sent for filing') ? 'Action Due (3 Days)' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  {/* 6-Day FER Reply Draft Confirmation */}
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      background: (record.current_status || '').toLowerCase().includes('fer received') ? 'rgba(234, 88, 12, 0.1)' : 'var(--page)',
+                      border: `1px solid ${(record.current_status || '').toLowerCase().includes('fer received') ? 'rgba(234, 88, 12, 0.3)' : 'var(--line)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                        6-Day FER Reply Draft Confirmation
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                        Triggered upon 'FER received' to send response draft to inventor
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: (record.current_status || '').toLowerCase().includes('fer received') ? '#EA580C' : 'var(--line)',
+                        color: (record.current_status || '').toLowerCase().includes('fer received') ? '#fff' : 'var(--muted)',
+                      }}
+                    >
+                      {(record.current_status || '').toLowerCase().includes('fer received') ? 'Action Due (6 Days)' : 'Inactive'}
+                    </span>
+                  </div>
+
+                  {/* Bi-Monthly Updates */}
+                  <div
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: '6px',
+                      background: (record.ps_filing_date || record.cs_filing_date) ? 'rgba(99, 102, 241, 0.08)' : 'var(--page)',
+                      border: `1px solid ${(record.ps_filing_date || record.cs_filing_date) ? 'rgba(99, 102, 241, 0.25)' : 'var(--line)'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--ink)' }}>
+                        Bi-Monthly Post-Filing Updates (Every 2 Months)
+                      </div>
+                      <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                        Scheduled every 2 months after PS or CS filing (whichever is earlier)
+                      </div>
+                    </div>
+                    <span
+                      style={{
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: (record.ps_filing_date || record.cs_filing_date) ? 'rgba(99, 102, 241, 0.15)' : 'var(--line)',
+                        color: (record.ps_filing_date || record.cs_filing_date) ? '#6366F1' : 'var(--muted)',
+                      }}
+                    >
+                      {(record.ps_filing_date || record.cs_filing_date) ? 'Active (Every 2 Mos)' : 'Pending Filing'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -38,6 +38,10 @@ const AVAILABLE_COLUMNS = [
   { id: 'form_18_filing_date', label: 'Form 18 (RFE) Date', category: 'Forms', defaultChecked: false },
 
   { id: 'inventors_summary', label: 'Inventors', category: 'Details', defaultChecked: false },
+  { id: 'inventor_institution', label: 'Inventor Institution', category: 'Details', defaultChecked: false },
+  { id: 'inventor_gender', label: 'Inventor Gender', category: 'Details', defaultChecked: false },
+  { id: 'inventor_nationality', label: 'Inventor Nationality', category: 'Details', defaultChecked: false },
+  { id: 'inventor_country', label: 'Inventor Country of Residence', category: 'Details', defaultChecked: false },
   { id: 'workdrive_folder_url', label: 'WorkDrive Folder URL', category: 'Details', defaultChecked: false },
   { id: 'status_notes', label: 'Internal Status Notes', category: 'Details', defaultChecked: false },
   { id: 'suggested_action', label: 'Suggested Action', category: 'Details', defaultChecked: false },
@@ -62,7 +66,17 @@ export default function ExportReportModal({
   const [exportScope, setExportScope] = useState(
     selectedRecords.length > 0 ? 'SELECTED' : 'ALL'
   );
+  const [selectedClient, setSelectedClient] = useState('ALL');
   const [reportTitle, setReportTitle] = useState('Lextria_Patent_Prosecution_Report');
+
+  const clientOptions = useMemo(() => {
+    const counts = {};
+    records.forEach((r) => {
+      const c = (r.applicant_name || r.client_name || '').trim();
+      if (c) counts[c] = (counts[c] || 0) + 1;
+    });
+    return Object.keys(counts).sort().map((name) => ({ name, count: counts[name] }));
+  }, [records]);
   const [format, setFormat] = useState('XLSX'); // XLSX or CSV
   const [isExporting, setIsExporting] = useState(false);
 
@@ -88,9 +102,44 @@ export default function ExportReportModal({
     }
 
     setIsExporting(true);
-    const dataToExport = exportScope === 'SELECTED' && selectedRecords.length > 0
+    let dataToExport = exportScope === 'SELECTED' && selectedRecords.length > 0
       ? selectedRecords
       : records;
+
+    if (selectedClient !== 'ALL') {
+      dataToExport = dataToExport.filter((r) => {
+        const c = (r.applicant_name || r.client_name || '').trim();
+        return c.toLowerCase() === selectedClient.toLowerCase();
+      });
+    }
+
+    const resolveCellValue = (colId, row) => {
+      if (colId === 'inventor_institution') {
+        if (row.inventors && row.inventors[0]?.institution) {
+          return row.inventors.map((i) => i.institution).filter(Boolean).join(', ');
+        }
+        return row.applicant_name || '';
+      }
+      if (colId === 'inventor_gender') {
+        if (row.inventors && row.inventors[0]?.gender) {
+          return row.inventors.map((i) => `${i.name}: ${i.gender}`).join(', ');
+        }
+        return '';
+      }
+      if (colId === 'inventor_nationality') {
+        if (row.inventors && row.inventors[0]?.nationality) {
+          return row.inventors.map((i) => i.nationality).filter(Boolean).join(', ');
+        }
+        return 'Indian';
+      }
+      if (colId === 'inventor_country') {
+        if (row.inventors && row.inventors[0]?.country_of_residence) {
+          return row.inventors.map((i) => i.country_of_residence).filter(Boolean).join(', ');
+        }
+        return 'India';
+      }
+      return row[colId] ?? '';
+    };
 
     const chosenColumns = AVAILABLE_COLUMNS.filter((c) => selectedCols.has(c.id));
 
@@ -100,7 +149,7 @@ export default function ExportReportModal({
       const dataRows = dataToExport.map((row) =>
         chosenColumns
           .map((c) => {
-            const val = row[c.id] ?? '';
+            const val = resolveCellValue(c.id, row);
             return `"${String(val).replace(/"/g, '""')}"`;
           })
           .join(',')
@@ -291,8 +340,8 @@ export default function ExportReportModal({
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
-              gap: '14px',
+              gridTemplateColumns: 'repeat(4, 1fr)',
+              gap: '12px',
               padding: '14px',
               borderRadius: '10px',
               background: 'var(--page)',
@@ -321,6 +370,32 @@ export default function ExportReportModal({
                 {selectedRecords.length > 0 && (
                   <option value="SELECTED">Selected Rows Only ({selectedRecords.length})</option>
                 )}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
+                Client Selection
+              </label>
+              <select
+                value={selectedClient}
+                onChange={(e) => setSelectedClient(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '7px 10px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                }}
+              >
+                <option value="ALL">All Clients ({records.length})</option>
+                {clientOptions.map((c) => (
+                  <option key={c.name} value={c.name}>
+                    {c.name} ({c.count})
+                  </option>
+                ))}
               </select>
             </div>
 

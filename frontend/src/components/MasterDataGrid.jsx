@@ -38,6 +38,7 @@ export default function MasterDataGrid({
   const [clientFilter, setClientFilter] = useState('ALL');
   const [tagFilter, setTagFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [patentTypeFilter, setPatentTypeFilter] = useState('ALL');
   const [deliveryUrgencyFilter, setDeliveryUrgencyFilter] = useState('ALL'); // ALL, OVERDUE, DUE_2, DUE_7, ON_TRACK, NO_DATE
   const [sorting, setSorting] = useState([{ id: 'project_code', desc: false }]);
   const [rowSelection, setRowSelection] = useState({});
@@ -142,6 +143,17 @@ export default function MasterDataGrid({
       data = data.filter((r) => {
         const clientVal = (r.applicant_name || r.client_name || '').toLowerCase();
         return clientVal.includes(clientFilter.toLowerCase());
+      });
+    }
+
+    // Patent Type filter (Requirement 2: PS, PS-CS, CS)
+    if (patentTypeFilter !== 'ALL') {
+      data = data.filter((r) => {
+        const spec = formatSpecType(r.specification_type, r.ps_filing_date, r.cs_filing_date).label;
+        if (patentTypeFilter === 'PS-CS') {
+          return spec === 'PS-CS' || spec === 'CS-PS' || (r.specification_type || '').toUpperCase() === 'PS_TO_CS';
+        }
+        return spec === patentTypeFilter;
       });
     }
 
@@ -263,7 +275,7 @@ export default function MasterDataGrid({
   const formatSpecType = (type, hasPs, hasCs) => {
     const val = String(type || '').toUpperCase();
     if (val === 'PS_TO_CS' || (hasPs && hasCs) || val.includes('CS-PS') || val.includes('PS TO CS')) {
-      return { label: 'CS-PS', bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED' };
+      return { label: 'PS-CS', bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED' };
     }
     if (val === 'CS' || val.includes('COMPLETE')) {
       return { label: 'CS', bg: 'rgba(16, 185, 129, 0.12)', fg: '#059669' };
@@ -705,6 +717,28 @@ export default function MasterDataGrid({
             {tags.filter((t) => !['priority', 'ticket raised', 'critical', 'political'].includes(t.name.toLowerCase())).map((t) => (
               <option key={t.name} value={t.name}>{t.name}</option>
             ))}
+          </select>
+
+          {/* Patent Type Filter Dropdown (PS, PS-CS, CS) */}
+          <select
+            value={patentTypeFilter}
+            onChange={(e) => setPatentTypeFilter(e.target.value)}
+            style={{
+              padding: '7px 10px',
+              borderRadius: '6px',
+              border: '1px solid var(--line)',
+              background: 'var(--page)',
+              color: 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 600,
+              maxWidth: '140px'
+            }}
+            title="Filter by Patent Specification Type (PS, PS-CS, CS)"
+          >
+            <option value="ALL">All Types</option>
+            <option value="PS">PS (Provisional)</option>
+            <option value="PS-CS">PS-CS (Prov to Complete)</option>
+            <option value="CS">CS (Direct Complete)</option>
           </select>
 
           {/* Status Dropdown Filter (Phase Grouped & Statutory) */}

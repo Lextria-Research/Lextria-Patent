@@ -1,5 +1,6 @@
 // frontend/src/components/DeadlinesTab.jsx
 import React, { useState, useMemo } from 'react';
+import { addDays, addMonths, getUpcomingInventorUpdateCycle } from '../utils/statutoryDeadlines';
 import {
   CheckSquare, Square, Clock, AlertTriangle, AlertCircle,
   Calendar, CheckCircle2, Search, Filter, User, ExternalLink,
@@ -183,6 +184,105 @@ export default function DeadlinesTab({
           completedBy: completedMap[`${r.project_code}_ANNUITY`]?.completedBy,
           record: r,
         });
+      }
+
+      // 7. 3-Day Filing Acknowledgment to Inventor (Requirement 5)
+      // Triggered when status is 'sent for filing' for PS, CS, PS-CS, FER reply, WS
+      const statusLower = (r.current_status || '').toLowerCase();
+      if (statusLower.includes('sent for filing') && !r.is_abandoned) {
+        const ackDate = r.filing_ack_deadline || (r.sent_for_filing_date ? addDays(r.sent_for_filing_date, 3) : addDays(r.status_updated_at || r.updated_at || now, 3));
+        const isDone = !!r.ack_sent_to_inventor_date || !!completedMap[`${r.project_code}_ACK`];
+        const dueDt = new Date(ackDate);
+        const diffDays = Math.ceil((dueDt - now) / 86400000);
+
+        let phaseLabel = 'Filing';
+        if (statusLower.includes('ps-cs')) phaseLabel = 'PS-CS';
+        else if (statusLower.includes('ps')) phaseLabel = 'PS';
+        else if (statusLower.includes('cs')) phaseLabel = 'CS';
+        else if (statusLower.includes('fer')) phaseLabel = 'FER Reply';
+        else if (statusLower.includes('ws')) phaseLabel = 'WS';
+
+        items.push({
+          id: `${r.project_code}_ACK`,
+          project_code: r.project_code,
+          application_number: r.application_number,
+          title: r.title,
+          assigned_to: r.assigned_to,
+          type: 'INVENTOR',
+          subType: 'ACK',
+          typeLabel: `Filing Ack (${phaseLabel})`,
+          actionText: `Send 3-Day Filing Acknowledgment to Inventor for ${r.project_code} (${phaseLabel} Sent for Filing)`,
+          statutoryRef: 'Firm SOP: 3-Day Inventor Acknowledgment post-filing dispatch',
+          dueDate: ackDate,
+          diffDays,
+          isCompleted: isDone,
+          completedAt: completedMap[`${r.project_code}_ACK`]?.completedAt,
+          completedBy: completedMap[`${r.project_code}_ACK`]?.completedBy,
+          record: r,
+        });
+      }
+
+      // 8. 6-Day FER Reply Draft Confirmation to Inventor (Requirement 6)
+      // Triggered once status is 'FER received'
+      if ((statusLower.includes('fer received') || (r.fer_notice_date && !statusLower.includes('reply filed') && !statusLower.includes('hearing'))) && !r.is_abandoned) {
+        const ferRefDate = r.fer_notice_date || r.status_updated_at || r.updated_at || now;
+        const confirmDate = r.fer_draft_confirmation_deadline || addDays(ferRefDate, 6);
+        const isDone = statusLower.includes('sent for confirmation') || statusLower.includes('reply under review') || statusLower.includes('reply sent for filing') || statusLower.includes('reply filed') || !!r.fer_draft_sent_date || !!completedMap[`${r.project_code}_FER_CONFIRM`];
+        const dueDt = new Date(confirmDate);
+        const diffDays = Math.ceil((dueDt - now) / 86400000);
+
+        items.push({
+          id: `${r.project_code}_FER_CONFIRM`,
+          project_code: r.project_code,
+          application_number: r.application_number,
+          title: r.title,
+          assigned_to: r.assigned_to,
+          type: 'INVENTOR',
+          subType: 'FER_CONFIRM',
+          typeLabel: 'FER Draft Confirmation (6-Day)',
+          actionText: `Send FER Reply Draft to Inventor for Confirmation for ${r.project_code} (6-Day Window)`,
+          statutoryRef: 'Firm SOP: 6-Day FER Draft Confirmation to Inventor',
+          dueDate: confirmDate,
+          diffDays,
+          isCompleted: isDone,
+          completedAt: completedMap[`${r.project_code}_FER_CONFIRM`]?.completedAt,
+          completedBy: completedMap[`${r.project_code}_FER_CONFIRM`]?.completedBy,
+          record: r,
+        });
+      }
+
+      // 9. Bi-Monthly Post-Filing Inventor Updates (Every 2 Months) (Requirement 7)
+      // Triggered after status is either PS filed or CS filed (whichever is earlier)
+      const earliestFiling = (r.ps_filing_date && r.cs_filing_date)
+        ? (new Date(r.ps_filing_date) <= new Date(r.cs_filing_date) ? r.ps_filing_date : r.cs_filing_date)
+        : (r.ps_filing_date || r.cs_filing_date);
+
+      if (earliestFiling && !r.is_abandoned && !r.grant_date) {
+        const completedCycles = Object.keys(completedMap)
+          .filter((k) => k.startsWith(`${r.project_code}_UPDATE_`))
+          .map((k) => k.replace(`${r.project_code}_UPDATE_`, ''));
+
+        const cycleInfo = getUpcomingInventorUpdateCycle(earliestFiling, completedCycles);
+        if (cycleInfo) {
+          items.push({
+            id: `${r.project_code}_UPDATE_${cycleInfo.cycleId}`,
+            project_code: r.project_code,
+            application_number: r.application_number,
+            title: r.title,
+            assigned_to: r.assigned_to,
+            type: 'INVENTOR',
+            subType: 'UPDATE',
+            typeLabel: `Inventor Update (${cycleInfo.cycleMonths}M)`,
+            actionText: `Send Bi-Monthly Prosecution Status Update to Inventors for ${r.project_code} (${cycleInfo.cycleMonths}-Month Post-Filing Milestone)`,
+            statutoryRef: 'Firm SOP: Bi-Monthly Status Update to Inventors (Every 2 Months)',
+            dueDate: cycleInfo.dueDate,
+            diffDays: cycleInfo.diffDays,
+            isCompleted: false,
+            completedAt: null,
+            completedBy: null,
+            record: r,
+          });
+        }
       }
     });
 
@@ -436,6 +536,7 @@ export default function DeadlinesTab({
             { id: 'FER', label: 'FER objections' },
             { id: 'WS', label: 'Hearing WS' },
             { id: 'FORMS', label: 'Forms 1 & 26' },
+            { id: 'INVENTOR', label: 'Inventor Acks & Updates' },
             { id: 'RENEWALS', label: 'Annuity renewals' },
           ].map((cat) => (
             <button

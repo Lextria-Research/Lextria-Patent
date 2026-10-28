@@ -201,6 +201,30 @@ export const STATUTORY_STATUSES = [
     colorName: 'orange',
     tip: 'Complete Specification sent to client for final approval and Form 2 sign-off.'
   },
+  {
+    id: 'STATUS_11B',
+    name: 'CS Sent for filing',
+    phase: 'PHASE_2_CS',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Complete Specification submitted to paralegal docket for e-filing (triggers 3-day inventor ack).'
+  },
+  {
+    id: 'STATUS_11C',
+    name: 'PS-CS Sent for filing',
+    phase: 'PHASE_2_CS',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Follow-up Complete Specification submitted to paralegal docket for filing (triggers 3-day inventor ack).'
+  },
+  {
+    id: 'STATUS_11D',
+    name: 'CS Filed',
+    phase: 'PHASE_2_CS',
+    colorKey: 'GREEN',
+    colorName: 'green',
+    tip: 'Form 2 Complete Specification e-filed with Patent Office with CBR receipt.'
+  },
 
   // --- Phase 3: Publication & Examination ---
   {
@@ -278,6 +302,14 @@ export const STATUTORY_STATUSES = [
     tip: 'Form 4 extension requested under Rule 24B(6) (allowed up to 3 calendar months maximum).'
   },
   {
+    id: 'STATUS_20B',
+    name: 'FER reply sent for filing',
+    phase: 'PHASE_4_FER',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Vetted FER response submitted for e-filing on IPO Portal (triggers 3-day inventor ack).'
+  },
+  {
     id: 'STATUS_21',
     name: 'FER Reply filed, awaiting hearing',
     phase: 'PHASE_4_FER',
@@ -310,6 +342,14 @@ export const STATUTORY_STATUSES = [
     colorKey: 'YELLOW',
     colorName: 'yellow',
     tip: 'Hearing successfully argued before Controller. Written Submissions (WS) being prepared (15-day limit).'
+  },
+  {
+    id: 'STATUS_24B',
+    name: 'WS sent for filing',
+    phase: 'PHASE_5_HEARING',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Written Submissions finalized and submitted to docket for e-filing (triggers 3-day inventor ack).'
   },
   {
     id: 'STATUS_25',

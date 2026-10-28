@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Save, Edit3, Calendar, User, Tag as TagIcon,
-  ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building, Plus
+  ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building, Plus, Trash2
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
 import { getFormFee, isReducedFeeEntity, formatINR } from '../utils/feeSchedule';
@@ -106,6 +106,34 @@ export default function EditApplicationModal({
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [inventorsList, setInventorsList] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`patent_inventors_${record.project_code}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    if (record.inventors && Array.isArray(record.inventors) && record.inventors.length > 0) {
+      return record.inventors;
+    }
+    if (record.inventors_summary) {
+      return record.inventors_summary.split(/[,;\n]+/).filter(Boolean).map((inv, idx) => ({
+        id: `inv_${idx + 1}`,
+        name: inv.trim().replace(/^\d+[\.\)]\s*/, ''),
+        institution: record.applicant_name || 'Manipal Academy of Higher Education (MAHE)',
+        gender: 'Male',
+        nationality: 'Indian',
+        country_of_residence: 'India',
+      }));
+    }
+    return [];
+  });
+  const [newInventor, setNewInventor] = useState({
+    name: '',
+    institution: record.applicant_name || '',
+    gender: 'Male',
+    nationality: 'Indian',
+    country_of_residence: 'India',
+  });
+  const [showAddInventor, setShowAddInventor] = useState(false);
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return effectiveClients;
@@ -252,10 +280,16 @@ export default function EditApplicationModal({
       }
     }
 
+    const summary = inventorsList.map((i) => i.name).join(', ');
     const payload = {
       ...formData,
+      inventors: inventorsList,
+      inventors_summary: summary || formData.inventors_summary,
       tags: formData.selectedTags,
     };
+    try {
+      localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(inventorsList));
+    } catch {}
 
     // Close modal immediately (0ms instant closure)
     onClose();
@@ -677,6 +711,175 @@ export default function EditApplicationModal({
                     })}
                   </div>
                 </div>
+              </div>
+
+              {/* Inventors Details & Roster (Requirement 1) */}
+              <div style={{ marginBottom: '16px', padding: '14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <User size={16} color="var(--accent)" />
+                    <h3 style={{ fontSize: '13px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                      Inventors Details ({inventorsList.length})
+                    </h3>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewInventor((prev) => ({
+                        ...prev,
+                        institution: prev.institution || formData.applicant_name || ''
+                      }));
+                      setShowAddInventor(!showAddInventor);
+                    }}
+                    style={{
+                      padding: '4px 10px',
+                      borderRadius: '5px',
+                      border: '1px solid var(--accent)',
+                      background: 'var(--surface)',
+                      color: 'var(--accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                    }}
+                  >
+                    <Plus size={12} /> Add Inventor
+                  </button>
+                </div>
+
+                {/* Add Inventor Subform */}
+                {showAddInventor && (
+                  <div
+                    style={{
+                      padding: '12px',
+                      borderRadius: '6px',
+                      background: 'var(--surface)',
+                      border: '1px solid var(--line)',
+                      marginBottom: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink)' }}>
+                      New Inventor Info (Institution, Gender, Nationality, Residence)
+                    </span>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="Full Name (e.g. Dr. Rajesh Kumar) *"
+                        value={newInventor.name}
+                        onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
+                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Institution / University (e.g. MIT Manipal) *"
+                        value={newInventor.institution}
+                        onChange={(e) => setNewInventor({ ...newInventor, institution: e.target.value })}
+                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
+                      />
+                      <select
+                        value={newInventor.gender}
+                        onChange={(e) => setNewInventor({ ...newInventor, gender: e.target.value })}
+                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                      <input
+                        type="text"
+                        placeholder="Nationality (e.g. Indian)"
+                        value={newInventor.nationality}
+                        onChange={(e) => setNewInventor({ ...newInventor, nationality: e.target.value })}
+                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
+                      />
+                      <input
+                        type="text"
+                        placeholder="Country of Residence (e.g. India)"
+                        value={newInventor.country_of_residence}
+                        onChange={(e) => setNewInventor({ ...newInventor, country_of_residence: e.target.value })}
+                        style={{ gridColumn: 'span 2', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
+                      />
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '4px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddInventor(false)}
+                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newInventor.name.trim()) return;
+                          setInventorsList((prev) => [...prev, { id: 'inv_' + Date.now(), ...newInventor }]);
+                          setNewInventor({
+                            name: '',
+                            institution: formData.applicant_name || '',
+                            gender: 'Male',
+                            nationality: 'Indian',
+                            country_of_residence: 'India',
+                          });
+                          setShowAddInventor(false);
+                        }}
+                        style={{ padding: '4px 10px', borderRadius: '4px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                      >
+                        Save Inventor
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* List */}
+                {inventorsList.length === 0 ? (
+                  <div style={{ fontSize: '12px', color: 'var(--muted)', fontStyle: 'italic', padding: '4px 0' }}>
+                    No inventors added yet. Click "+ Add Inventor" to enter institution, gender, nationality and residence.
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    {inventorsList.map((inv, idx) => (
+                      <div
+                        key={inv.id || idx}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          background: 'var(--surface)',
+                          border: '1px solid var(--line)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <div>
+                          <span style={{ fontWeight: 800, color: 'var(--ink)', marginRight: '6px' }}>
+                            {idx + 1}. {inv.name}
+                          </span>
+                          <span style={{ color: 'var(--accent)', fontWeight: 600, marginRight: '6px' }}>
+                            • {inv.institution || 'No institution'}
+                          </span>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>
+                            ({inv.gender} • {inv.nationality} • {inv.country_of_residence})
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setInventorsList((prev) => prev.filter((_, i) => i !== idx))}
+                          style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: '2px' }}
+                          title="Remove"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Assigned Drafter (Placed on clean standalone row above status selection) */}

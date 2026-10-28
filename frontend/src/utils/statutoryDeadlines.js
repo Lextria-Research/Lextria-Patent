@@ -106,6 +106,41 @@ export function validateSection17PostDating(psFilingDate, postDatedDate) {
  * automatically based on the filing date and post-dating.
  * Supports both camelCase and snake_case parameter properties.
  */
+/**
+ * Calculates the next upcoming bi-monthly (every 2 months) inventor update reminder
+ * scheduled from the earlier of PS or CS filing date.
+ */
+export function getUpcomingInventorUpdateCycle(earliestFilingDate, completedCycles = []) {
+  if (!earliestFilingDate) return null;
+  const baseDt = new Date(earliestFilingDate);
+  if (isNaN(baseDt.getTime())) return null;
+  const now = new Date();
+
+  // Schedule every 2 months up to 36 months (3 years)
+  for (let cycle = 1; cycle <= 18; cycle++) {
+    const cycleMonths = cycle * 2;
+    const cycleId = 'CYCLE_' + cycleMonths + 'M';
+    const dueDate = addMonths(earliestFilingDate, cycleMonths);
+    if (!dueDate) continue;
+    const dueDt = new Date(dueDate);
+    const diffDays = Math.ceil((dueDt - now) / 86400000);
+
+    const isCompleted = completedCycles.includes(cycleId);
+    if (!isCompleted) {
+      return {
+        cycle,
+        cycleMonths,
+        cycleId,
+        dueDate,
+        diffDays,
+        actionText: 'Send Bi-Monthly Prosecution Update to Inventors (' + cycleMonths + '-Month Post-Filing Milestone)',
+        statutoryRef: 'Firm SOP: Bi-Monthly Status Update to Inventors (Every 2 Months)'
+      };
+    }
+  }
+  return null;
+}
+
 export function calculateAllStatutoryDeadlines(params = {}) {
   const psFilingDate = params.psFilingDate || params.ps_filing_date;
   const csFilingDate = params.csFilingDate || params.cs_filing_date;
@@ -218,8 +253,54 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     nextRenewalDate = toIsoDate(renewalDt);
   }
 
+
+
+  // 11. 3-Day Filing Acknowledgment to Inventor (Requirement 5)
+  // Triggered when status is 'sent for filing' for PS, CS, PS-CS, FER reply, WS
+  const currentStatusStr = String(params.current_status || params.currentStatus || params.status || '').toLowerCase();
+  const isSentForFiling = currentStatusStr.includes('sent for filing');
+  let filingAckDeadline = null;
+  if (isSentForFiling) {
+    const sentDate = params.sent_for_filing_date || params.sentForFilingDate || params.status_date || params.updated_at || toIsoDate(now);
+    filingAckDeadline = addDays(sentDate, 3);
+  }
+
+  // 12. 6-Day FER Reply Draft Confirmation to Inventor (Requirement 6)
+  // Triggered once status is 'FER received'
+  const isFerReceived = currentStatusStr.includes('fer received') || currentStatusStr.includes('fer_received') || (Boolean(ferNoticeDate) && !currentStatusStr.includes('filed'));
+  let ferDraftConfirmationDeadline = null;
+  if (isFerReceived && ferNoticeDate) {
+    ferDraftConfirmationDeadline = addDays(ferNoticeDate, 6);
+  }
+
+  // 13. Bi-Monthly Post-Filing Inventor Updates (Every 2 Months) (Requirement 7)
+  let earliestFilingDate = null;
+  if (psFilingDate && csFilingDate) {
+    earliestFilingDate = new Date(psFilingDate) <= new Date(csFilingDate) ? psFilingDate : csFilingDate;
+  } else {
+    earliestFilingDate = psFilingDate || csFilingDate || null;
+  }
+
+  let nextInventorUpdateDeadline = null;
+  let inventorUpdateCycleInfo = null;
+  if (earliestFilingDate) {
+    inventorUpdateCycleInfo = getUpcomingInventorUpdateCycle(earliestFilingDate, params.completedInventorUpdates || []);
+    if (inventorUpdateCycleInfo) {
+      nextInventorUpdateDeadline = inventorUpdateCycleInfo.dueDate;
+    }
+  }
+
   return {
     csDeadline,
+    filingAckDeadline,
+    filing_ack_deadline: filingAckDeadline,
+    ferDraftConfirmationDeadline,
+    fer_draft_confirmation_deadline: ferDraftConfirmationDeadline,
+    earliestFilingDate,
+    earliest_filing_date: earliestFilingDate,
+    nextInventorUpdateDeadline,
+    next_inventor_update_deadline: nextInventorUpdateDeadline,
+    inventorUpdateCycleInfo,
     cs_deadline: csDeadline,
     form1Deadline,
     form_1_deadline: form1Deadline,
