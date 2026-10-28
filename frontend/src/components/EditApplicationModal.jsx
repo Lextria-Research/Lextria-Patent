@@ -1370,6 +1370,46 @@ export default function EditApplicationModal({
                   />
                 </div>
               </div>
+
+              {/* Form-27 Triennial Working Statement Live Calculator */}
+              {Boolean(formData.grant_date) && (() => {
+                const f27 = calculateForm27Deadlines(formData.grant_date);
+                if (!f27) return null;
+                return (
+                  <div style={{
+                    marginTop: '12px',
+                    padding: '12px 14px',
+                    borderRadius: '8px',
+                    background: 'rgba(16, 185, 129, 0.08)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '6px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: '#059669' }}>
+                        Form-27 Working of Patent Compliance (Rule 131 - 2024 Amendments)
+                      </span>
+                      <span style={{
+                        fontSize: '10.5px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        background: f27.isWindowOpen ? '#10B981' : 'rgba(5, 150, 105, 0.15)',
+                        color: f27.isWindowOpen ? '#fff' : '#059669',
+                      }}>
+                        {f27.isWindowOpen ? 'Filing Window Open (1 Apr - 30 Sep)' : 'Filing Window: 1 Apr - 30 Sep'}
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '12px', color: 'var(--ink)' }}>
+                      Current 3-Year Block: <strong>{f27.currentBlock}</strong> • Statutory Due Date: <strong style={{ color: '#DC2626' }}>{f27.statutoryDueDate}</strong>
+                    </div>
+                    <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      Grant FY: {f27.grantFyLabel} • Extension Leeway: Rule 131(2) (+3M) to {f27.extRule131} | Rule 138 (+6M) to {f27.extRule138}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
 

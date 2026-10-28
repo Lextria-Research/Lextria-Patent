@@ -94,9 +94,9 @@ export const PROSECUTION_PHASES = [
   },
   {
     id: 'PHASE_6_GRANT_RENEWAL',
-    label: '6. Grant & Renewals',
+    label: '6. Grant, Renewals & Form 27',
     shortLabel: 'Grant & Renewals',
-    description: 'Patent Certificate grant and Section 53 maintenance renewals (Years 3 through 20)'
+    description: 'Patent Certificate grant, Section 53 maintenance renewals, and Form-27 triennial commercial working statements'
   },
   {
     id: 'PHASE_7_APPEAL',
@@ -368,6 +368,63 @@ export const STATUTORY_STATUSES = [
     colorKey: 'GREEN',
     colorName: 'green',
     tip: 'Patent Certificate issued under Section 43! Awaiting client instructions for Section 53 renewals.'
+  },
+  // Form-27 Working of Patent Statement Workflow (Section 146(2) & Rule 131)
+  {
+    id: 'STATUS_FORM27_AWAITING_DATA',
+    name: 'Form-27 awaiting commercial working data',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'PURPLE',
+    colorName: 'purple',
+    tip: 'Dispatched commercial working statement questionnaire to patentee/licensee for 3-year block.'
+  },
+  {
+    id: 'STATUS_FORM27_UNDERDRAFTING',
+    name: 'Form-27 under drafting',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Statement of Working (Form-27) is actively being compiled for the 3-year financial block.'
+  },
+  {
+    id: 'STATUS_FORM27_UNDER_REVIEW',
+    name: 'Form-27 under review',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'GREY',
+    colorName: 'grey',
+    tip: 'Compiled Form-27 working data submitted for internal QA and senior partner vetting.'
+  },
+  {
+    id: 'STATUS_FORM27_SENT_CONFIRMATION',
+    name: 'Form-27 Draft Sent, waiting for confirmation',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'ORANGE',
+    colorName: 'orange',
+    tip: 'Vetted Form-27 working statement sent to patentee / licensee for review and sign-off.'
+  },
+  {
+    id: 'STATUS_FORM27_SENT_FOR_FILING',
+    name: 'Form-27 Sent for filing',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'YELLOW',
+    colorName: 'yellow',
+    tip: 'Approved Form-27 submitted to paralegal docket for e-filing on IPO Portal (triggers 3-day ack clock).'
+  },
+  {
+    id: 'STATUS_FORM27_FILED',
+    name: 'Form-27 Filed',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'GREEN',
+    colorName: 'green',
+    tip: 'Form-27 statement of working e-filed with Patent Office. CBR receipt and filing date recorded.'
+  },
+  {
+    id: 'STATUS_FORM27_FILED_TRIENNIAL',
+    name: 'Form-27 Filed for 3-Year Block',
+    phase: 'PHASE_6_GRANT_RENEWAL',
+    colorKey: 'GREEN',
+    colorName: 'green',
+    tip: 'Form-27 triennial compliance complete under Rule 131 for 3 financial years. Next block due in 3 years.'
   },
   // Dynamic Renewals (Statuses for all years 3 to 20)
   ...Array.from({ length: 18 }, (_, i) => {

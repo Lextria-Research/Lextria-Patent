@@ -1,6 +1,6 @@
 // frontend/src/components/DeadlinesTab.jsx
 import React, { useState, useMemo } from 'react';
-import { addDays, addMonths, getUpcomingInventorUpdateCycle } from '../utils/statutoryDeadlines';
+import { addDays, addMonths, getUpcomingInventorUpdateCycle, calculateForm27Deadlines } from '../utils/statutoryDeadlines';
 import {
   CheckSquare, Square, Clock, AlertTriangle, AlertCircle,
   Calendar, CheckCircle2, Search, Filter, User, ExternalLink,
@@ -337,6 +337,47 @@ export default function DeadlinesTab({
           });
         });
       }
+
+      // 11. Form-27 Working of Patent Statement (Section 146(2) & Rule 131)
+      if (r.grant_date && !r.is_abandoned) {
+        let completedF27 = [];
+        try {
+          const savedF27 = localStorage.getItem(`patent_form27_completed_${r.project_code}`);
+          if (savedF27) completedF27 = JSON.parse(savedF27);
+        } catch {}
+
+        const f27 = calculateForm27Deadlines(r.grant_date, 'TRIENNIAL', completedF27);
+        if (f27 && f27.activeCycle) {
+          const cycle = f27.activeCycle;
+          const isDone = !!completedMap[`${r.project_code}_FORM27_${cycle.cycleId}`] || cycle.isCompleted;
+
+          let actionText = `File Form-27 Working of Patent Statement for ${r.project_code} (${cycle.blockLabel} - Filing Window: 1 Apr to 30 Sep)`;
+          if (cycle.isWindowOpen) {
+            actionText = `[FILING WINDOW OPEN] Submit Form-27 Working of Patent Statement for ${r.project_code} (${cycle.blockLabel} - Due 30-Sep-${cycle.statutoryDueDate.slice(0, 4)})`;
+          }
+
+          items.push({
+            id: `${r.project_code}_FORM27_${cycle.cycleId}`,
+            project_code: r.project_code,
+            application_number: r.application_number,
+            title: r.title,
+            assigned_to: r.assigned_to,
+            type: 'FORM_27',
+            subType: cycle.isWindowOpen ? 'WINDOW_OPEN' : 'UPCOMING',
+            typeLabel: 'Form 27 (Working)',
+            actionText,
+            statutoryRef: `Section 146(2) & Rule 131(2) (3-Year Block: ${cycle.blockLabel} | Window: 1-Apr to 30-Sep)`,
+            dueDate: cycle.statutoryDueDate,
+            diffDays: cycle.diffDays,
+            isCompleted: isDone,
+            completedAt: completedMap[`${r.project_code}_FORM27_${cycle.cycleId}`]?.completedAt,
+            completedBy: completedMap[`${r.project_code}_FORM27_${cycle.cycleId}`]?.completedBy,
+            record: r,
+            form27Info: f27,
+            form27Cycle: cycle,
+          });
+        }
+      }
     });
 
     // Sort by due date ascending (most urgent first)
@@ -590,6 +631,7 @@ export default function DeadlinesTab({
             { id: 'WS', label: 'Hearing WS' },
             { id: 'FORMS', label: 'Forms 1 & 26' },
             { id: 'MISC_FORMS', label: 'Misc Forms (F6/F13/F16/F30)' },
+            { id: 'FORM_27', label: 'Form 27 (Working Statement)' },
             { id: 'INVENTOR', label: 'Inventor Acks & Updates' },
             { id: 'RENEWALS', label: 'Annuity renewals' },
           ].map((cat) => (

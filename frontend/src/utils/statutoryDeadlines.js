@@ -141,6 +141,140 @@ export function getUpcomingInventorUpdateCycle(earliestFilingDate, completedCycl
   return null;
 }
 
+/**
+ * Calculates Form-27 Working of Patent Statement Deadlines & Cycles
+ * under Section 146(2) of The Patents Act, 1970 and Rule 131 of Patent Rules, 2003
+ * (as amended by Patent (Amendment) Rules, 2024).
+ *
+ * Rules:
+ * 1. Form-27 must be filed once in respect of every period of 3 financial years,
+ *    starting from the financial year commencing immediately after the FY in which the patent was granted.
+ *    (Financial Year runs from 1st April to 31st March).
+ * 2. Filing window: Within six months from expiry of such period: 1st April to 30th September.
+ *    Statutory due date: 30th September.
+ * 3. Extensions:
+ *    - Up to 3 months via Form 4 under Rule 131(2) -> 31st December.
+ *    - Up to 6 months via Form 4 under Rule 138 -> 30th June (or 31st March if Rule 131(2) not availed).
+ * 4. Cutoff / Transitional Provisions:
+ *    - Patents granted on or before 31-03-2024:
+ *      First 3-year block is FY 2024-25, FY 2025-26, FY 2026-27.
+ *      First due date: 30th September 2027 (Window: 1 April 2027 to 30 September 2027).
+ *      (For patents granted in FY 2022-23 or earlier, block was FY 2023-24 to 2025-26, due 30-Sep-2026).
+ *    - Patents granted in FY 2024-25 (1 Apr 2024 - 31 Mar 2025):
+ *      First 3-year block is FY 2025-26, FY 2026-27, FY 2027-28.
+ *      First due date: 30th September 2028 (Window: 1 April 2028 to 30 September 2028).
+ * 5. General Term (20 years):
+ *    3 + 3 + 3 + 3 + 3 + 3 + 2 = 20 years.
+ *    Cycles 1 to 6 (Years 1 to 18): Every 3 financial years.
+ *    Final Cycle 7: Remaining 2 financial years filed together (at Year 20).
+ * 6. Option to file annually is also retained (Window: 1 April to 30 September each year).
+ */
+export function calculateForm27Deadlines(grantDateStr, filingMode = 'TRIENNIAL', completedFilings = []) {
+  if (!grantDateStr) return null;
+  const grantDate = new Date(grantDateStr);
+  if (isNaN(grantDate.getTime())) return null;
+
+  const now = new Date();
+  const grantYear = grantDate.getFullYear();
+  const grantMonth = grantDate.getMonth(); // 0-indexed: 0=Jan, 2=Mar, 3=Apr, 11=Dec
+
+  // Financial year of grant (FY runs 1 Apr to 31 Mar)
+  const grantFyStart = grantMonth < 3 ? grantYear - 1 : grantYear;
+  const grantFyEnd = grantFyStart + 1;
+
+  // Determine cycles
+  const cycles = [];
+  let blockStartYear = 0;
+
+  // As per Notice 2 (Item 2) and Notice 1 (FAQ Q7):
+  if (grantFyEnd <= 2023) {
+    // Granted before FY 2023-24 (e.g. 2022-23 or earlier):
+    // FAQ Page 2: block is FY 2023-24 to FY 2025-26, due 30-Sep-2026
+    blockStartYear = 2023;
+  } else if (grantFyEnd === 2024) {
+    // Granted in FY 2023-24 (1 Apr 2023 - 31 Mar 2024):
+    // Notice 2 Page 3 & FAQ Page 3: block is FY 2024-25, 2025-26, 2026-27, due 30-Sep-2027
+    blockStartYear = 2024;
+  } else {
+    // Granted in FY 2024-25 or later:
+    // Counting starts from FY commencing immediately after FY of grant
+    blockStartYear = grantFyEnd;
+  }
+
+  // Generate 20-year schedule (6 x 3 years + 1 x 2 years)
+  let currentStartYear = blockStartYear;
+  for (let c = 1; c <= 7; c++) {
+    const isFinalTwoYears = c === 7;
+    const blockDuration = isFinalTwoYears ? 2 : 3;
+    const blockEndYear = currentStartYear + blockDuration;
+    
+    // Financial years included in this block
+    const fyYears = [];
+    for (let y = currentStartYear; y < blockEndYear; y++) {
+      fyYears.push(`FY ${y}-${String(y + 1).slice(2)}`);
+    }
+
+    const blockLabel = `${fyYears[0]} to ${fyYears[fyYears.length - 1]}`;
+    const windowStart = `${blockEndYear}-04-01`;
+    const statutoryDueDate = `${blockEndYear}-09-30`;
+    const extRule131 = `${blockEndYear}-12-31`; // +3 months
+    const extRule138 = `${blockEndYear + 1}-06-30`; // +6 months
+
+    const dueDateObj = new Date(statutoryDueDate);
+    const windowStartObj = new Date(windowStart);
+    const diffDays = Math.ceil((dueDateObj - now) / (1000 * 60 * 60 * 24));
+    const isWindowOpen = now >= windowStartObj && now <= dueDateObj;
+    const isOverdue = now > dueDateObj;
+
+    const cycleId = `CYCLE_${c}_${blockEndYear}`;
+    const isCompleted = Array.isArray(completedFilings) && (
+      completedFilings.includes(cycleId) ||
+      completedFilings.some((f) => (typeof f === 'string' ? f === cycleId : f.cycleId === cycleId || f.blockEndYear === blockEndYear))
+    );
+
+    cycles.push({
+      cycleIndex: c,
+      cycleId,
+      isFinalTwoYears,
+      blockDuration,
+      blockYears: fyYears,
+      blockLabel,
+      windowStart,
+      statutoryDueDate,
+      extRule131,
+      extRule138,
+      diffDays,
+      isWindowOpen,
+      isOverdue,
+      isCompleted,
+    });
+
+    currentStartYear = blockEndYear;
+  }
+
+  // Find the active/current upcoming cycle
+  const activeCycle = cycles.find((c) => !c.isCompleted) || cycles[cycles.length - 1];
+
+  return {
+    grantDate: toIsoDate(grantDate),
+    grantFyLabel: `FY ${grantFyStart}-${String(grantFyEnd).slice(2)}`,
+    activeCycle,
+    allCycles: cycles,
+    currentBlock: activeCycle?.blockLabel,
+    windowStart: activeCycle?.windowStart,
+    statutoryDueDate: activeCycle?.statutoryDueDate,
+    extRule131: activeCycle?.extRule131,
+    extRule138: activeCycle?.extRule138,
+    diffDays: activeCycle?.diffDays,
+    isWindowOpen: activeCycle?.isWindowOpen,
+    isOverdue: activeCycle?.isOverdue,
+    isCompleted: activeCycle?.isCompleted,
+    filingMode, // 'TRIENNIAL' or 'ANNUAL'
+  };
+}
+
+export { calculateAllStatutoryDeadlines as calculateStatutoryDeadlines };
+
 export function calculateAllStatutoryDeadlines(params = {}) {
   const psFilingDate = params.psFilingDate || params.ps_filing_date;
   const csFilingDate = params.csFilingDate || params.cs_filing_date;
@@ -290,6 +424,13 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     }
   }
 
+  // 14. Form-27 Working of Patent Statement (Section 146(2) & Rule 131)
+  let form27Info = null;
+  const grantDateVal = params.grant_date || params.grantDate;
+  if (grantDateVal) {
+    form27Info = calculateForm27Deadlines(grantDateVal, params.form27_mode || 'TRIENNIAL', params.completed_form27 || []);
+  }
+
   return {
     csDeadline,
     filingAckDeadline,
@@ -322,5 +463,10 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     next_renewal_date: nextRenewalDate,
     currentAnnuityYear,
     isPost2024,
+    form27Info,
+    form_27_due_date: form27Info?.statutoryDueDate,
+    form_27_window_start: form27Info?.windowStart,
+    form_27_block: form27Info?.currentBlock,
+    form_27_is_open: form27Info?.isWindowOpen,
   };
 }
