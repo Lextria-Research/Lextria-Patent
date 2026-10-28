@@ -10,6 +10,7 @@ import { getStatusColor } from '../constants/patentStatuses';
 import PhasedStatusSelector from './PhasedStatusSelector';
 import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
+import MiscFormsManager from './MiscFormsManager';
 
 const DRAFTERS = [
   'Anusha', 'Ayush', 'Abhishek', 'Fiona',
@@ -134,6 +135,16 @@ export default function EditApplicationModal({
     country_of_residence: 'India',
   });
   const [showAddInventor, setShowAddInventor] = useState(false);
+  const [miscForms, setMiscForms] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`patent_misc_forms_${record.project_code}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    if (record.misc_forms && Array.isArray(record.misc_forms)) {
+      return record.misc_forms;
+    }
+    return [];
+  });
 
   const filteredClients = useMemo(() => {
     if (!clientSearchQuery) return effectiveClients;
@@ -285,8 +296,12 @@ export default function EditApplicationModal({
       ...formData,
       inventors: inventorsList,
       inventors_summary: summary || formData.inventors_summary,
+      misc_forms: miscForms,
       tags: formData.selectedTags,
     };
+    try {
+      localStorage.setItem(`patent_misc_forms_${record.project_code}`, JSON.stringify(miscForms));
+    } catch {}
     try {
       localStorage.setItem(`patent_inventors_${record.project_code}`, JSON.stringify(inventorsList));
     } catch {}
@@ -1488,6 +1503,15 @@ export default function EditApplicationModal({
                     }}
                   />
                 </div>
+              </div>
+
+              {/* Dedicated Miscellaneous Forms (Form 13 & Form 30) Section */}
+              <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                <MiscFormsManager
+                  record={record}
+                  miscForms={miscForms}
+                  onUpdateMiscForms={(updated) => setMiscForms(updated)}
+                />
               </div>
 
               {/* Statutory Government Fee Reference Schedule */}

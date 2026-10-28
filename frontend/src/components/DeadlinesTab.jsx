@@ -284,6 +284,59 @@ export default function DeadlinesTab({
           });
         }
       }
+
+      // 10. Miscellaneous Forms Tracking & Follow-Ups (Form 13 & Form 30)
+      let miscFormsList = r.misc_forms || [];
+      try {
+        const saved = localStorage.getItem(`patent_misc_forms_${r.project_code}`);
+        if (saved) miscFormsList = JSON.parse(saved);
+      } catch {}
+
+      if (Array.isArray(miscFormsList)) {
+        miscFormsList.forEach((mf) => {
+          if (mf.status === 'UPDATED_BY_IPO') return; // Completed
+
+          const isSent = mf.status === 'SENT_FOR_FILING';
+          const isNeedConf = mf.status === 'NEED_CONFIRMATION';
+          const isFiled = mf.status === 'FILED';
+
+          const baseDate = mf.updated_at || mf.created_at || now;
+          const dueDate = isSent ? addDays(baseDate, 3) : isNeedConf ? addDays(baseDate, 7) : addDays(baseDate, 30);
+          const dueDt = new Date(dueDate);
+          const diffDays = Math.ceil((dueDt - now) / 86400000);
+
+          let actionText = '';
+          if (isNeedConf) {
+            actionText = `Obtain Client Requirements & Confirmation for ${mf.sub_type_label} (${r.project_code})`;
+          } else if (isSent) {
+            actionText = `E-File ${mf.sub_type_label} & Issue 3-Day Inventor Ack (${r.project_code})`;
+          } else {
+            actionText = `Track Patent Office Disposal / Register Update for ${mf.sub_type_label} (${r.project_code} - CBR: ${mf.cbr_number || 'Pending'})`;
+          }
+
+          const isDone = !!completedMap[`${r.project_code}_${mf.id}`] || (isFiled && mf.status === 'UPDATED_BY_IPO');
+
+          items.push({
+            id: `${r.project_code}_${mf.id}`,
+            project_code: r.project_code,
+            application_number: r.application_number,
+            title: r.title,
+            assigned_to: r.assigned_to,
+            type: 'MISC_FORMS',
+            subType: mf.status,
+            typeLabel: mf.form_type === 'FORM_13' ? 'Form 13' : 'Form 30',
+            actionText,
+            statutoryRef: mf.sub_type_label,
+            dueDate,
+            diffDays,
+            isCompleted: isDone,
+            completedAt: completedMap[`${r.project_code}_${mf.id}`]?.completedAt,
+            completedBy: completedMap[`${r.project_code}_${mf.id}`]?.completedBy,
+            record: r,
+            miscFormItem: mf,
+          });
+        });
+      }
     });
 
     // Sort by due date ascending (most urgent first)
@@ -536,6 +589,7 @@ export default function DeadlinesTab({
             { id: 'FER', label: 'FER objections' },
             { id: 'WS', label: 'Hearing WS' },
             { id: 'FORMS', label: 'Forms 1 & 26' },
+            { id: 'MISC_FORMS', label: 'Misc Forms (F13 / F30)' },
             { id: 'INVENTOR', label: 'Inventor Acks & Updates' },
             { id: 'RENEWALS', label: 'Annuity renewals' },
           ].map((cat) => (

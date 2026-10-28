@@ -157,12 +157,23 @@ export default function MasterDataGrid({
       });
     }
 
-    // Tag dropdown filter (Requirement 10)
+    // Tag dropdown filter (Requirement 10 & Misc Forms)
     if (tagFilter !== 'ALL') {
-      data = data.filter((r) => {
-        const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? [r.classification] : []);
-        return rTags.some((t) => String(t).toLowerCase() === tagFilter.toLowerCase());
-      });
+      if (tagFilter === 'MISC_FORMS') {
+        data = data.filter((r) => {
+          if (Array.isArray(r.misc_forms) && r.misc_forms.length > 0) return true;
+          try {
+            return Boolean(localStorage.getItem(`patent_misc_forms_${r.project_code}`));
+          } catch {
+            return false;
+          }
+        });
+      } else {
+        data = data.filter((r) => {
+          const rTags = Array.isArray(r.tags) ? r.tags : (r.classification ? [r.classification] : []);
+          return rTags.some((t) => String(t).toLowerCase() === tagFilter.toLowerCase());
+        });
+      }
     }
 
     // Status dropdown filter (supports individual statutory status or whole phase)
@@ -210,7 +221,7 @@ export default function MasterDataGrid({
     }
 
     return data;
-  }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
+  }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, patentTypeFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
 
   // Grouped statutory statuses for filter dropdown with counts
   const { phaseGroupedStatuses } = useMemo(() => {
@@ -329,12 +340,32 @@ export default function MasterDataGrid({
         cell: ({ row }) => {
           const code = row.original.project_code || '';
           const prefix = code.replace(/[0-9]/g, '') || (row.original.is_mahe ? 'MAHE' : 'AAIS');
+          const hasMisc = Array.isArray(row.original.misc_forms) && row.original.misc_forms.length > 0;
+          const activeMisc = hasMisc ? row.original.misc_forms.find((m) => m.status !== 'UPDATED_BY_IPO') : null;
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-              <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '13px' }}>
-                {code}
-              </span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '13px' }}>
+                  {code}
+                </span>
+                {activeMisc && (
+                  <span
+                    title={`${activeMisc.sub_type_label} (${activeMisc.status})`}
+                    style={{
+                      fontSize: '9px',
+                      fontWeight: 800,
+                      padding: '1px 4px',
+                      borderRadius: '3px',
+                      background: activeMisc.form_type === 'FORM_13' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(124, 58, 237, 0.15)',
+                      color: activeMisc.form_type === 'FORM_13' ? '#2563EB' : '#7C3AED',
+                      border: `1px solid ${activeMisc.form_type === 'FORM_13' ? 'rgba(37, 99, 235, 0.3)' : 'rgba(124, 58, 237, 0.3)'}`,
+                    }}
+                  >
+                    {activeMisc.form_type === 'FORM_13' ? 'F13' : 'F30'}
+                  </span>
+                )}
+              </div>
               <span
                 style={{
                   fontSize: '9.5px',
@@ -710,6 +741,7 @@ export default function MasterDataGrid({
             title="Filter by Tag (Priority, Ticket Raised, Critical, Political...)"
           >
             <option value="ALL">All Tags</option>
+            <option value="MISC_FORMS">Misc Forms (F13 / F30)</option>
             <option value="Priority">Priority</option>
             <option value="Ticket Raised">Ticket Raised</option>
             <option value="Critical">Critical</option>

@@ -10,6 +10,7 @@ import { getStatusColor } from '../constants/patentStatuses';
 import { getFormFee, formatINR } from '../utils/feeSchedule';
 import { validateSection17PostDating, addDays, addMonths, getUpcomingInventorUpdateCycle } from '../utils/statutoryDeadlines';
 import DEFAULT_CLIENTS from '../data/clients.json';
+import MiscFormsManager from './MiscFormsManager';
 
 export default function SlideOverDrawer({
   record,
@@ -240,6 +241,45 @@ export default function SlideOverDrawer({
     phone: '',
   });
   const [showAddInventor, setShowAddInventor] = useState(false);
+
+  // Miscellaneous Statutory Forms (Form 13 & Form 30) state
+  const [miscForms, setMiscForms] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`patent_misc_forms_${record.project_code}`);
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    if (record.misc_forms && Array.isArray(record.misc_forms)) {
+      return record.misc_forms;
+    }
+    if (record.form_13_filing_date) {
+      return [
+        {
+          id: `mf_init_${record.project_code}`,
+          form_type: 'FORM_13',
+          sub_type: 'FORM_13_CORRECTION',
+          sub_type_label: 'Form 13: Correction of details',
+          fee_mode: 'WITH_FEE',
+          status: 'FILED',
+          filing_date: record.form_13_filing_date,
+          cbr_number: record.form_13_particulars || 'CBR Recorded',
+          details_notes: record.form_13_particulars || 'Pre-grant amendment under Section 57',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        }
+      ];
+    }
+    return [];
+  });
+
+  const handleUpdateMiscForms = (updatedList) => {
+    setMiscForms(updatedList);
+    try {
+      localStorage.setItem(`patent_misc_forms_${record.project_code}`, JSON.stringify(updatedList));
+    } catch {}
+    if (onUpdate) {
+      onUpdate(record.project_code, { misc_forms: updatedList });
+    }
+  };
 
   // Editable manual fields state
   const [statusNotes, setStatusNotes] = useState(record.status_notes || '');
@@ -1442,6 +1482,15 @@ export default function SlideOverDrawer({
                   {record.f26_delayed_by || record.f26_status || 'Pending'}
                 </span>
               </div>
+            </div>
+
+            {/* Dedicated Miscellaneous Forms (Form 13 & Form 30) Section */}
+            <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--surface)', border: '1px solid var(--line)', marginTop: '4px' }}>
+              <MiscFormsManager
+                record={record}
+                miscForms={miscForms}
+                onUpdateMiscForms={handleUpdateMiscForms}
+              />
             </div>
 
             {/* Other Forms List */}
