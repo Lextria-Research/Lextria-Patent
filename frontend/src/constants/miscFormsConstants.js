@@ -1,6 +1,6 @@
 // frontend/src/constants/miscFormsConstants.js
 /**
- * Miscellaneous Statutory Forms (Form 13, Form 6, Form 16 & Form 30)
+ * Miscellaneous Statutory Forms (Form 13, Form 6, Form 16, Form 30 & Form 27)
  * Includes official First Schedule entries, fee options, and 4-step prosecution flow:
  * 1. Need confirmation/requirement by the client
  * 2. Sent for filing (triggers 3-day inventor/client ack deadline)
@@ -103,6 +103,18 @@ export const MISC_FORM_MAIN_TYPES = [
     tag: 'F30',
     timing: 'Any Stage',
     description: 'Adjournment, office action response, DAS codes, NBA approvals, certified copies, withdrawal'
+  },
+  {
+    id: 'FORM_27',
+    label: 'Form 27',
+    name: 'Form 27 (Statement of Working)',
+    shortTitle: 'Form 27',
+    badgeBg: 'rgba(5, 150, 105, 0.15)',
+    badgeFg: '#059669',
+    badgeBorder: 'rgba(5, 150, 105, 0.3)',
+    tag: 'F27',
+    timing: 'Post-Grant / Triennial',
+    description: 'Commercial working of invention under Section 146(2) & Rule 131; runs parallel with Section 53 renewals'
   }
 ];
 
@@ -195,6 +207,33 @@ export const FORM_16_SUBTYPES = [
     defaultFeeMode: 'WITH_FEE'
   }
 ];
+export const FORM_27_SUBTYPES = [
+  {
+    id: 'FORM_27_TRIENNIAL',
+    label: 'Form 27: Triennial Statement of Working',
+    shortLabel: 'Form 27: Statement of Working (Rule 131)',
+    code: 'FORM 27 => STATEMENT REGARDING THE WORKING OF PATENTED INVENTION',
+    description: 'Statement regarding the working of a patented invention on a commercial scale in India filed once in respect of every period of 3 financial years (Section 146(2) & Rule 131). Runs parallel with patent renewals.',
+    subTitle: 'Section 146(2) & Rule 131(2) (2024 Amendments)',
+    rule: 'Section 146(2) & Rule 131',
+    numberField: 'patent_number',
+    numberFieldLabel: 'Patent Number',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+  {
+    id: 'FORM_27_EXT_RULE131',
+    label: 'Form 4: Extension of Time for Form 27 (Rule 131(2))',
+    shortLabel: 'Form 4: Extension for Form 27 (+3 Months)',
+    code: 'FORM 4 / RULE 131(2) => EXTENSION OF TIME FOR FORM 27',
+    description: 'Petition on Form 4 to extend the Form-27 filing deadline by up to 3 months under amended Rule 131(2) & Rule 138',
+    subTitle: 'Statutory extension petition under Rule 131(2) & Rule 138',
+    rule: 'Rule 131(2) & Rule 138',
+    numberField: 'patent_number',
+    numberFieldLabel: 'Patent Number',
+    defaultFeeMode: 'WITH_FEE'
+  }
+];
+
 
 export const FORM_30_ENTRIES = [
   // --- WITH FEE OPTIONS (IPO First Schedule & Section 142) ---

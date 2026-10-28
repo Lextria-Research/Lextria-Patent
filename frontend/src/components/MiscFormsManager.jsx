@@ -1,5 +1,7 @@
 // frontend/src/components/MiscFormsManager.jsx
 import React, { useState, useMemo } from 'react';
+import { calculateForm27Deadlines } from '../utils/statutoryDeadlines';
+
 import {
   FileText, Plus, CheckCircle2, Clock, AlertTriangle, ArrowRight,
   Trash2, Shield, Calendar, Check, ExternalLink, ChevronRight, FileCheck
@@ -10,6 +12,7 @@ import {
   FORM_13_SUBTYPES,
   FORM_6_SUBTYPES,
   FORM_16_SUBTYPES,
+  FORM_27_SUBTYPES,
   FORM_30_ENTRIES,
   getMiscFormStatusInfo,
   getMainFormTypeInfo
@@ -44,6 +47,13 @@ export default function MiscFormsManager({
     });
   }, [feeMode]);
 
+  // Form-27 Triennial Working Compliance Calculator (runs parallel with Section 53 renewals)
+  const form27Compliance = useMemo(() => {
+    const gDate = record?.grant_date || record?.patent_grant_date;
+    if (!gDate) return null;
+    return calculateForm27Deadlines(gDate);
+  }, [record?.grant_date, record?.patent_grant_date]);
+
   const currentSubtypeObj = useMemo(() => {
     if (selectedMainType === 'FORM_13') {
       return FORM_13_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_13_SUBTYPES[0];
@@ -53,6 +63,9 @@ export default function MiscFormsManager({
     }
     if (selectedMainType === 'FORM_16') {
       return FORM_16_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_16_SUBTYPES[0];
+    }
+    if (selectedMainType === 'FORM_27') {
+      return FORM_27_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_27_SUBTYPES[0];
     }
     return FORM_30_ENTRIES.find((s) => s.id === selectedSubtype) || availableForm30Entries[0] || FORM_30_ENTRIES[0];
   }, [selectedMainType, selectedSubtype, availableForm30Entries]);
@@ -149,7 +162,7 @@ export default function MiscFormsManager({
           <Shield size={16} color="var(--accent)" />
           <div>
             <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-              Miscellaneous Forms Tracker (Form 13 & Form 30)
+              Miscellaneous Forms Tracker (Form 13, 6, 16, 30 & Form 27)
             </div>
             <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
               Dedicated lifecycle: Need Confirmation ➔ Sent for Filing (3-Day Ack) ➔ Filed ➔ Updated by Patent Office
@@ -185,6 +198,107 @@ export default function MiscFormsManager({
         )}
       </div>
 
+      {/* Form-27 Working of Patent Statement Compliance & Calculator (Parallel with Renewals) */}
+      {form27Compliance && (
+        <div style={{
+          padding: '14px',
+          borderRadius: '8px',
+          background: 'var(--surface)',
+          border: '1px solid rgba(16, 185, 129, 0.35)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                padding: '2px 8px',
+                borderRadius: '4px',
+                fontSize: '11px',
+                fontWeight: 800,
+                background: 'rgba(16, 185, 129, 0.15)',
+                color: '#059669',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+              }}>
+                Form 27 (Rule 131)
+              </span>
+              <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--ink)' }}>
+                Commercial Working Statement (Parallel with Annual Renewals)
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{
+                padding: '3px 10px',
+                borderRadius: '12px',
+                fontSize: '11px',
+                fontWeight: 800,
+                background: form27Compliance.isWindowOpen ? '#10B981' : form27Compliance.isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.1)',
+                color: form27Compliance.isWindowOpen ? '#fff' : form27Compliance.isOverdue ? '#DC2626' : '#059669',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+              }}>
+                ● {form27Compliance.isWindowOpen ? 'Filing Window Open (1 Apr - 30 Sep)' : form27Compliance.isOverdue ? 'Overdue' : 'Upcoming Triennial Filing'}
+              </span>
+
+              {!readOnly && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedMainType('FORM_27');
+                    setSelectedSubtype('FORM_27_TRIENNIAL');
+                    setTargetNumber(record.patent_number || record.application_number || '');
+                    setDetailsNotes(`Form-27 commercial working statement for 3-year financial block ${form27Compliance.currentBlock} (Due: ${form27Compliance.statutoryDueDate})`);
+                    setFeeMode('WITHOUT_FEE');
+                    setShowAddModal(true);
+                  }}
+                  style={{
+                    padding: '3px 9px',
+                    borderRadius: '5px',
+                    border: '1px solid #059669',
+                    background: '#D1FAE5',
+                    color: '#065F46',
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}
+                >
+                  <Plus size={12} /> Log Form 27
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '8px' }}>
+            <div style={{ background: 'var(--page)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600 }}>3-Year Financial Block</div>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>{form27Compliance.currentBlock}</div>
+            </div>
+
+            <div style={{ background: 'var(--page)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600 }}>Statutory Filing Window</div>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#059669' }}>1 April to 30 September</div>
+            </div>
+
+            <div style={{ background: 'var(--page)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600 }}>Statutory Due Date</div>
+              <div style={{ fontSize: '12px', fontWeight: 800, color: '#DC2626' }}>{form27Compliance.statutoryDueDate}</div>
+            </div>
+
+            <div style={{ background: 'var(--page)', padding: '8px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
+              <div style={{ fontSize: '10.5px', color: 'var(--muted)', fontWeight: 600 }}>Extension Leeway (Form 4)</div>
+              <div style={{ fontSize: '11px', color: 'var(--ink)' }}>Rule 131(2): <strong>{form27Compliance.extRule131}</strong> (+3M)</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+            Rule 131(2) & 2024 Amendment: Triennial filing once every 3 FYs, starting from the FY commencing immediately after grant FY ({form27Compliance.grantFyLabel}). Monitored parallel with Section 53 maintenance renewals.
+          </div>
+        </div>
+      )}
+
       {/* List of Misc Forms */}
       {miscForms.length === 0 ? (
         <div
@@ -198,9 +312,9 @@ export default function MiscFormsManager({
             fontSize: '12px',
           }}
         >
-          No Form 13 or Form 30 filings logged yet for this patent.
+          No miscellaneous forms (Form 13, 6, 16, 30 or 27) logged yet for this patent.
           <br />
-          Click <strong>"+ Log Misc Form"</strong> to initiate an inventor addition/deletion, detail correction, or Form-30 petition.
+          Click <strong>"+ Log Misc Form"</strong> to initiate an inventor change, title transfer, Form-30 petition, or Form-27 working statement.
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -518,6 +632,10 @@ export default function MiscFormsManager({
                             setSelectedSubtype('FORM_16_TRANSFER');
                             setTargetNumber(record.patent_number || record.application_number || '');
                             setFeeMode('WITH_FEE');
+                          } else if (mainType.id === 'FORM_27') {
+                            setSelectedSubtype('FORM_27_TRIENNIAL');
+                            setTargetNumber(record.patent_number || record.application_number || '');
+                            setFeeMode('WITHOUT_FEE');
                           } else {
                             setSelectedSubtype('ENTRY_S142_3_RESPONSE');
                             setTargetNumber(record.application_number || '');
@@ -557,6 +675,11 @@ export default function MiscFormsManager({
               {selectedMainType === 'FORM_16' && (
                 <div style={{ fontSize: '11px', color: '#D97706', background: 'rgba(217, 119, 6, 0.08)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(217, 119, 6, 0.2)' }}>
                   <strong>Form 16 (Post-Grant):</strong> Application for registration of title, assignment, transmission or addition of patentee post-grant under Section 68, 69 & Rule 90.
+                </div>
+              )}
+              {selectedMainType === 'FORM_27' && (
+                <div style={{ fontSize: '11px', color: '#059669', background: 'rgba(16, 185, 129, 0.08)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <strong>Form 27 (Statement of Working):</strong> Triennial compliance under amended Rule 131(2) & Section 146(2). Runs parallel with Section 53 renewals. Statutory fee: Free (₹0).
                 </div>
               )}
 
@@ -615,6 +738,7 @@ export default function MiscFormsManager({
                     if (selectedMainType === 'FORM_13') found = FORM_13_SUBTYPES.find((s) => s.id === val);
                     else if (selectedMainType === 'FORM_6') found = FORM_6_SUBTYPES.find((s) => s.id === val);
                     else if (selectedMainType === 'FORM_16') found = FORM_16_SUBTYPES.find((s) => s.id === val);
+                    else if (selectedMainType === 'FORM_27') found = FORM_27_SUBTYPES.find((s) => s.id === val);
                     else found = FORM_30_ENTRIES.find((s) => s.id === val);
 
                     if (found && found.numberField === 'patent_number') {
@@ -650,6 +774,13 @@ export default function MiscFormsManager({
                   )}
                   {selectedMainType === 'FORM_16' && (
                     FORM_16_SUBTYPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.rule})
+                      </option>
+                    ))
+                  )}
+                  {selectedMainType === 'FORM_27' && (
+                    FORM_27_SUBTYPES.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.label} ({s.rule})
                       </option>
