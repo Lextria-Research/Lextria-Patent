@@ -350,7 +350,7 @@ export default function FormalitiesDocket({
               <h2 style={{ fontSize: '16px', fontWeight: 900, margin: 0, color: 'var(--ink)' }}>
                 Formalities & Docketing Command Center
               </h2>
-              <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '10px', background: '#ECFDF5', color: '#047857', border: '1px solid #A7F3D0' }}>
+              <span style={{ fontSize: '11px', fontWeight: 800, padding: '2px 8px', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.15)', color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
                 Paralegal / IPO Docketing View
               </span>
             </div>
@@ -515,7 +515,7 @@ export default function FormalitiesDocket({
           <div
             style={{
               padding: '6px 20px',
-              background: '#f8fafc',
+              background: 'var(--page)',
               borderBottom: '1px solid var(--line)',
               display: 'flex',
               alignItems: 'center',
@@ -531,7 +531,7 @@ export default function FormalitiesDocket({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Form 1 (Application):</span>
-              <strong style={{ color: '#0f172a' }}>₹1,600</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹1,600</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Startup/Edu) / <strong>₹8,000</strong> (Others)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -578,7 +578,7 @@ export default function FormalitiesDocket({
                       onClick={() => onOpenDrawer && onOpenDrawer(r)}
                       style={{
                         borderBottom: '1px solid var(--line)',
-                        background: isFatal ? '#FEF2F2' : (isFixable ? '#FFFBEB' : 'transparent'),
+                        background: isFatal ? 'rgba(239, 68, 68, 0.12)' : (isFixable ? 'rgba(245, 158, 11, 0.12)' : 'transparent'),
                         cursor: 'pointer',
                         transition: 'background 0.15s ease',
                       }}
@@ -602,8 +602,9 @@ export default function FormalitiesDocket({
                             borderRadius: '4px',
                             fontWeight: 700,
                             fontSize: '11px',
-                            background: r.f1DaysLate > 0 ? '#FEE2E2' : '#ECFDF5',
-                            color: r.f1DaysLate > 0 ? '#DC2626' : '#059669',
+                            background: r.f1DaysLate > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            color: r.f1DaysLate > 0 ? '#EF4444' : '#10B981',
+                            border: r.f1DaysLate > 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
                           {r.f1Status}
@@ -616,8 +617,9 @@ export default function FormalitiesDocket({
                             borderRadius: '4px',
                             fontWeight: 700,
                             fontSize: '11px',
-                            background: r.f26DaysLate > 0 ? '#FEE2E2' : '#ECFDF5',
-                            color: r.f26DaysLate > 0 ? '#DC2626' : '#059669',
+                            background: r.f26DaysLate > 0 ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                            color: r.f26DaysLate > 0 ? '#EF4444' : '#10B981',
+                            border: r.f26DaysLate > 0 ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                           }}
                         >
                           {r.f26Status}
@@ -636,8 +638,9 @@ export default function FormalitiesDocket({
                             borderRadius: '12px',
                             fontWeight: 800,
                             fontSize: '10.5px',
-                            background: isFatal ? '#FEE2E2' : (isFixable ? '#FEF3C7' : '#DCFCE7'),
-                            color: isFatal ? '#DC2626' : (isFixable ? '#D97706' : '#15803D'),
+                            background: isFatal ? 'rgba(239, 68, 68, 0.18)' : (isFixable ? 'rgba(245, 158, 11, 0.18)' : 'rgba(16, 185, 129, 0.18)'),
+                            color: isFatal ? '#EF4444' : (isFixable ? '#F59E0B' : '#10B981'),
+                            border: isFatal ? '1px solid rgba(239, 68, 68, 0.35)' : (isFixable ? '1px solid rgba(245, 158, 11, 0.35)' : '1px solid rgba(16, 185, 129, 0.35)'),
                           }}
                         >
                           {r.verdict}
@@ -722,7 +725,7 @@ export default function FormalitiesDocket({
           <div
             style={{
               padding: '6px 20px',
-              background: '#f8fafc',
+              background: 'var(--page)',
               borderBottom: '1px solid var(--line)',
               display: 'flex',
               alignItems: 'center',
@@ -738,7 +741,7 @@ export default function FormalitiesDocket({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Form 9 (Early Pub):</span>
-              <strong style={{ color: '#0f172a' }}>₹2,500</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹2,500</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Startup/Edu) / <strong>₹12,500</strong> (Others)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -781,7 +784,7 @@ export default function FormalitiesDocket({
                       onClick={() => onOpenDrawer && onOpenDrawer(r)}
                       style={{
                         borderBottom: '1px solid var(--line)',
-                        background: isRfeCritical ? '#FEF2F2' : 'transparent',
+                        background: isRfeCritical ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
                         cursor: 'pointer',
                         transition: 'background 0.15s ease',
                       }}
@@ -805,8 +808,9 @@ export default function FormalitiesDocket({
                             borderRadius: '4px',
                             fontWeight: 700,
                             fontSize: '11px',
-                            background: r.f9Filed ? '#ECFDF5' : (r.isPublished ? '#F3F4F6' : '#FEF3C7'),
-                            color: r.f9Filed ? '#059669' : (r.isPublished ? 'var(--muted)' : '#D97706'),
+                            background: r.f9Filed ? 'rgba(16, 185, 129, 0.15)' : (r.isPublished ? 'rgba(148, 163, 184, 0.15)' : 'rgba(245, 158, 11, 0.15)'),
+                            color: r.f9Filed ? '#10B981' : (r.isPublished ? 'var(--muted)' : '#F59E0B'),
+                            border: r.f9Filed ? '1px solid rgba(16, 185, 129, 0.3)' : (r.isPublished ? '1px solid var(--line)' : '1px solid rgba(245, 158, 11, 0.3)'),
                           }}
                         >
                           {r.f9Filed ? 'Filed' : (r.isPublished ? 'Published (N/A)' : 'Pending')}
@@ -819,8 +823,9 @@ export default function FormalitiesDocket({
                             borderRadius: '4px',
                             fontWeight: 700,
                             fontSize: '11px',
-                            background: r.f18Filed ? '#ECFDF5' : '#FEE2E2',
-                            color: r.f18Filed ? '#059669' : '#DC2626',
+                            background: r.f18Filed ? 'rgba(16, 185, 129, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                            color: r.f18Filed ? '#10B981' : '#EF4444',
+                            border: r.f18Filed ? '1px solid rgba(16, 185, 129, 0.3)' : '1px solid rgba(239, 68, 68, 0.3)',
                           }}
                         >
                           {r.f18Filed ? 'Filed' : 'Pending'}
@@ -892,8 +897,8 @@ export default function FormalitiesDocket({
                   style={{
                     padding: '12px 16px',
                     borderRadius: '8px',
-                    border: `1.5px solid ${d.severity === 'CRITICAL' ? '#FCA5A5' : '#FDE68A'}`,
-                    background: d.severity === 'CRITICAL' ? '#FEF2F2' : '#FFFBEB',
+                    border: `1.5px solid ${d.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(245, 158, 11, 0.4)'}`,
+                    background: d.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(245, 158, 11, 0.1)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -912,8 +917,8 @@ export default function FormalitiesDocket({
                             fontWeight: 800,
                             padding: '1px 6px',
                             borderRadius: '4px',
-                            background: d.severity === 'CRITICAL' ? '#FEE2E2' : '#FEF3C7',
-                            color: d.severity === 'CRITICAL' ? '#DC2626' : '#B45309',
+                            background: d.severity === 'CRITICAL' ? 'rgba(239, 68, 68, 0.18)' : 'rgba(245, 158, 11, 0.18)',
+                            color: d.severity === 'CRITICAL' ? '#EF4444' : '#F59E0B',
                           }}
                         >
                           {d.type.replace(/_/g, ' ')}
@@ -954,7 +959,7 @@ export default function FormalitiesDocket({
           <div
             style={{
               padding: '8px 20px',
-              background: '#f8fafc',
+              background: 'var(--page)',
               borderBottom: '1px solid var(--line)',
               display: 'flex',
               alignItems: 'center',
@@ -970,25 +975,25 @@ export default function FormalitiesDocket({
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Years 3–6:</span>
-              <strong style={{ color: '#0f172a' }}>₹800/yr</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹800/yr</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹4,000/yr</strong> (Others)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Years 7–10:</span>
-              <strong style={{ color: '#0f172a' }}>₹2,400/yr</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹2,400/yr</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹12,000/yr</strong> (Others)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Years 11–15:</span>
-              <strong style={{ color: '#0f172a' }}>₹4,800/yr</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹4,800/yr</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹24,000/yr</strong> (Others)</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <span style={{ color: 'var(--muted)' }}>Years 16–20:</span>
-              <strong style={{ color: '#0f172a' }}>₹8,000/yr</strong>
+              <strong style={{ color: 'var(--ink)' }}>₹8,000/yr</strong>
               <span style={{ color: 'var(--muted)', fontSize: '10px' }}>(Natural/Small) / <strong>₹40,000/yr</strong> (Others)</span>
             </div>
-            <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, background: '#ecfdf5', padding: '2px 6px', borderRadius: '4px', border: '1px solid #a7f3d0' }}>
+            <span style={{ fontSize: '10px', color: '#059669', fontWeight: 700, background: 'rgba(16, 185, 129, 0.15)', padding: '2px 6px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.3)', color: '#10B981' }}>
               10% discount on renewal fees paid online for ≥ 4 years in advance
             </span>
           </div>
@@ -1013,7 +1018,7 @@ export default function FormalitiesDocket({
                   onClick={() => onOpenDrawer && onOpenDrawer(r)}
                   style={{
                     borderBottom: '1px solid var(--line)',
-                    background: r.isOverdue ? '#FEF2F2' : 'transparent',
+                    background: r.isOverdue ? 'rgba(239, 68, 68, 0.12)' : 'transparent',
                     cursor: 'pointer',
                   }}
                 >
@@ -1042,8 +1047,9 @@ export default function FormalitiesDocket({
                         borderRadius: '10px',
                         fontWeight: 800,
                         fontSize: '11px',
-                        background: r.isOverdue ? '#FEE2E2' : '#DCFCE7',
-                        color: r.isOverdue ? '#DC2626' : '#15803D',
+                        background: r.isOverdue ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                        color: r.isOverdue ? '#EF4444' : '#10B981',
+                        border: r.isOverdue ? '1px solid rgba(239, 68, 68, 0.3)' : '1px solid rgba(16, 185, 129, 0.3)',
                       }}
                     >
                       {r.isOverdue ? `Overdue (${Math.abs(r.daysUntil)}d)` : 'Active'}

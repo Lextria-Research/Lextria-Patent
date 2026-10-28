@@ -1292,7 +1292,7 @@ export default function EditApplicationModal({
                 marginTop: '8px',
                 padding: '12px 14px',
                 borderRadius: '8px',
-                background: 'var(--surface-muted, #f8fafc)',
+                background: 'var(--page)',
                 border: '1px solid var(--line)',
                 fontSize: '11.5px'
               }}>
@@ -1300,31 +1300,31 @@ export default function EditApplicationModal({
                   Statutory Government Fee Schedule (First Schedule of Indian Patents Rules)
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: '8px' }}>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 1 (Application):</strong> ₹1,600 (Reduced) / ₹8,000 (Others)
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 2 (Spec):</strong> Free up to 30 sheets & 10 claims
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 3 & Form 5:</strong> Free of statutory fee (₹0)
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 4 (FER Ext R.24B):</strong> ₹1,000/mo / ₹4,000/mo
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 9 (Early Pub):</strong> ₹2,500 / ₹12,500
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 18 (RFE):</strong> ₹4,000 / ₹20,000
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Form 30 (Hearing):</strong> ₹1,500 / ₹7,500
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Sec 17 (Postdating):</strong> ₹800 / ₹4,000
                   </div>
-                  <div style={{ background: '#ffffff', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
+                  <div style={{ background: 'var(--surface)', padding: '6px 8px', borderRadius: '5px', border: '1px solid var(--line)' }}>
                     <strong>Sec 53 Renewals:</strong> Y3-Y6: ₹800/yr / ₹4,000/yr
                   </div>
                 </div>

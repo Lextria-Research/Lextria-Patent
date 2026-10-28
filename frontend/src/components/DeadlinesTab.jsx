@@ -524,16 +524,16 @@ export default function DeadlinesTab({
                     border: item.isCompleted
                       ? '1px solid var(--line)'
                       : isOverdue
-                      ? '1px solid #FCA5A5'
+                      ? '1px solid rgba(239, 68, 68, 0.35)'
                       : isDueSoon
-                      ? '1px solid #FDE68A'
+                      ? '1px solid rgba(245, 158, 11, 0.35)'
                       : '1px solid var(--line)',
                     background: item.isCompleted
                       ? 'var(--page)'
                       : isOverdue
-                      ? '#FEF2F2'
+                      ? 'rgba(239, 68, 68, 0.08)'
                       : isDueSoon
-                      ? '#FFFBEB'
+                      ? 'rgba(245, 158, 11, 0.08)'
                       : 'var(--surface)',
                     transition: 'all 0.15s ease',
                   }}
@@ -597,8 +597,9 @@ export default function DeadlinesTab({
                               fontWeight: 700,
                               padding: '1px 6px',
                               borderRadius: '4px',
-                              background: '#EDE9FE',
-                              color: '#7C3AED',
+                              background: 'rgba(139, 92, 246, 0.15)',
+                              color: '#A78BFA',
+                              border: '1px solid rgba(139, 92, 246, 0.3)',
                             }}
                           >
                             Drafter: {item.assigned_to}

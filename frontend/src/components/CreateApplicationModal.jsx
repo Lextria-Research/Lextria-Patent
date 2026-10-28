@@ -1056,54 +1056,54 @@ export default function CreateApplicationModal({
               gap: '8px',
               padding: '12px',
               borderRadius: '8px',
-              background: 'var(--surface-muted, #f8fafc)',
+              background: 'var(--page)',
               border: '1px solid var(--line)'
             }}>
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 1 (Application)</span>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f1.label}</strong>
+                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f1.label}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Basic fee up to 30p, 10c</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 2 (Specification)</span>
                 <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Up to 30p & 10 claims</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 3 (Sec 8 Statement)</span>
                 <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Foreign applications</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 9 (Early Pub)</span>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f9.label}</strong>
+                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f9.label}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11A(2)</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 18 (RFE Exam)</span>
                 <strong style={{ fontSize: '13px', color: '#2563eb' }}>{statutoryFees.f18.label}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11B</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 17 (Postdating)</span>
                 <strong style={{ fontSize: '13px', color: '#7c3aed' }}>{statutoryFees.sec17.label}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Max 6 months leeway</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 30 (Hearing Attendance)</span>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{statutoryFees.f30.label}</strong>
+                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f30.label}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Rule 62(2) notice</span>
               </div>
 
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: '#ffffff', border: '1px solid var(--line)' }}>
+              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 53 Renewals (Y3-Y6)</span>
-                <strong style={{ fontSize: '13px', color: '#0f172a' }}>{isReducedFeeEntity(formData.entity_category) ? '₹800/yr' : '₹4,000/yr'}</strong>
+                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{isReducedFeeEntity(formData.entity_category) ? '₹800/yr' : '₹4,000/yr'}</strong>
                 <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>10% discount for 4+ yr e-filing</span>
               </div>
             </div>

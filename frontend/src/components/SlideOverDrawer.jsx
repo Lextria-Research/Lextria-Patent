@@ -2197,7 +2197,7 @@ export default function SlideOverDrawer({
                     height: '100%',
                     border: '1px solid var(--line)',
                     borderRadius: '8px',
-                    background: '#ffffff',
+                    background: 'var(--surface)',
                   }}
                 />
               ) : previewDoc.dataUrl && (previewDoc.type?.includes('image') || previewDoc.name?.match(/\.(png|jpe?g|svg|webp|gif)$/i)) ? (
@@ -2220,7 +2220,7 @@ export default function SlideOverDrawer({
                   style={{
                     width: '100%',
                     maxWidth: '800px',
-                    background: '#ffffff',
+                    background: 'var(--surface)',
                     borderRadius: '10px',
                     border: '1px solid var(--line)',
                     padding: '36px 48px',
@@ -2255,7 +2255,7 @@ export default function SlideOverDrawer({
                       <div style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#2563EB', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
                         Abstract of Invention (Form 2):
                       </div>
-                      <p style={{ fontSize: '13.5px', lineHeight: 1.7, color: '#334155', margin: 0, fontStyle: 'italic', background: '#F8FAFC', padding: '14px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                      <p style={{ fontSize: '13.5px', lineHeight: 1.7, color: 'var(--ink)', margin: 0, fontStyle: 'italic', background: 'var(--page)', padding: '14px', borderRadius: '6px', border: '1px solid var(--line)' }}>
                         {formData.abstract}
                       </p>
                     </div>
@@ -2266,7 +2266,7 @@ export default function SlideOverDrawer({
                       <div style={{ fontWeight: 800, fontSize: '12px', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#2563EB', fontFamily: 'Inter, sans-serif', marginBottom: '6px' }}>
                         Claims:
                       </div>
-                      <div style={{ fontSize: '13.5px', lineHeight: 1.7, color: '#1e293b', whiteSpace: 'pre-wrap', background: '#F8FAFC', padding: '14px', borderRadius: '6px', border: '1px solid #E2E8F0' }}>
+                      <div style={{ fontSize: '13.5px', lineHeight: 1.7, color: 'var(--ink)', whiteSpace: 'pre-wrap', background: 'var(--page)', padding: '14px', borderRadius: '6px', border: '1px solid var(--line)' }}>
                         {formData.claims}
                       </div>
                     </div>

@@ -383,9 +383,9 @@ export default function AdminTeamOverview({
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        background: '#ffffff',
+        background: 'var(--page)',
         overflowY: 'auto',
-        color: '#0f172a',
+        color: 'var(--ink)',
         fontFamily: 'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
         padding: '24px 32px 48px',
       }}
@@ -397,7 +397,7 @@ export default function AdminTeamOverview({
           alignItems: 'center',
           justifyContent: 'space-between',
           paddingBottom: '16px',
-          borderBottom: '1.5px solid #0f172a',
+          borderBottom: '1.5px solid var(--line)',
           flexWrap: 'wrap',
           gap: '12px',
         }}
@@ -409,7 +409,7 @@ export default function AdminTeamOverview({
               width: '32px',
               height: '32px',
               borderRadius: '6px',
-              background: '#0f172a',
+              background: 'var(--accent)',
               color: '#ffffff',
               display: 'flex',
               alignItems: 'center',
@@ -422,10 +422,10 @@ export default function AdminTeamOverview({
             L
           </div>
           <div>
-            <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', lineHeight: 1.2 }}>
+            <div style={{ fontSize: '17px', fontWeight: 800, color: 'var(--ink)', lineHeight: 1.2 }}>
               Lextria IP
             </div>
-            <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+            <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
               Team overview · {isSuperAdmin ? 'Super Admin' : 'Patent Admin'}
             </div>
           </div>
@@ -433,10 +433,10 @@ export default function AdminTeamOverview({
 
         {/* Date & Docket Context */}
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '13.5px', fontWeight: 700, color: '#0f172a' }}>
+          <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--ink)' }}>
             As of Tuesday, 27 October 2026
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
             8 drafters · firm-wide docket
           </div>
         </div>
@@ -446,10 +446,10 @@ export default function AdminTeamOverview({
       <div style={{ marginTop: '24px', marginBottom: '18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: '#0f172a', letterSpacing: '-0.3px' }}>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0, color: 'var(--ink)', letterSpacing: '-0.3px' }}>
               Team overview
             </h1>
-            <p style={{ fontSize: '13.5px', color: '#64748b', margin: '4px 0 0', fontWeight: 400 }}>
+            <p style={{ fontSize: '13.5px', color: 'var(--muted)', margin: '4px 0 0', fontWeight: 400 }}>
               Workload, due dates and roadblocks across all 8 drafters.
             </p>
           </div>
@@ -462,9 +462,9 @@ export default function AdminTeamOverview({
                 style={{
                   padding: '7px 14px',
                   borderRadius: '6px',
-                  border: '1px solid #e2e8f0',
-                  background: '#ffffff',
-                  color: '#0f172a',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  color: 'var(--ink)',
                   fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -484,9 +484,9 @@ export default function AdminTeamOverview({
                 style={{
                   padding: '7px 14px',
                   borderRadius: '6px',
-                  border: '1px solid #e2e8f0',
-                  background: '#ffffff',
-                  color: '#2563eb',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  color: 'var(--accent)',
                   fontSize: '12.5px',
                   fontWeight: 600,
                   cursor: 'pointer',
@@ -507,7 +507,7 @@ export default function AdminTeamOverview({
                   padding: '7px 16px',
                   borderRadius: '6px',
                   border: 'none',
-                  background: '#0f172a',
+                  background: 'var(--accent)',
                   color: '#ffffff',
                   fontSize: '12.5px',
                   fontWeight: 700,
@@ -538,22 +538,22 @@ export default function AdminTeamOverview({
         <div
           onClick={() => onNavigateToPortfolio && onNavigateToPortfolio()}
           style={{
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             padding: '16px 20px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             cursor: onNavigateToPortfolio ? 'pointer' : 'default',
             transition: 'border-color 0.15s ease',
           }}
         >
-          <div style={{ fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
             Active matters
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '4px 0 2px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 2px' }}>
             {liveStats.activeMatters}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
             Avg {liveStats.avgPerDrafter} per drafter
           </div>
         </div>
@@ -562,22 +562,22 @@ export default function AdminTeamOverview({
         <div
           onClick={() => onNavigateToPortfolio && onNavigateToPortfolio('OVERDUE')}
           style={{
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             padding: '16px 20px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             cursor: onNavigateToPortfolio ? 'pointer' : 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
             <span style={{ width: '7px', height: '7px', background: '#dc2626', borderRadius: '1.5px', display: 'inline-block' }} />
             <span>Overdue deliveries</span>
           </div>
           <div style={{ fontSize: '28px', fontWeight: 800, color: '#dc2626', margin: '4px 0 2px' }}>
             {liveStats.overdueDeliveries}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
             Across {liveStats.overdueDraftersCount} drafters
           </div>
         </div>
@@ -586,22 +586,22 @@ export default function AdminTeamOverview({
         <div
           onClick={() => onNavigateToPortfolio && onNavigateToPortfolio('DUE_7D')}
           style={{
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             padding: '16px 20px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             cursor: onNavigateToPortfolio ? 'pointer' : 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
             <span style={{ width: '7px', height: '7px', background: '#ea580c', borderRadius: '1.5px', display: 'inline-block' }} />
             <span>Due in 7 days</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '4px 0 2px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 2px' }}>
             {liveStats.dueIn7Days}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
             Client delivery commitments
           </div>
         </div>
@@ -610,22 +610,22 @@ export default function AdminTeamOverview({
         <div
           onClick={() => onNavigateToPortfolio && onNavigateToPortfolio('AWAITING_SIGNOFF')}
           style={{
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             padding: '16px 20px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             cursor: onNavigateToPortfolio ? 'pointer' : 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
             <span style={{ width: '7px', height: '7px', background: '#ea580c', borderRadius: '1.5px', display: 'inline-block' }} />
             <span>Awaiting sign-off</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '4px 0 2px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 2px' }}>
             {liveStats.awaitingSignoff}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
             Ready for review
           </div>
         </div>
@@ -634,22 +634,22 @@ export default function AdminTeamOverview({
         <div
           onClick={() => onNavigateToPortfolio && onNavigateToPortfolio('OPEN_QUERIES')}
           style={{
-            background: '#ffffff',
+            background: 'var(--surface)',
             borderRadius: '10px',
-            border: '1px solid #e2e8f0',
+            border: '1px solid var(--line)',
             padding: '16px 20px',
             boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
             cursor: onNavigateToPortfolio ? 'pointer' : 'default',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: '#64748b', fontWeight: 500 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
             <span style={{ width: '7px', height: '7px', background: '#eab308', borderRadius: '1.5px', display: 'inline-block' }} />
             <span>Open queries</span>
           </div>
-          <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '4px 0 2px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--ink)', margin: '4px 0 2px' }}>
             {liveStats.openQueries}
           </div>
-          <div style={{ fontSize: '11.5px', color: '#64748b' }}>
+          <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
             Waiting on client or inventor
           </div>
         </div>
@@ -658,10 +658,10 @@ export default function AdminTeamOverview({
       {/* 4. DRAFTER WORKLOAD SECTION (PAGE 1) */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--ink)', margin: 0 }}>
             Drafter workload
           </h2>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontWeight: 600 }}>Stage mix:</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#6366f1', borderRadius: '1.5px' }} />
@@ -680,10 +680,10 @@ export default function AdminTeamOverview({
         </div>
 
         {/* Workload Table */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', background: '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '12px', fontWeight: 600, background: '#f8fafc' }}>
+              <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '12px', fontWeight: 600, background: 'var(--page)' }}>
                 <th style={{ padding: '12px 18px', width: '180px' }}>Drafter</th>
                 <th style={{ padding: '12px 14px', width: '70px' }}>Active</th>
                 <th style={{ padding: '12px 14px', width: '170px' }}>Load vs. avg</th>
@@ -708,18 +708,18 @@ export default function AdminTeamOverview({
                 const isImmediate = d.nextDueLabel.includes('today') || d.nextDueLabel.includes('1 day') || d.nextDueLabel.includes('2 days');
                 const isWeek = d.nextDueLabel.includes('3 days') || d.nextDueLabel.includes('6 days') || d.nextDueLabel.includes('7 days');
 
-                const badgeBg = isImmediate ? '#fef2f2' : (isWeek ? '#fffbeb' : '#f0fdf4');
-                const badgeBorder = isImmediate ? '#fecaca' : (isWeek ? '#fed7aa' : '#bbf7d0');
-                const badgeText = isImmediate ? '#dc2626' : (isWeek ? '#d97706' : '#16a34a');
-                const dotColor = isImmediate ? '#dc2626' : (isWeek ? '#d97706' : '#16a34a');
+                const badgeBg = isImmediate ? 'rgba(239, 68, 68, 0.15)' : (isWeek ? 'rgba(245, 158, 11, 0.15)' : 'rgba(16, 185, 129, 0.15)');
+                const badgeBorder = isImmediate ? 'rgba(239, 68, 68, 0.35)' : (isWeek ? 'rgba(245, 158, 11, 0.35)' : 'rgba(16, 185, 129, 0.35)');
+                const badgeText = isImmediate ? '#EF4444' : (isWeek ? '#F59E0B' : '#10B981');
+                const dotColor = isImmediate ? '#EF4444' : (isWeek ? '#F59E0B' : '#10B981');
 
                 return (
                   <tr
                     key={d.name}
                     onClick={() => setSelectedDrafter(selectedDrafter === d.name ? null : d.name)}
                     style={{
-                      borderBottom: idx === liveStats.workload.length - 1 ? 'none' : '1px solid #f1f5f9',
-                      background: selectedDrafter === d.name ? '#f8fafc' : '#ffffff',
+                      borderBottom: idx === liveStats.workload.length - 1 ? 'none' : '1px solid var(--line)',
+                      background: selectedDrafter === d.name ? 'var(--page)' : 'transparent',
                       cursor: 'pointer',
                       transition: 'background 0.12s ease',
                     }}
@@ -743,21 +743,21 @@ export default function AdminTeamOverview({
                         >
                           {d.initials}
                         </div>
-                        <span style={{ fontWeight: 700, color: '#0f172a' }}>
+                        <span style={{ fontWeight: 700, color: 'var(--ink)' }}>
                           {d.name}
                         </span>
                       </div>
                     </td>
 
                     {/* Active Count */}
-                    <td style={{ padding: '12px 14px', fontWeight: 800, color: '#0f172a' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 800, color: 'var(--ink)' }}>
                       {d.active}
                     </td>
 
                     {/* Load vs. avg with horizontal comparison bar */}
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '80px', height: '6px', background: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: '80px', height: '6px', background: 'var(--line)', borderRadius: '3px', overflow: 'hidden' }}>
                           <div
                             style={{
                               width: `${Math.min(d.loadPct, 200) / 2}%`,
@@ -776,7 +776,7 @@ export default function AdminTeamOverview({
                     {/* Stage mix numbers & stacked bar */}
                     <td style={{ padding: '12px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span style={{ fontSize: '12px', color: '#64748b', fontWeight: 500, minWidth: '70px' }}>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500, minWidth: '70px' }}>
                           {d.drafting} · {d.signoff} · {d.query}
                         </span>
                         <div style={{ flex: 1, maxWidth: '120px', height: '6px', display: 'flex', borderRadius: '3px', overflow: 'hidden' }}>
@@ -788,7 +788,7 @@ export default function AdminTeamOverview({
                     </td>
 
                     {/* Due <= 7 days */}
-                    <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                    <td style={{ padding: '12px 14px', textAlign: 'right', fontWeight: 700, color: 'var(--ink)' }}>
                       {d.due7d}
                     </td>
 
@@ -864,10 +864,10 @@ export default function AdminTeamOverview({
       {/* 5. NEEDS ATTENTION SECTION (PAGE 2) */}
       <div style={{ marginBottom: '32px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--ink)', margin: 0 }}>
             Needs attention
           </h2>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span style={{ fontWeight: 600 }}>Urgency:</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
               <span style={{ width: '8px', height: '8px', background: '#dc2626', borderRadius: '50%' }} />
@@ -889,10 +889,10 @@ export default function AdminTeamOverview({
         </div>
 
         {/* Needs Attention Table */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', background: '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#64748b', fontSize: '12px', fontWeight: 600, background: '#f8fafc' }}>
+              <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--muted)', fontSize: '12px', fontWeight: 600, background: 'var(--page)' }}>
                 <th style={{ padding: '12px 18px', width: '130px' }}>Matter</th>
                 <th style={{ padding: '12px 14px', width: '160px' }}>Action</th>
                 <th style={{ padding: '12px 14px', width: '130px' }}>Drafter</th>
@@ -911,8 +911,8 @@ export default function AdminTeamOverview({
                     key={item.matter + idx}
                     onClick={() => handleMatterClick(item.matter, item.record)}
                     style={{
-                      borderBottom: idx === liveStats.needsAttention.length - 1 ? 'none' : '1px solid #f1f5f9',
-                      background: '#ffffff',
+                      borderBottom: idx === liveStats.needsAttention.length - 1 ? 'none' : '1px solid var(--line)',
+                      background: 'transparent',
                       cursor: 'pointer',
                       transition: 'background 0.12s ease',
                     }}
@@ -923,17 +923,17 @@ export default function AdminTeamOverview({
                     </td>
 
                     {/* Action */}
-                    <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 500 }}>
+                    <td style={{ padding: '12px 14px', color: 'var(--ink)', fontWeight: 500 }}>
                       {item.action}
                     </td>
 
                     {/* Drafter */}
-                    <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>
+                    <td style={{ padding: '12px 14px', color: 'var(--ink)', fontWeight: 600 }}>
                       {item.drafter}
                     </td>
 
                     {/* Due Date */}
-                    <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 500 }}>
+                    <td style={{ padding: '12px 14px', color: 'var(--ink)', fontWeight: 500 }}>
                       {item.due}
                     </td>
 
@@ -987,21 +987,21 @@ export default function AdminTeamOverview({
       {/* 6. DUE DATES · NEXT 14 DAYS CAPACITY HEATMAP (PAGE 2) */}
       <div style={{ marginBottom: '28px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
-          <h2 style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+          <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--ink)', margin: 0 }}>
             Due dates · next 14 days
           </h2>
-          <div style={{ fontSize: '12px', color: '#64748b', display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ fontSize: '12px', color: 'var(--muted)', display: 'flex', alignItems: 'center', gap: '10px' }}>
             <span style={{ fontWeight: 600 }}>Deliveries per drafter per day:</span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '12px', height: '12px', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '2px' }} />
+              <span style={{ width: '12px', height: '12px', background: 'var(--page)', border: '1px solid var(--line)', borderRadius: '2px' }} />
               None
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '12px', height: '12px', background: '#dbeafe', borderRadius: '2px' }} />
+              <span style={{ width: '12px', height: '12px', background: 'rgba(59, 130, 246, 0.25)', border: '1px solid rgba(59, 130, 246, 0.4)', borderRadius: '2px' }} />
               1–2
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ width: '12px', height: '12px', background: '#93c5fd', borderRadius: '2px' }} />
+              <span style={{ width: '12px', height: '12px', background: 'rgba(59, 130, 246, 0.55)', border: '1px solid rgba(59, 130, 246, 0.7)', borderRadius: '2px' }} />
               3–4
             </span>
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -1012,18 +1012,18 @@ export default function AdminTeamOverview({
         </div>
 
         {/* Heatmap Grid Container */}
-        <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', background: '#ffffff', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
+        <div style={{ border: '1px solid var(--line)', borderRadius: '10px', overflow: 'hidden', background: 'var(--surface)', boxShadow: '0 1px 2px rgba(0,0,0,0.03)' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'center', fontSize: '12.5px' }}>
             <thead>
               {/* Day of Week Row */}
-              <tr style={{ background: '#ffffff', color: '#64748b', fontSize: '11px', fontWeight: 600 }}>
-                <th style={{ padding: '8px 16px', textAlign: 'left', width: '130px', color: '#64748b' }}></th>
+              <tr style={{ background: 'var(--surface)', color: 'var(--muted)', fontSize: '11px', fontWeight: 600 }}>
+                <th style={{ padding: '8px 16px', textAlign: 'left', width: '130px', color: 'var(--muted)' }}></th>
                 {liveStats.heatmapDays.map((hd, i) => (
                   <th
                     key={hd.label + i}
                     style={{
                       padding: '6px 4px',
-                      color: hd.isToday ? '#2563eb' : '#64748b',
+                      color: hd.isToday ? 'var(--accent)' : 'var(--muted)',
                       fontWeight: hd.isToday ? 800 : 600,
                     }}
                   >
@@ -1032,14 +1032,14 @@ export default function AdminTeamOverview({
                 ))}
               </tr>
               {/* Date Number Row */}
-              <tr style={{ borderBottom: '1px solid #e2e8f0', color: '#0f172a', fontSize: '12px', fontWeight: 700 }}>
-                <th style={{ padding: '4px 16px', textAlign: 'left', width: '130px', color: '#64748b' }}>Drafter</th>
+              <tr style={{ borderBottom: '1px solid var(--line)', color: 'var(--ink)', fontSize: '12px', fontWeight: 700 }}>
+                <th style={{ padding: '4px 16px', textAlign: 'left', width: '130px', color: 'var(--muted)' }}>Drafter</th>
                 {liveStats.heatmapDays.map((hd, i) => (
                   <th
                     key={hd.dayNum + i}
                     style={{
                       padding: '4px 4px 8px',
-                      color: hd.isToday ? '#2563eb' : '#0f172a',
+                      color: hd.isToday ? 'var(--accent)' : 'var(--ink)',
                       fontWeight: 800,
                     }}
                   >
@@ -1056,11 +1056,11 @@ export default function AdminTeamOverview({
                   <tr
                     key={d.name}
                     style={{
-                      borderBottom: rowIdx === OFFICIAL_DRAFTERS.length - 1 ? 'none' : '1px solid #f1f5f9',
+                      borderBottom: rowIdx === OFFICIAL_DRAFTERS.length - 1 ? 'none' : '1px solid var(--line)',
                     }}
                   >
                     {/* Drafter Name */}
-                    <td style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: '#0f172a' }}>
+                    <td style={{ padding: '8px 16px', textAlign: 'left', fontWeight: 600, color: 'var(--ink)' }}>
                       {d.name}
                     </td>
 
@@ -1075,12 +1075,12 @@ export default function AdminTeamOverview({
                         cellColor = '#ffffff';
                         fontWeight = 800;
                       } else if (cnt >= 3) {
-                        cellBg = '#93c5fd';
-                        cellColor = '#1e3a8a';
+                        cellBg = 'rgba(59, 130, 246, 0.5)';
+                        cellColor = '#ffffff';
                         fontWeight = 800;
                       } else if (cnt >= 1) {
-                        cellBg = '#dbeafe';
-                        cellColor = '#1e40af';
+                        cellBg = 'rgba(59, 130, 246, 0.2)';
+                        cellColor = 'var(--accent)';
                         fontWeight = 700;
                       }
 
@@ -1126,7 +1126,8 @@ export default function AdminTeamOverview({
         style={{
           marginTop: '36px',
           marginBottom: '28px',
-          background: '#ffffff',
+          background: 'var(--surface)',
+          border: '1px solid var(--line)',
           borderRadius: '12px',
           border: '1.5px solid #e2e8f0',
           boxShadow: '0 4px 12px rgba(0, 0, 0, 0.04)',
@@ -1138,8 +1139,8 @@ export default function AdminTeamOverview({
           onClick={() => setShowMatrix(!showMatrix)}
           style={{
             padding: '16px 22px',
-            background: 'linear-gradient(180deg, #F8FAFC 0%, #F1F5F9 100%)',
-            borderBottom: showMatrix ? '1.5px solid #e2e8f0' : 'none',
+            background: 'var(--page)',
+            borderBottom: showMatrix ? '1.5px solid var(--line)' : 'none',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
@@ -1164,7 +1165,7 @@ export default function AdminTeamOverview({
               <Target size={18} />
             </div>
             <div>
-              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--ink)' }}>
                 Drafter Capacity, Client Commitments & Problem Triage Matrix
               </div>
 
@@ -1190,7 +1191,7 @@ export default function AdminTeamOverview({
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px',
-                color: '#475569',
+                color: 'var(--muted)',
                 fontSize: '12.5px',
                 fontWeight: 700,
               }}
@@ -1203,10 +1204,10 @@ export default function AdminTeamOverview({
 
         {/* Matrix Table */}
         {showMatrix && (
-          <div style={{ overflowX: 'auto', background: '#ffffff' }}>
+          <div style={{ overflowX: 'auto', background: 'var(--surface)' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12.5px', textAlign: 'left' }}>
               <thead>
-                <tr style={{ background: '#F8FAFC', borderBottom: '1.5px solid #E2E8F0', color: '#475569', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                <tr style={{ background: 'var(--page)', borderBottom: '1.5px solid var(--line)', color: 'var(--muted)', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   <th style={{ padding: '12px 18px', minWidth: '150px' }}>Drafter</th>
                   <th style={{ padding: '12px 14px', textAlign: 'center', minWidth: '95px' }}>Total Cases</th>
                   <th style={{ padding: '12px 10px', textAlign: 'center', minWidth: '60px' }}>PS</th>
@@ -1232,14 +1233,14 @@ export default function AdminTeamOverview({
                     <tr
                       key={dm.drafter}
                       style={{
-                        borderBottom: '1px solid #F1F5F9',
+                        borderBottom: '1px solid var(--line)',
                         transition: 'background 0.15s ease',
                       }}
-                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#F8FAFC')}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--page)')}
                       onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
                     >
                       {/* Drafter Name */}
-                      <td style={{ padding: '12px 18px', fontWeight: 800, color: '#0F172A' }}>
+                      <td style={{ padding: '12px 18px', fontWeight: 800, color: 'var(--ink)' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '9px' }}>
                           <span
                             style={{
@@ -1450,9 +1451,9 @@ export default function AdminTeamOverview({
                               style={{
                                 padding: '5px 11px',
                                 borderRadius: '6px',
-                                border: '1px solid #E2E8F0',
-                                background: '#FFFFFF',
-                                color: '#475569',
+                                border: '1px solid var(--line)',
+                                background: 'var(--surface)',
+                                color: 'var(--ink)',
                                 fontSize: '11.5px',
                                 fontWeight: 700,
                                 cursor: 'pointer',
@@ -1484,8 +1485,9 @@ export default function AdminTeamOverview({
             position: 'fixed',
             bottom: '24px',
             right: '24px',
-            background: '#0f172a',
-            color: '#ffffff',
+            background: 'var(--surface)',
+            color: 'var(--ink)',
+            border: '1px solid var(--line)',
             padding: '14px 20px',
             borderRadius: '10px',
             boxShadow: '0 10px 25px -5px rgba(0,0,0,0.3)',

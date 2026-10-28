@@ -74,7 +74,7 @@ export default function PhasedStatusSelector({
       <div style={{
         padding: '10px 14px',
         borderBottom: '1px solid var(--line, #e2e8f0)',
-        background: 'var(--surface-muted, #f8fafc)',
+        background: 'var(--page)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -82,7 +82,7 @@ export default function PhasedStatusSelector({
         gap: '8px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted, #64748b)', textTransform: 'uppercase' }}>
+          <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--muted)', textTransform: 'uppercase' }}>
             Current Status:
           </span>
           <span style={{
@@ -122,7 +122,7 @@ export default function PhasedStatusSelector({
               borderRadius: '6px',
               border: '1px solid var(--line, #cbd5e1)',
               background: 'var(--surface, #ffffff)',
-              color: 'var(--text, #0f172a)'
+              color: 'var(--ink)'
             }}
           />
         </div>
@@ -134,7 +134,7 @@ export default function PhasedStatusSelector({
           display: 'flex',
           overflowX: 'auto',
           borderBottom: '1px solid var(--line, #e2e8f0)',
-          background: 'var(--surface-subtle, #f1f5f9)',
+          background: 'var(--page)',
           padding: '4px 6px',
           gap: '4px',
           scrollbarWidth: 'thin'
@@ -152,9 +152,9 @@ export default function PhasedStatusSelector({
                   fontWeight: isActive ? 700 : 500,
                   whiteSpace: 'nowrap',
                   borderRadius: '5px',
-                  border: isActive ? '1px solid #3b82f6' : '1px solid transparent',
-                  background: isActive ? '#ffffff' : 'transparent',
-                  color: isActive ? '#1d4ed8' : 'var(--text-muted, #64748b)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid transparent',
+                  background: isActive ? 'var(--surface)' : 'transparent',
+                  color: isActive ? 'var(--accent)' : 'var(--muted)',
                   cursor: 'pointer',
                   boxShadow: isActive ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
                   transition: 'all 0.15s ease'
@@ -215,7 +215,7 @@ export default function PhasedStatusSelector({
                   <span style={{
                     fontSize: '12px',
                     fontWeight: isSelected ? 800 : 600,
-                    color: isSelected ? col.text : 'var(--text, #1e293b)',
+                    color: isSelected ? col.text : 'var(--ink)',
                     whiteSpace: 'nowrap',
                     overflow: 'hidden',
                     textOverflow: 'ellipsis'
@@ -249,12 +249,12 @@ export default function PhasedStatusSelector({
         <div style={{
           padding: '8px 12px',
           borderTop: '1px solid var(--line, #e2e8f0)',
-          background: 'var(--surface-muted, #f8fafc)',
+          background: 'var(--page)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           fontSize: '11px',
-          color: 'var(--text, #334155)'
+          color: 'var(--ink)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
             <Calendar size={13} style={{ color: '#10b981' }} />
@@ -268,10 +268,10 @@ export default function PhasedStatusSelector({
                 padding: '3px 8px',
                 fontSize: '11px',
                 borderRadius: '4px',
-                border: '1px solid #10b981',
-                background: '#ffffff',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
                 fontWeight: 600,
-                color: '#065f46'
+                color: 'var(--ink)'
               }}
             >
               {Array.from({ length: 18 }, (_, i) => i + 3).map((yr) => (
@@ -304,14 +304,14 @@ export default function PhasedStatusSelector({
       <div style={{
         padding: '6px 12px',
         borderTop: '1px solid var(--line, #e2e8f0)',
-        background: 'var(--surface-subtle, #f1f5f9)',
+        background: 'var(--page)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '6px',
         fontSize: '10px',
-        color: 'var(--text-muted, #64748b)'
+        color: 'var(--muted)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>

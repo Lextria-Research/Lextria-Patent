@@ -9,49 +9,49 @@
 
 export const STATUS_COLORS = {
   GREEN: {
-    bg: '#D1FAE5',
-    text: '#065F46',
-    border: '#10B981',
+    bg: 'var(--badge-green-bg, rgba(16, 185, 129, 0.15))',
+    text: 'var(--badge-green-text, #10B981)',
+    border: 'var(--badge-green-border, rgba(16, 185, 129, 0.35))',
     dot: '#10B981',
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-700',
     meaning: 'Filed (Official Registry Action Complete)'
   },
   YELLOW: {
-    bg: '#FEF3C7',
-    text: '#92400E',
-    border: '#F59E0B',
+    bg: 'var(--badge-yellow-bg, rgba(245, 158, 11, 0.15))',
+    text: 'var(--badge-yellow-text, #F59E0B)',
+    border: 'var(--badge-yellow-border, rgba(245, 158, 11, 0.35))',
     dot: '#EAB308',
     badgeClass: 'bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-700',
     meaning: 'Under drafting (by internal legal/tech team)'
   },
   GREY: {
-    bg: '#F3F4F6',
-    text: '#374151',
-    border: '#9CA3AF',
-    dot: '#6B7280',
+    bg: 'var(--badge-grey-bg, rgba(148, 163, 184, 0.15))',
+    text: 'var(--badge-grey-text, #94A3B8)',
+    border: 'var(--badge-grey-border, rgba(148, 163, 184, 0.35))',
+    dot: '#94A3B8',
     badgeClass: 'bg-slate-100 text-slate-800 border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700',
     meaning: 'Under review (by senior attorney / QA team)'
   },
   ORANGE: {
-    bg: '#FFEDD5',
-    text: '#9A3412',
-    border: '#F97316',
+    bg: 'var(--badge-orange-bg, rgba(249, 115, 22, 0.15))',
+    text: 'var(--badge-orange-text, #F97316)',
+    border: 'var(--badge-orange-border, rgba(249, 115, 22, 0.35))',
     dot: '#F97316',
     badgeClass: 'bg-orange-50 text-orange-800 border-orange-300 dark:bg-orange-950/60 dark:text-orange-300 dark:border-orange-700',
     meaning: 'Waiting confirmation (by client)'
   },
   PURPLE: {
-    bg: '#EDE9FE',
-    text: '#5B21B6',
-    border: '#8B5CF6',
+    bg: 'var(--badge-purple-bg, rgba(139, 92, 246, 0.15))',
+    text: 'var(--badge-purple-text, #A78BFA)',
+    border: 'var(--badge-purple-border, rgba(139, 92, 246, 0.35))',
     dot: '#8B5CF6',
     badgeClass: 'bg-purple-50 text-purple-800 border-purple-300 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-700',
     meaning: 'Waiting information / data (from client)'
   },
   BLUE: {
-    bg: '#DBEAFE',
-    text: '#1E40AF',
-    border: '#3B82F6',
+    bg: 'var(--badge-blue-bg, rgba(59, 130, 246, 0.15))',
+    text: 'var(--badge-blue-text, #60A5FA)',
+    border: 'var(--badge-blue-border, rgba(59, 130, 246, 0.35))',
     dot: '#3B82F6',
     badgeClass: 'bg-blue-50 text-blue-800 border-blue-300 dark:bg-blue-950/60 dark:text-blue-300 dark:border-blue-700',
     meaning: 'Official Publication / Notice / Court Milestone'

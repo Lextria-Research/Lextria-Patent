@@ -147,8 +147,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
       <div
         className="modal-dialog-animate"
         style={{
-          background: 'var(--surface, #ffffff)',
-          color: 'var(--text, #0f172a)',
+          background: 'var(--surface)',
+          color: 'var(--ink)',
           borderRadius: '12px',
           maxWidth: '560px',
           width: '100%',
@@ -167,14 +167,14 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: 'var(--surface-muted, #f8fafc)'
+          background: 'var(--page)'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{
               width: '36px',
               height: '36px',
               borderRadius: '8px',
-              background: '#eff6ff',
+              background: 'var(--accent-soft)',
               color: '#2563eb',
               display: 'flex',
               alignItems: 'center',
@@ -183,10 +183,10 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
               <UserPlus size={20} />
             </div>
             <div>
-              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--text, #0f172a)' }}>
+              <h2 style={{ fontSize: '16px', fontWeight: 700, margin: 0, color: 'var(--ink)' }}>
                 Add New Client
               </h2>
-              <p style={{ fontSize: '11px', color: 'var(--text-muted, #64748b)', margin: 0 }}>
+              <p style={{ fontSize: '11px', color: 'var(--muted)', margin: 0 }}>
                 Synchronized across all Lextria dashboards via <code style={{ color: '#2563eb' }}>core.clients</code>
               </p>
             </div>
@@ -198,7 +198,7 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
               background: 'transparent',
               border: 'none',
               cursor: 'pointer',
-              color: 'var(--text-muted, #64748b)',
+              color: 'var(--muted)',
               padding: '6px',
               borderRadius: '6px'
             }}
@@ -262,8 +262,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   fontSize: '12px',
                   fontWeight: 600,
                   textTransform: 'uppercase',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -284,8 +284,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   borderRadius: '6px',
                   border: '1px solid var(--line, #cbd5e1)',
                   fontSize: '12px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -306,8 +306,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                 border: '1.5px solid #2563eb',
                 fontSize: '12px',
                 fontWeight: 600,
-                background: 'var(--surface, #ffffff)',
-                color: 'var(--text, #0f172a)'
+                background: 'var(--surface)',
+                color: 'var(--ink)'
               }}
             >
               {ENTITY_OPTIONS.map((opt) => (
@@ -335,8 +335,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   borderRadius: '6px',
                   border: '1px solid var(--line, #cbd5e1)',
                   fontSize: '12px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -356,8 +356,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   borderRadius: '6px',
                   border: '1px solid var(--line, #cbd5e1)',
                   fontSize: '12px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -380,8 +380,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   borderRadius: '6px',
                   border: '1px solid var(--line, #cbd5e1)',
                   fontSize: '12px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -401,8 +401,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                   borderRadius: '6px',
                   border: '1px solid var(--line, #cbd5e1)',
                   fontSize: '12px',
-                  background: 'var(--surface, #ffffff)',
-                  color: 'var(--text, #0f172a)'
+                  background: 'var(--surface)',
+                  color: 'var(--ink)'
                 }}
               />
             </div>
@@ -424,8 +424,8 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                 borderRadius: '6px',
                 border: '1px solid var(--line, #cbd5e1)',
                 fontSize: '12px',
-                background: 'var(--surface, #ffffff)',
-                color: 'var(--text, #0f172a)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
                 resize: 'vertical'
               }}
             />
@@ -449,7 +449,7 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
                 borderRadius: '6px',
                 border: '1px solid var(--line, #cbd5e1)',
                 background: 'transparent',
-                color: 'var(--text, #0f172a)',
+                color: 'var(--ink)',
                 cursor: 'pointer'
               }}
             >
