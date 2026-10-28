@@ -998,7 +998,65 @@ export default function SlideOverDrawer({
         {/* DOCS VAULT TAB (Zoho WorkDrive Storage & In-Dashboard Document Viewing) */}
         {activeTab === 'work' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+            {/* 1. Zoho WorkDrive Cloud Vault Connection Banner */}
+            <div style={{
+              padding: '14px 18px',
+              borderRadius: '8px',
+              background: 'rgba(37, 99, 235, 0.05)',
+              border: '1px solid rgba(37, 99, 235, 0.2)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  background: 'rgba(37, 99, 235, 0.12)',
+                  color: '#2563EB',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Cloud size={20} />
+                </div>
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>Zoho WorkDrive Vault: {record.project_code}</span>
+                    <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#ecfdf5', color: '#059669', border: '1px solid #a7f3d0' }}>
+                      ● Live Cloud Sync
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
+                    All files are stored and managed directly in Zoho WorkDrive. The dashboard fetches and displays documents here for viewing and downloading.
+                  </div>
+                </div>
+              </div>
 
+              <a
+                href={record.workdrive_folder_url || workdriveLink || `https://workdrive.zoho.com/workspace/patents/${record.project_code}`}
+                target="_blank"
+                rel="noreferrer"
+                style={{
+                  padding: '7px 14px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(37, 99, 235, 0.3)',
+                  background: 'var(--surface)',
+                  color: '#2563EB',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  textDecoration: 'none',
+                }}
+              >
+                <ExternalLink size={13} /> Open Folder in WorkDrive
+              </a>
+            </div>
 
             {/* 2. Specification Content (Abstract & Claims) */}
             <div style={{ padding: '16px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -1102,117 +1160,15 @@ export default function SlideOverDrawer({
               </div>
             </div>
 
-            {/* 3. Direct Document Upload Zone (To Zoho WorkDrive) */}
-            <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDragOver(false);
-                const files = Array.from(e.dataTransfer.files);
-                handleFilesUpload(files);
-              }}
-              style={{
-                padding: '18px',
-                borderRadius: '10px',
-                border: `2px dashed ${isDragOver ? '#2563EB' : 'var(--line)'}`,
-                background: isDragOver ? 'rgba(37, 99, 235, 0.05)' : 'var(--surface)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '12px',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Upload size={16} color="#2563EB" />
-                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-                    Upload Documents Directly to Dashboard (Zoho WorkDrive Vault)
-                  </span>
-                </div>
-                <span style={{ fontSize: '11px', color: '#059669', fontWeight: 700 }}>
-                  ☁️ Stored on WorkDrive
-                </span>
-              </div>
-              <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--muted)' }}>
-                Drag and drop or browse files (PDF, DOCX, Drawings, IDF, Search Reports, CBR receipts) to upload directly for viewing, review, and reference.
-              </p>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: '10px' }}>
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
-                    Document Category / Type *
-                  </label>
-                  <select
-                    value={uploadCategory}
-                    onChange={(e) => setUploadCategory(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      color: 'var(--ink)',
-                      fontSize: '12px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <option value="Complete Specification (Form 2)">Complete Specification (Form 2)</option>
-                    <option value="Provisional Specification (Form 2)">Provisional Specification (Form 2)</option>
-                    <option value="Patent Claims Draft">Patent Claims Draft (.docx)</option>
-                    <option value="Patent Drawings & Figures">Patent Drawings & Figures (.pdf, .png)</option>
-                    <option value="Invention Disclosure Form (IDF)">Invention Disclosure Form (IDF)</option>
-                    <option value="Prior Art & Novelty Search Report">Prior Art & Novelty Search Report</option>
-                    <option value="Form 1 (Application Proof of Right)">Form 1 (Application Proof of Right)</option>
-                    <option value="Form 3 (Foreign Filing Statement)">Form 3 (Foreign Filing Statement)</option>
-                    <option value="Form 5 (Declaration of Inventorship)">Form 5 (Declaration of Inventorship)</option>
-                    <option value="Form 26 (Power of Attorney)">Form 26 (Power of Attorney)</option>
-                    <option value="Form 9 (Early Publication Receipt)">Form 9 (Early Publication Receipt)</option>
-                    <option value="Form 18 / 18A (RFE Examination)">Form 18 / 18A (RFE Examination)</option>
-                    <option value="First Examination Report (FER)">First Examination Report (FER)</option>
-                    <option value="FER Reply & Technical Submissions">FER Reply & Technical Submissions</option>
-                    <option value="Hearing Notice & Form 30">Hearing Notice & Form 30</option>
-                    <option value="Letters Patent / Grant Certificate">Letters Patent / Grant Certificate</option>
-                    <option value="Official IPO CBR Receipt">Official IPO CBR Receipt</option>
-                    <option value="Client Correspondence & Instructions">Client Correspondence & Instructions</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)', display: 'block', marginBottom: '4px' }}>
-                    Select File(s) to Upload
-                  </label>
-                  <input
-                    type="file"
-                    multiple
-                    id={`file_input_${record.project_code}`}
-                    style={{
-                      width: '100%',
-                      padding: '6px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '11.5px',
-                    }}
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      handleFilesUpload(files);
-                      e.target.value = '';
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* 4. Uploaded Documents List & Viewer Interface */}
+            {/* 3. Zoho WorkDrive Documents List & Viewer Interface */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-                    Docs Vault ({filteredDocuments.length})
+                    WorkDrive Synced Documents ({filteredDocuments.length})
                   </span>
                   <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                    All files ready for direct in-dashboard viewing & reference
+                    Fetched directly from Zoho WorkDrive for viewing and download
                   </span>
                 </div>
 
@@ -1359,30 +1315,7 @@ export default function SlideOverDrawer({
                         <ExternalLink size={13} />
                       </a>
 
-                      {/* Delete */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const updated = documents.filter((d) => d.id !== doc.id);
-                          setDocuments(updated);
-                          try {
-                            localStorage.setItem(`patent_docs_vault_${record.project_code}`, JSON.stringify(updated));
-                          } catch {}
-                        }}
-                        style={{
-                          padding: '6px 8px',
-                          borderRadius: '6px',
-                          border: '1px solid var(--line)',
-                          background: 'var(--surface)',
-                          color: '#DC2626',
-                          cursor: 'pointer',
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                        title="Delete document from vault"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+
                     </div>
                   </div>
                 ))
