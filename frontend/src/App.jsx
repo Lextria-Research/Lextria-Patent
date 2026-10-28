@@ -20,6 +20,7 @@ import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
 import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
+import { normalizeStatus } from './constants/patentStatuses';
 import { supabase, patentDb, coreDb } from './lib/supabase';
 import DEFAULT_CLIENTS from './data/clients.json';
 import {
@@ -274,19 +275,30 @@ export default function App() {
         const resp = await fetch('/master_records.json');
         if (resp.ok) {
           const rawData = await resp.json();
-          const data = seedCommitmentDates(rawData);
+          const data = seedCommitmentDates(rawData).map((r) => ({
+            ...r,
+            current_status: normalizeStatus(r.current_status, r.specification_type)
+          }));
           try {
             const rawOverrides = localStorage.getItem('patent_local_overrides');
             if (rawOverrides) {
               const overrides = JSON.parse(rawOverrides);
               const merged = data.map((rec) => {
                 const ov = overrides[rec.project_code];
-                return ov ? { ...rec, ...ov } : rec;
+                if (ov) {
+                  const updated = { ...rec, ...ov };
+                  updated.current_status = normalizeStatus(updated.current_status, updated.specification_type);
+                  return updated;
+                }
+                return rec;
               });
               const existingCodes = new Set(data.map((r) => r.project_code));
               const extraCreated = Object.values(overrides).filter(
                 (r) => r && r.project_code && !existingCodes.has(r.project_code)
-              );
+              ).map((r) => ({
+                ...r,
+                current_status: normalizeStatus(r.current_status, r.specification_type)
+              }));
               setRecords([...extraCreated, ...merged]);
               return;
             }

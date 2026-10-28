@@ -11,7 +11,7 @@ import {
   FileText, ExternalLink, Plus, Edit3, Tag as TagIcon,
   CheckSquare, Square, User, Building, X, UserCheck
 } from 'lucide-react';
-import { getStatusColor } from '../constants/patentStatuses';
+import { getStatusColor, PROSECUTION_PHASES, STATUTORY_STATUSES, getStatusPhase } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
 export default function MasterDataGrid({
@@ -153,9 +153,14 @@ export default function MasterDataGrid({
       });
     }
 
-    // Status dropdown filter
+    // Status dropdown filter (supports individual statutory status or whole phase)
     if (statusFilter !== 'ALL') {
-      data = data.filter((r) => r.current_status === statusFilter);
+      if (statusFilter.startsWith('PHASE:')) {
+        const targetPhase = statusFilter.replace('PHASE:', '');
+        data = data.filter((r) => getStatusPhase(r.current_status) === targetPhase);
+      } else {
+        data = data.filter((r) => (r.current_status || '').toLowerCase() === statusFilter.toLowerCase());
+      }
     }
 
     // Delivery Urgency filter (Matching Reference UI Design)
@@ -195,10 +200,35 @@ export default function MasterDataGrid({
     return data;
   }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
 
-  // Unique statuses for filter dropdown
-  const statusOptions = useMemo(() => {
-    const s = new Set(records.map((r) => r.current_status).filter(Boolean));
-    return Array.from(s).sort();
+  // Grouped statutory statuses for filter dropdown with counts
+  const { phaseGroupedStatuses } = useMemo(() => {
+    const counts = {};
+    records.forEach((r) => {
+      const st = r.current_status || 'Idf sent, awaiting data';
+      counts[st] = (counts[st] || 0) + 1;
+    });
+
+    const groups = PROSECUTION_PHASES.map((phase) => {
+      const statuses = STATUTORY_STATUSES.filter((s) => s.phase === phase.id);
+      return {
+        phaseId: phase.id,
+        phaseLabel: phase.label,
+        shortLabel: phase.shortLabel,
+        statuses,
+      };
+    });
+
+    return { phaseGroupedStatuses: groups, statusCounts: counts };
+  }, [records]);
+
+  // Status counts map for quick lookup
+  const statusCountsMap = useMemo(() => {
+    const counts = {};
+    records.forEach((r) => {
+      const st = r.current_status || 'Idf sent, awaiting data';
+      counts[st] = (counts[st] || 0) + 1;
+    });
+    return counts;
   }, [records]);
 
   // Unique clients for dropdown (combine core.clients + existing applicant names)
@@ -677,7 +707,7 @@ export default function MasterDataGrid({
             ))}
           </select>
 
-          {/* Status Dropdown Filter */}
+          {/* Status Dropdown Filter (Phase Grouped & Statutory) */}
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
@@ -689,13 +719,34 @@ export default function MasterDataGrid({
               color: 'var(--ink)',
               fontSize: '12px',
               fontWeight: 600,
-              maxWidth: '160px'
+              minWidth: '180px',
+              maxWidth: '240px',
+              outline: 'none'
             }}
+            title="Filter by Statutory Prosecution Status or Phase"
           >
-            <option value="ALL">All Statuses</option>
-            {statusOptions.map((st) => (
-              <option key={st} value={st}>{st}</option>
-            ))}
+            <option value="ALL">All Statuses ({records.length})</option>
+            {phaseGroupedStatuses.map((group) => {
+              const groupTotal = group.statuses.reduce(
+                (sum, s) => sum + (statusCountsMap[s.name] || 0),
+                0
+              );
+              return (
+                <optgroup key={group.phaseId} label={`${group.phaseLabel} (${groupTotal})`}>
+                  <option value={`PHASE:${group.phaseId}`}>
+                    ▸ All {group.shortLabel} ({groupTotal})
+                  </option>
+                  {group.statuses.map((st) => {
+                    const cnt = statusCountsMap[st.name] || 0;
+                    return (
+                      <option key={st.id || st.name} value={st.name}>
+                        {st.name} {cnt > 0 ? `(${cnt})` : ''}
+                      </option>
+                    );
+                  })}
+                </optgroup>
+              );
+            })}
           </select>
 
           <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>

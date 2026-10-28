@@ -491,3 +491,51 @@ export function getStatusPhase(statusName) {
   return 'PHASE_1_PS';
 }
 
+
+/**
+ * Normalize any legacy status string to an official statutory status
+ */
+export function normalizeStatus(status, specType = 'PROVISIONAL') {
+  if (!status) return 'Idf sent, awaiting data';
+  const s = String(status).trim();
+  const lower = s.toLowerCase();
+
+  // If already an official statutory status name
+  const exact = STATUTORY_STATUSES.find((st) => st.name.toLowerCase() === lower);
+  if (exact) return exact.name;
+
+  if (lower.includes('renewed')) return s;
+
+  // Legacy string mappings
+  const isCs = (specType && String(specType).toUpperCase().includes('CS')) || lower.includes('cs');
+
+  if (lower.includes('purple')) {
+    return isCs ? 'Checklist sent for CS, awaiting Data' : 'Idf sent, awaiting data';
+  }
+  if (lower.includes('yellow')) {
+    return isCs ? 'CS underdrafting' : 'PS Underdrafting';
+  }
+  if (lower.includes('grey')) {
+    return isCs ? 'CS under review' : 'PS under review';
+  }
+  if (lower.includes('orange')) {
+    return isCs ? 'CS Draft Sent, Waiting Confirmation' : 'PS Draft Sent, waiting for confirmation';
+  }
+  if (lower === 'not started') {
+    return 'Idf sent, awaiting data';
+  }
+  if (lower === 'ps filed - cs not filed') {
+    return 'Checklist sent for CS, awaiting Data';
+  }
+  if (lower === 'published') {
+    return 'Patent Published';
+  }
+  if (lower.includes('fer received') || lower.includes('reply not filed')) {
+    return 'FER reply under drafting';
+  }
+  if (lower === 'ps filed' || lower === 'idf - green') {
+    return 'PS Filed';
+  }
+
+  return 'Idf sent, awaiting data';
+}
