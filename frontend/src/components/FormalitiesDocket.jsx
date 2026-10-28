@@ -409,6 +409,7 @@ export default function FormalitiesDocket({
               <button
                 key={sec.id}
                 onClick={() => setActiveSection(sec.id)}
+                className="nav-tab-btn"
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -467,7 +468,7 @@ export default function FormalitiesDocket({
 
       {/* SECTION CONTENT 1: F1 / F26 */}
       {activeSection === 'f1f26' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div key="f1f26" className="animate-tab-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {/* Sub-bar */}
           <div
             style={{
@@ -675,7 +676,7 @@ export default function FormalitiesDocket({
 
       {/* SECTION CONTENT 2: F9 / F18 */}
       {activeSection === 'f9f18' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div key="f9f18" className="animate-tab-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <div
             style={{
               padding: '8px 20px',
@@ -870,7 +871,7 @@ export default function FormalitiesDocket({
 
       {/* SECTION CONTENT 3: DATA ISSUES & DISCREPANCIES */}
       {activeSection === 'discrepancies' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '16px 20px' }}>
+        <div key="discrepancies" className="animate-tab-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '16px 20px' }}>
           {discrepancyData.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--muted)' }}>
               <CheckCircle2 size={40} color="#10B981" style={{ margin: '0 auto 12px' }} />
@@ -950,7 +951,7 @@ export default function FormalitiesDocket({
 
       {/* SECTION CONTENT 4: GRANTED & RENEWALS */}
       {activeSection === 'renewals' && (
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+        <div key="renewals" className="animate-tab-pane" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
           {/* Statutory Renewal Fees Reference Strip */}
           <div
             style={{

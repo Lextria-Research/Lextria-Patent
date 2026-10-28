@@ -133,6 +133,7 @@ export default function SettingsModal({
 
   return (
     <div
+      className="modal-backdrop-animate"
       style={{
         position: 'fixed',
         inset: 0,
@@ -147,6 +148,7 @@ export default function SettingsModal({
       onClick={onClose}
     >
       <div
+        className="modal-dialog-animate"
         style={{
           background: 'var(--surface)',
           borderRadius: '16px',
@@ -229,6 +231,7 @@ export default function SettingsModal({
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
+                className="nav-tab-btn"
                 style={{
                   padding: '12px 18px',
                   border: 'none',
@@ -253,6 +256,7 @@ export default function SettingsModal({
 
         {/* Tab Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+          <div key={activeTab} className="animate-tab-pane">
           {/* TAB: ZOHO WORKDRIVE STORAGE INTEGRATION (Super Admin Only) */}
           {activeTab === 'WORKDRIVE' && isSuperAdmin && (
             <div>
@@ -879,6 +883,7 @@ export default function SettingsModal({
               )}
             </div>
           )}
+          </div>
         </div>
 
         {/* Footer */}

@@ -622,10 +622,12 @@ export default function CalendarView({
       {/* Selected Day Deadlines Drawer / Modal */}
       {selectedDayDeadlines && (
         <div
+          className="modal-backdrop-animate"
           style={{
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(15, 23, 42, 0.6)',
+            backdropFilter: 'blur(4px)',
             zIndex: 1500,
             display: 'flex',
             alignItems: 'center',
@@ -635,6 +637,7 @@ export default function CalendarView({
           onClick={() => setSelectedDayDeadlines(null)}
         >
           <div
+            className="modal-dialog-animate"
             style={{
               background: 'var(--surface)',
               borderRadius: '14px',

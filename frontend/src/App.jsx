@@ -841,6 +841,7 @@ export default function App() {
                   cursor: 'pointer',
                   boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
                 }}
+                className="action-btn-interactive"
                 title="Quick Docket: record IPO Application No, CBR receipt, Form 1/26 and prosecution dates"
               >
                 <CheckSquare size={14} /> Quick Docket
@@ -864,6 +865,7 @@ export default function App() {
                   gap: '6px',
                   cursor: 'pointer',
                 }}
+                className="action-btn-interactive"
                 title="Rebalance workload across associate drafters"
               >
                 <UserCheck size={14} /> Reassign
@@ -873,6 +875,7 @@ export default function App() {
             {/* New Application Button */}
             <button
               onClick={() => setIsCreateOpen(true)}
+              className="action-btn-interactive"
               style={{
                 padding: '6px 13px',
                 borderRadius: '6px',
@@ -910,7 +913,8 @@ export default function App() {
                 gap: '6px',
                 cursor: 'pointer',
               }}
-              title="Generate custom report with selected columns"
+              className="action-btn-interactive"
+                title="Generate custom report with selected columns"
             >
               <Download size={14} /> Export
             </button>
@@ -931,7 +935,8 @@ export default function App() {
                 gap: '6px',
                 cursor: 'pointer',
               }}
-              title="Launch Fullscreen Operations TV Board"
+              className="action-btn-interactive"
+                title="Launch Fullscreen Operations TV Board"
             >
               <Tv size={14} color="#C98A2C" /> TV Board
             </button>
@@ -951,6 +956,7 @@ export default function App() {
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
+              className="action-btn-interactive"
               title="Settings (Custom Tags, Zoho Integrations, Audit History)"
             >
               <Settings size={15} />
@@ -971,6 +977,7 @@ export default function App() {
                 justifyContent: 'center',
                 cursor: 'pointer',
               }}
+              className="action-btn-interactive"
               title="Toggle Light / Dark Mode"
             >
               {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
@@ -991,6 +998,7 @@ export default function App() {
                 color: 'var(--ink)',
                 transition: 'all 0.15s ease',
               }}
+              className="action-btn-interactive"
               title="Click to switch authenticated user account"
             >
               <div
@@ -1044,6 +1052,7 @@ export default function App() {
             {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
               <button
                 onClick={() => setActiveNavTab('TEAM_OVERVIEW')}
+                className="nav-tab-btn"
                 style={{
                   padding: '6px 14px',
                   borderRadius: '6px',
@@ -1069,6 +1078,7 @@ export default function App() {
             {/* Tab 1: Portfolio Master / Drafting Cockpit */}
             <button
               onClick={() => setActiveNavTab('PORTFOLIO')}
+              className="nav-tab-btn"
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
@@ -1093,6 +1103,7 @@ export default function App() {
             {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
               <button
                 onClick={() => setActiveNavTab('FORMALITIES')}
+                className="nav-tab-btn"
                 style={{
                   padding: '6px 14px',
                   borderRadius: '6px',
@@ -1118,6 +1129,7 @@ export default function App() {
             {/* Tab 2: Deadlines Checklist */}
             <button
               onClick={() => setActiveNavTab('DEADLINES')}
+              className="nav-tab-btn"
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
@@ -1142,6 +1154,7 @@ export default function App() {
             {/* Tab 3: Calendar View */}
             <button
               onClick={() => setActiveNavTab('CALENDAR')}
+              className="nav-tab-btn"
               style={{
                 padding: '6px 14px',
                 borderRadius: '6px',
@@ -1214,7 +1227,7 @@ export default function App() {
       >
         {/* VIEW 0: TEAM OVERVIEW (Paralegal / Patent Admin & Super Admin) */}
         {activeNavTab === 'TEAM_OVERVIEW' && (
-          <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+          <div key="TEAM_OVERVIEW" className="animate-tab-view" style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
             <AdminTeamOverview
               records={records}
               currentUser={currentUser}
@@ -1240,7 +1253,7 @@ export default function App() {
 
         {/* VIEW 1: PORTFOLIO MASTER */}
         {activeNavTab === 'PORTFOLIO' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div key="PORTFOLIO" className="animate-tab-view" style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             {/* KPI Alert Ribbon */}
             <KpiAlertRibbon
               records={roleFilteredRecords}
@@ -1323,7 +1336,7 @@ export default function App() {
 
         {/* VIEW: FORMALITIES DOCKET (Paralegal & Super Admin) */}
         {activeNavTab === 'FORMALITIES' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div key="FORMALITIES" className="animate-tab-view" style={{ flex: 1, overflow: 'hidden' }}>
             <FormalitiesDocket
               records={roleFilteredRecords}
               currentUser={currentUser}
@@ -1337,7 +1350,7 @@ export default function App() {
 
         {/* VIEW 2: DEADLINES CHECKLIST (Requirement 8) */}
         {activeNavTab === 'DEADLINES' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div key="DEADLINES" className="animate-tab-view" style={{ flex: 1, overflow: 'hidden' }}>
             <DeadlinesTab
               records={roleFilteredRecords}
               currentUser={currentUser}
@@ -1352,7 +1365,7 @@ export default function App() {
 
         {/* VIEW 3: CALENDAR VIEW (Requirement 14) */}
         {activeNavTab === 'CALENDAR' && (
-          <div style={{ flex: 1, overflow: 'hidden' }}>
+          <div key="CALENDAR" className="animate-tab-view" style={{ flex: 1, overflow: 'hidden' }}>
             <CalendarView
               records={roleFilteredRecords}
               currentUser={currentUser}

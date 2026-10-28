@@ -268,6 +268,7 @@ export default function EditApplicationModal({
 
   return (
     <div
+      className="modal-backdrop-animate"
       style={{
         position: 'fixed',
         inset: 0,
@@ -282,6 +283,7 @@ export default function EditApplicationModal({
       onClick={onClose}
     >
       <div
+        className="modal-dialog-animate"
         style={{
           background: 'var(--surface)',
           borderRadius: '12px',

@@ -129,29 +129,37 @@ export default function AddClientModal({ isOpen, onClose, onClientCreated }) {
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.7)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999,
-      padding: '16px'
-    }}>
-      <div style={{
-        background: 'var(--surface, #ffffff)',
-        color: 'var(--text, #0f172a)',
-        borderRadius: '12px',
-        maxWidth: '560px',
-        width: '100%',
-        boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-        overflow: 'hidden',
-        border: '1px solid var(--line, #e2e8f0)',
+    <div
+      className="modal-backdrop-animate"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.7)',
+        backdropFilter: 'blur(5px)',
         display: 'flex',
-        flexDirection: 'column'
-      }}>
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '16px'
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-dialog-animate"
+        style={{
+          background: 'var(--surface, #ffffff)',
+          color: 'var(--text, #0f172a)',
+          borderRadius: '12px',
+          maxWidth: '560px',
+          width: '100%',
+          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
+          overflow: 'hidden',
+          border: '1px solid var(--line, #e2e8f0)',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div style={{
           padding: '16px 20px',

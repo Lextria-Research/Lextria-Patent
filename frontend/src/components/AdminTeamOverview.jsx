@@ -1501,6 +1501,7 @@ export default function AdminTeamOverview({
       {/* Cell Detail Modal / Toast when clicking a heatmap cell */}
       {selectedCellInfo && (
         <div
+          className="animate-pop-in"
           style={{
             position: 'fixed',
             bottom: '24px',

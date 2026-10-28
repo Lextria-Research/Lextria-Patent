@@ -126,32 +126,37 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0, 0, 0, 0.65)',
-      backdropFilter: 'blur(4px)',
-      zIndex: 2000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '20px'
-    }}>
-      <div style={{
-        background: 'var(--surface)',
-        borderRadius: '12px',
-        width: '100%',
-        maxWidth: '750px',
-        maxHeight: '85vh',
-        boxShadow: '0 20px 48px rgba(0, 0, 0, 0.35)',
+    <div
+      className="modal-backdrop-animate"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.65)',
+        backdropFilter: 'blur(5px)',
+        zIndex: 2000,
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        border: '1px solid var(--line)'
-      }}>
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '20px'
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="modal-dialog-animate"
+        style={{
+          background: 'var(--surface)',
+          borderRadius: '12px',
+          width: '100%',
+          maxWidth: '750px',
+          maxHeight: '85vh',
+          boxShadow: '0 20px 48px rgba(0, 0, 0, 0.35)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+          border: '1px solid var(--line)'
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Modal Header */}
         <div style={{
           padding: '18px 24px',

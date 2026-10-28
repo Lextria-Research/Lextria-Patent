@@ -106,12 +106,13 @@ export default function ReassignMatterModal({
 
   return (
     <div
+      className="modal-backdrop-animate"
       style={{
         position: 'fixed',
         inset: 0,
         zIndex: 9999,
         background: 'rgba(0, 0, 0, 0.65)',
-        backdropFilter: 'blur(3px)',
+        backdropFilter: 'blur(5px)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -122,6 +123,7 @@ export default function ReassignMatterModal({
       }}
     >
       <div
+        className="modal-dialog-animate"
         style={{
           background: 'var(--surface)',
           borderRadius: '12px',
@@ -133,7 +135,6 @@ export default function ReassignMatterModal({
           boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
           border: '1px solid var(--line)',
           overflow: 'hidden',
-          animation: 'fadeIn 0.15s ease',
         }}
       >
         {/* Header */}

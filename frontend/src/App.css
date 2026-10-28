@@ -3725,3 +3725,185 @@ tr.is-abandoned:hover > td { background: var(--bad-soft); }
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
+
+
+/* ==========================================================================
+   FLUID MOTION & LUXURY INTERACTION DESIGN SYSTEM
+   Smooth Apple / Material 3 physics, spring cubic-bezier transitions,
+   panoramic view transitions, and tactile micro-interactions.
+   ========================================================================== */
+
+/* 1. Global View Navigation Transitions (Tab Switching) */
+@keyframes viewTabFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-tab-view {
+  animation: viewTabFadeSlide 0.28s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  will-change: transform, opacity;
+}
+
+/* 2. Sub-tab and Panel Transitions */
+@keyframes tabPaneFadeSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-tab-pane {
+  animation: tabPaneFadeSlide 0.22s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  will-change: transform, opacity;
+}
+
+/* 3. Modal Backdrop & Dialog Animations */
+@keyframes modalBackdropFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(5px);
+  }
+}
+
+.modal-backdrop-animate {
+  animation: modalBackdropFadeIn 0.24s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@keyframes modalDialogPopIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.93) translateY(18px);
+  }
+  65% {
+    transform: scale(1.008) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-dialog-animate {
+  animation: modalDialogPopIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  will-change: transform, opacity;
+}
+
+/* 4. Slide-Over Detail Drawer Animations */
+@keyframes drawerBackdropFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(4px);
+  }
+}
+
+.drawer-backdrop-animate {
+  animation: drawerBackdropFadeIn 0.26s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+@keyframes drawerSlideInRight {
+  0% {
+    transform: translateX(100%);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+  }
+  100% {
+    transform: translateX(0);
+    box-shadow: -16px 0 48px rgba(0, 0, 0, 0.32);
+  }
+}
+
+.drawer-panel-animate {
+  animation: drawerSlideInRight 0.34s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  will-change: transform;
+}
+
+/* 5. Popovers, Dropdowns, and Toast Micro-Animations */
+@keyframes popoverIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.popover-animate {
+  animation: popoverIn 0.18s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: top;
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-pop-in {
+  animation: popIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 6. Interactive Tab & Header Button Feedback */
+.nav-tab-btn {
+  position: relative;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.nav-tab-btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nav-tab-btn:active {
+  transform: scale(0.97);
+}
+
+.action-btn-interactive {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.action-btn-interactive:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.22);
+}
+
+.action-btn-interactive:active {
+  transform: scale(0.96);
+}
+
+/* 7. Subtle Pulse for Overdue / Critical Deadlines */
+@keyframes subtlePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
+  }
+}
+
+.pulse-critical {
+  animation: subtlePulse 2.2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}

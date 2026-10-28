@@ -132,6 +132,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onSelectUser }
 
   return (
     <div
+      className="modal-backdrop-animate"
       style={{
         position: 'fixed',
         inset: 0,
@@ -146,6 +147,7 @@ export default function AuthModal({ isOpen, onClose, currentUser, onSelectUser }
       onClick={onClose}
     >
       <div
+        className="modal-dialog-animate"
         style={{
           background: 'var(--surface)',
           borderRadius: '16px',

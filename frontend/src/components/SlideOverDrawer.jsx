@@ -283,22 +283,35 @@ export default function SlideOverDrawer({
   ];
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      right: 0,
-      bottom: 0,
-      width: '100%',
-      maxWidth: '680px',
-      background: 'var(--surface)',
-      borderLeft: '1px solid var(--line)',
-      boxShadow: '-8px 0 32px rgba(0, 0, 0, 0.25)',
-      zIndex: 1000,
-      display: 'flex',
-      flexDirection: 'column',
-      overflow: 'hidden',
-      animation: 'slideInRight 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
-    }}>
+    <div
+      className="drawer-backdrop-animate"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.45)',
+        backdropFilter: 'blur(3px)',
+        zIndex: 1000,
+      }}
+      onClick={onClose}
+    >
+      <div
+        className="drawer-panel-animate"
+        style={{
+          position: 'fixed',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          width: '100%',
+          maxWidth: '680px',
+          background: 'var(--surface)',
+          borderLeft: '1px solid var(--line)',
+          boxShadow: '-16px 0 48px rgba(0, 0, 0, 0.3)',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
       {/* Drawer Header */}
       <div style={{
         padding: '18px 24px',
@@ -504,6 +517,7 @@ export default function SlideOverDrawer({
           <button
             key={t.id}
             onClick={() => setActiveTab(t.id)}
+            className="nav-tab-btn"
             style={{
               padding: '12px 0',
               background: 'none',
@@ -522,6 +536,7 @@ export default function SlideOverDrawer({
 
       {/* Drawer Body */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+        <div key={activeTab} className="animate-tab-pane">
         {/* OVERVIEW TAB */}
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
@@ -2091,16 +2106,18 @@ export default function SlideOverDrawer({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* In-Dashboard Document Viewer Modal */}
       {previewDoc && (
         <div
+          className="modal-backdrop-animate"
           style={{
             position: 'fixed',
             inset: 0,
             backgroundColor: 'rgba(15, 23, 42, 0.75)',
-            backdropFilter: 'blur(4px)',
+            backdropFilter: 'blur(5px)',
             zIndex: 1100,
             display: 'flex',
             alignItems: 'center',
@@ -2110,6 +2127,7 @@ export default function SlideOverDrawer({
           onClick={() => setPreviewDoc(null)}
         >
           <div
+            className="modal-dialog-animate"
             style={{
               background: 'var(--surface)',
               borderRadius: '12px',
@@ -2398,6 +2416,7 @@ export default function SlideOverDrawer({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }
