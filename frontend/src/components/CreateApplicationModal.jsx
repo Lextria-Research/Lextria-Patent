@@ -680,14 +680,9 @@ export default function CreateApplicationModal({
             </h3>
             {/* Assigned Drafter */}
             <div style={{ marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
-                  Assigned Drafter *
-                </label>
-                <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
-                  Responsible patent agent/drafter for this matter
-                </span>
-              </div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)', marginBottom: '6px' }}>
+                Assigned Drafter *
+              </label>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                 <select
                   name="assigned_to"
@@ -711,22 +706,15 @@ export default function CreateApplicationModal({
                     </option>
                   ))}
                 </select>
-                <span style={{ fontSize: '11px', color: 'var(--muted)', background: 'var(--page)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
-                  Assigned Associate: <strong>{formData.assigned_to || 'Unassigned'}</strong>
-                </span>
+
               </div>
             </div>
 
             {/* Prosecution Status (Full Width) */}
             <div style={{ marginBottom: '8px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
-                  Select Prosecution Status (Organized into 7 Statutory Phases)
-                </label>
-                <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                  Select from 33 statutory phases or search directly
-                </span>
-              </div>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)', marginBottom: '6px' }}>
+                Prosecution Status (7 Statutory Phases)
+              </label>
               <PhasedStatusSelector
                 value={formData.current_status}
                 onChange={handleStatusChange}
@@ -905,7 +893,7 @@ export default function CreateApplicationModal({
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 800, color: '#1D4ED8', marginBottom: '8px' }}>
-                <Clock size={14} /> AUTOMATICALLY CALCULATED STATUTORY DEADLINES (INDIAN PATENTS ACT)
+                <Clock size={14} /> Statutory Deadlines
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '12px' }}>
                 <div>
@@ -915,9 +903,7 @@ export default function CreateApplicationModal({
                   <strong style={{ color: statutoryCalculations.cs_deadline ? '#DC2626' : 'var(--muted)' }}>
                     {statutoryCalculations.cs_deadline || '—'}
                   </strong>
-                  <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                    {formData.post_dated_date ? '12m from post-date' : '12m from PS (Sec 9(1))'}
-                  </span>
+
                 </div>
 
                 <div>
@@ -927,9 +913,7 @@ export default function CreateApplicationModal({
                   <strong style={{ color: '#059669' }}>
                     {statutoryCalculations.form_1_deadline || '—'}
                   </strong>
-                  <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                    6m from filing (Rule 10)
-                  </span>
+
                 </div>
 
                 <div>
@@ -939,9 +923,7 @@ export default function CreateApplicationModal({
                   <strong style={{ color: '#059669' }}>
                     {statutoryCalculations.form_26_deadline || '—'}
                   </strong>
-                  <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                    3m from filing (Rule 135)
-                  </span>
+
                 </div>
 
                 <div>
@@ -951,9 +933,7 @@ export default function CreateApplicationModal({
                   <strong style={{ color: '#2563EB' }}>
                     {statutoryCalculations.rfe_deadline || '—'}
                   </strong>
-                  <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                    31m / 48m (Rule 24B)
-                  </span>
+
                 </div>
               </div>
             </div>
@@ -970,7 +950,7 @@ export default function CreateApplicationModal({
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 700 }}>
-                    Invention Abstract (Rule 13(7)(a))
+                    Abstract
                   </label>
                   <span style={{
                     fontSize: '11px',
@@ -988,7 +968,7 @@ export default function CreateApplicationModal({
                   name="abstract"
                   value={formData.abstract}
                   onChange={handleChange}
-                  placeholder="Enter concise technical abstract (Rule 13(7)(a) mandates concise summary not exceeding 150 words)..."
+                  placeholder="Enter abstract..."
                   rows={6}
                   style={{
                     width: '100%',
@@ -1001,15 +981,11 @@ export default function CreateApplicationModal({
                     resize: 'vertical',
                   }}
                 />
-                {abstractWords > 150 ? (
+                {abstractWords > 150 && (
                   <div style={{ marginTop: '4px', fontSize: '11px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <AlertTriangle size={13} />
-                    <span>Statutory violation: Abstract exceeds 150 words limit under Rule 13(7)(a) of Patents Rules.</span>
+                    <span>Abstract exceeds 150 words limit.</span>
                   </div>
-                ) : (
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                    Per Rule 13(7)(a), abstract must summarize technical field and not exceed 150 words.
-                  </span>
                 )}
               </div>
 
@@ -1017,7 +993,7 @@ export default function CreateApplicationModal({
               <div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <label style={{ fontSize: '12px', fontWeight: 700 }}>
-                    Patent Claims (Unrestricted Length)
+                    Claims
                   </label>
                   <span style={{
                     fontSize: '11px',
@@ -1035,7 +1011,7 @@ export default function CreateApplicationModal({
                   name="claims"
                   value={formData.claims}
                   onChange={handleChange}
-                  placeholder="Enter full patent claims (1. An apparatus comprising...\n2. The apparatus of claim 1, further comprising...)..."
+                  placeholder="Enter claims..."
                   rows={6}
                   style={{
                     width: '100%',

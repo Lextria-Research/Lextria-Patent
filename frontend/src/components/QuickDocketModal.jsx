@@ -562,9 +562,7 @@ export default function QuickDocketModal({
           {/* TAB 2: FORM 1 & FORM 26 */}
           {activeTab === 'forms' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(234, 88, 12, 0.08)', border: '1px solid rgba(234, 88, 12, 0.2)', fontSize: '12px', color: '#C2410C' }}>
-                ⚖️ <strong>Rule 135 / Rule 137 Petition Protocol:</strong> Form 1 (Proof of Right) must be filed within 6 months of filing. Form 26 (Power of Attorney) must be filed within 3 months. If delayed, record petition filing dates and fees below.
-              </div>
+
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 <div style={{ padding: '14px', borderRadius: '8px', border: '1px solid var(--line)', background: 'var(--page)' }}>
@@ -743,9 +741,7 @@ export default function QuickDocketModal({
           {/* TAB 3: EXAMINATION & FER */}
           {activeTab === 'prosecution' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '10px 14px', borderRadius: '6px', background: 'rgba(138, 79, 255, 0.08)', border: '1px solid rgba(138, 79, 255, 0.2)', fontSize: '12px', color: '#7C3AED' }}>
-                📋 <strong>Section 11B & Section 21 Examination Tracker:</strong> RFE (Form 18) must be filed within 31 months of priority. Once FER is issued, response must be submitted within 6 months (Rule 24B).
-              </div>
+
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
                 <div>

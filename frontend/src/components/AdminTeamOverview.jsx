@@ -1167,9 +1167,7 @@ export default function AdminTeamOverview({
               <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
                 Drafter Capacity, Client Commitments & Problem Triage Matrix
               </div>
-              <div style={{ fontSize: '12px', color: '#64748b', marginTop: '1px' }}>
-                Firm-wide macro view across associates: active docket loads, PS / CS / FER / WS stages, commitments & triage status
-              </div>
+
             </div>
           </div>
 
@@ -1476,27 +1474,7 @@ export default function AdminTeamOverview({
         )}
       </div>
 
-      {/* 7. FOOTER DISCLAIMER & SUMMARY */}
-      <div
-        style={{
-          paddingTop: '16px',
-          borderTop: '1px solid #e2e8f0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          fontSize: '11.5px',
-          color: '#94a3b8',
-          flexWrap: 'wrap',
-          gap: '8px',
-        }}
-      >
-        <span>
-          Sample figures: apart from Thanush’s docket, workloads, matter codes and daily due counts are illustrative.
-        </span>
-        <span style={{ fontWeight: 600 }}>
-          Lextria IP Prosecution Intelligence Suite · 2026
-        </span>
-      </div>
+
 
       {/* Cell Detail Modal / Toast when clicking a heatmap cell */}
       {selectedCellInfo && (

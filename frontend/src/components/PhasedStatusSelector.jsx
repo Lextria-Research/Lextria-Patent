@@ -190,60 +190,52 @@ export default function PhasedStatusSelector({
               <div
                 key={st.id}
                 onClick={() => handleSelect(st.name)}
+                title={st.tip || st.name}
                 style={{
-                  padding: '8px 10px',
+                  padding: '7px 11px',
                   borderRadius: '6px',
                   border: isSelected ? `2px solid ${col.border}` : '1px solid var(--line, #e2e8f0)',
                   background: isSelected ? col.bg : 'var(--surface, #ffffff)',
                   cursor: 'pointer',
                   display: 'flex',
-                  flexDirection: 'column',
-                  gap: '4px',
-                  transition: 'all 0.1s ease',
-                  position: 'relative'
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  transition: 'all 0.12s ease',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: col.dot,
-                      flexShrink: 0
-                    }} />
-                    <span style={{
-                      fontSize: '12px',
-                      fontWeight: isSelected ? 700 : 600,
-                      color: isSelected ? col.text : 'var(--text, #1e293b)'
-                    }}>
-                      {st.name}
-                    </span>
-                  </div>
-                  {isSelected && (
-                    <span style={{
-                      background: col.border,
-                      color: '#ffffff',
-                      borderRadius: '50%',
-                      width: '16px',
-                      height: '16px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}>
-                      <Check size={11} strokeWidth={3} />
-                    </span>
-                  )}
-                </div>
-
-                {st.tip && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                   <span style={{
-                    fontSize: '10.5px',
-                    color: isSelected ? col.text : 'var(--text-muted, #64748b)',
-                    lineHeight: '1.3',
-                    opacity: 0.9
+                    width: '8px',
+                    height: '8px',
+                    borderRadius: '50%',
+                    backgroundColor: col.dot,
+                    flexShrink: 0
+                  }} />
+                  <span style={{
+                    fontSize: '12px',
+                    fontWeight: isSelected ? 800 : 600,
+                    color: isSelected ? col.text : 'var(--text, #1e293b)',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
                   }}>
-                    {st.tip}
+                    {st.name}
+                  </span>
+                </div>
+                {isSelected && (
+                  <span style={{
+                    background: col.border,
+                    color: '#ffffff',
+                    borderRadius: '50%',
+                    width: '16px',
+                    height: '16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Check size={11} strokeWidth={3} />
                   </span>
                 )}
               </div>

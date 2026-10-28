@@ -681,14 +681,9 @@ export default function EditApplicationModal({
 
               {/* Assigned Drafter (Placed on clean standalone row above status selection) */}
               <div style={{ marginBottom: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
-                    Assigned Drafter
-                  </label>
-                  <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
-                    Responsible patent associate for drafting & client commitments
-                  </span>
-                </div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)', marginBottom: '6px' }}>
+                  Assigned Drafter
+                </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
                   <select
                     name="assigned_to"
@@ -712,22 +707,15 @@ export default function EditApplicationModal({
                       </option>
                     ))}
                   </select>
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', background: 'var(--page)', padding: '6px 10px', borderRadius: '6px', border: '1px solid var(--line)' }}>
-                    Active Drafter: <strong>{formData.assigned_to || 'Unassigned'}</strong>
-                  </span>
+
                 </div>
               </div>
 
               {/* Prosecution Status (Full Width 7 Statutory Phases) */}
               <div style={{ marginBottom: '20px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <label style={{ fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)' }}>
-                    Prosecution Status (7 Statutory Phases)
-                  </label>
-                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                    Select from 33 statutory phases or search directly
-                  </span>
-                </div>
+                <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--ink)', marginBottom: '6px' }}>
+                  Prosecution Status (7 Statutory Phases)
+                </label>
                 <PhasedStatusSelector
                   value={formData.current_status}
                   onChange={handleStatusChange}
@@ -740,7 +728,7 @@ export default function EditApplicationModal({
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 700 }}>
-                      Abstract (Rule 13(7)(a))
+                      Abstract
                     </label>
                     <span style={{
                       fontSize: '11px',
@@ -758,7 +746,7 @@ export default function EditApplicationModal({
                     name="abstract"
                     value={formData.abstract}
                     onChange={handleChange}
-                    placeholder="Concise technical summary not exceeding 150 words..."
+                    placeholder="Enter abstract..."
                     rows={5}
                     style={{
                       width: '100%',
@@ -771,22 +759,18 @@ export default function EditApplicationModal({
                       resize: 'vertical',
                     }}
                   />
-                  {abstractWords > 150 ? (
+                  {abstractWords > 150 && (
                     <div style={{ marginTop: '4px', fontSize: '11px', color: '#dc2626', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <AlertTriangle size={13} />
-                      <span>Exceeds 150 words limit under Rule 13(7)(a) of Patents Rules.</span>
+                      <span>Abstract exceeds 150 words limit.</span>
                     </div>
-                  ) : (
-                    <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                      Statutory limit: 150 words maximum per Rule 13(7)(a).
-                    </span>
                   )}
                 </div>
 
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                     <label style={{ fontSize: '12px', fontWeight: 700 }}>
-                      Claims (Unrestricted Length)
+                      Claims
                     </label>
                     <span style={{
                       fontSize: '11px',
@@ -818,9 +802,7 @@ export default function EditApplicationModal({
                       resize: 'vertical',
                     }}
                   />
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                    Claims 1-10 included in basic fee; subsequent claims incur ₹320 (Reduced) / ₹1,600 (Others).
-                  </span>
+
                 </div>
               </div>
             </div>
@@ -843,11 +825,8 @@ export default function EditApplicationModal({
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <label style={{ fontSize: '12.5px', fontWeight: 800, color: '#C2410C', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    🎯 Client Delivery Commitment Date (Under-Drafting Deadline)
+                    🎯 Client Delivery Commitment
                   </label>
-                  <span style={{ fontSize: '10.5px', color: '#EA580C', fontWeight: 700 }}>
-                    ⚡ Changing this triggers automated SPOC & Org alert
-                  </span>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <input
@@ -1013,7 +992,7 @@ export default function EditApplicationModal({
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 800, color: '#1D4ED8', marginBottom: '8px' }}>
-                  <Clock size={14} /> LIVE STATUTORY DEADLINES (INDIAN PATENTS ACT)
+                  <Clock size={14} /> Statutory Deadlines
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', fontSize: '12px' }}>
                   <div>
@@ -1021,9 +1000,7 @@ export default function EditApplicationModal({
                     <strong style={{ color: statutoryCalculations.cs_deadline ? '#DC2626' : 'var(--muted)' }}>
                       {statutoryCalculations.cs_deadline || '—'}
                     </strong>
-                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                      {formData.post_dated_date ? '12m from post-date' : '12m from PS (Sec 9(1))'}
-                    </span>
+
                   </div>
 
                   <div>
@@ -1031,9 +1008,7 @@ export default function EditApplicationModal({
                     <strong style={{ color: '#059669' }}>
                       {statutoryCalculations.form_1_deadline || '—'}
                     </strong>
-                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                      6m from filing (Rule 10)
-                    </span>
+
                   </div>
 
                   <div>
@@ -1041,9 +1016,7 @@ export default function EditApplicationModal({
                     <strong style={{ color: '#059669' }}>
                       {statutoryCalculations.form_26_deadline || '—'}
                     </strong>
-                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                      3m from filing (Rule 135)
-                    </span>
+
                   </div>
 
                   <div>
@@ -1051,9 +1024,7 @@ export default function EditApplicationModal({
                     <strong style={{ color: statutoryCalculations.fer_reply_deadline ? '#DC2626' : 'var(--muted)' }}>
                       {statutoryCalculations.fer_reply_deadline || '—'}
                     </strong>
-                    <span style={{ fontSize: '10px', color: 'var(--muted)', display: 'block' }}>
-                      6m from FER (Sec 21)
-                    </span>
+
                   </div>
                 </div>
               </div>

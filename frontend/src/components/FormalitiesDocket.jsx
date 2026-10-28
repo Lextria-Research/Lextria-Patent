@@ -354,9 +354,7 @@ export default function FormalitiesDocket({
                 Paralegal / IPO Docketing View
               </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '2px 0 0' }}>
-              Official IPO compliance: Rule 135/137 petitions, Form 1 & 26 tracking, 31-month RFE clocks, and data verification
-            </p>
+
           </div>
         </div>
 

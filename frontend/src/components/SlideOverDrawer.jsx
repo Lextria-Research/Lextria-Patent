@@ -1123,7 +1123,7 @@ export default function SlideOverDrawer({
               <div style={{ padding: '12px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)' }}>
-                    Abstract (Rule 13(7)(a) - Max 150 words)
+                    Abstract (Max 150 words)
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{
@@ -1156,7 +1156,7 @@ export default function SlideOverDrawer({
               <div style={{ padding: '12px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                   <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)' }}>
-                    Claims (Unrestricted Length)
+                    Claims
                   </span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <span style={{
