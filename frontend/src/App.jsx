@@ -769,23 +769,29 @@ export default function App() {
         </div>
       )}
 
-      {/* Main App Navigation Header */}
+      {/* Main App Navigation Header: Clean 2-Tier Architecture */}
       <header
         style={{
-          height: '60px',
-          padding: '0 24px',
           background: 'var(--surface)',
           borderBottom: '1px solid var(--line)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
           flexShrink: 0,
-          boxShadow: '0 1px 3px rgba(0,0,0,0.04)',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
         }}
       >
-        {/* Left: Firm Brand & Product */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Tier 1: Brand & Global Actions Bar */}
+        <div
+          style={{
+            height: '52px',
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            borderBottom: '1px solid var(--line)',
+          }}
+        >
+          {/* Left: Firm Brand & Product */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
             <div
               style={{
                 width: '32px',
@@ -799,168 +805,79 @@ export default function App() {
                 fontWeight: 900,
                 fontSize: '16px',
                 boxShadow: '0 2px 6px rgba(59, 130, 246, 0.35)',
+                flexShrink: 0,
               }}
             >
               L
             </div>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: 'var(--ink)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+              <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
                 LEXTRIA IP
-              </div>
-              <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '-2px', fontWeight: 600 }}>
+              </span>
+              <span style={{ color: 'var(--line)', fontSize: '13px' }}>|</span>
+              <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
                 Patent Prosecution & Docketing Dashboard
-              </div>
+              </span>
             </div>
           </div>
-        </div>
 
-        {/* Center: Functional Navigation Tabs (Requirement 1 - NOT role tabs) */}
-        <nav
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            background: 'var(--page)',
-            padding: '4px',
-            borderRadius: '10px',
-            border: '1px solid var(--line)',
-          }}
-        >
-          {/* Tab 0: Team Overview (Patent Admin & Super Admin) */}
-          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+          {/* Right: Global Utility Actions & User Profile */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+            {/* Quick Docketing Desk Button (Paralegal & Super Admin) */}
+            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+              <button
+                onClick={() => handleOpenQuickDocket()}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #059669, #047857)',
+                  color: '#fff',
+                  fontSize: '12px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
+                }}
+                title="Quick Docket: record IPO Application No, CBR receipt, Form 1/26 and prosecution dates"
+              >
+                <CheckSquare size={14} /> Quick Docket
+              </button>
+            )}
+
+            {/* Reassign Button (Super Admin) */}
+            {currentUser.role === 'SUPER_ADMIN' && (
+              <button
+                onClick={() => handleOpenReassign()}
+                style={{
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  color: '#2563EB',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                }}
+                title="Rebalance workload across associate drafters"
+              >
+                <UserCheck size={14} /> Reassign
+              </button>
+            )}
+
+            {/* New Application Button */}
             <button
-              onClick={() => setActiveNavTab('TEAM_OVERVIEW')}
+              onClick={() => setIsCreateOpen(true)}
               style={{
-                padding: '7px 16px',
-                borderRadius: '7px',
+                padding: '6px 13px',
+                borderRadius: '6px',
                 border: 'none',
-                background: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--surface)' : 'transparent',
-                color: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--ink)' : 'var(--muted)',
-                fontSize: '12.5px',
-                fontWeight: activeNavTab === 'TEAM_OVERVIEW' ? 800 : 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: activeNavTab === 'TEAM_OVERVIEW' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.15s ease',
-              }}
-              title="Executive team workload, 14-day capacity heatmap & urgent deliveries across all 8 drafters"
-            >
-              <Users size={15} color={activeNavTab === 'TEAM_OVERVIEW' ? '#2563EB' : 'currentColor'} />
-              Team Overview
-            </button>
-          )}
-
-          {/* Tab 1: Portfolio Master / Drafting Cockpit */}
-          <button
-            onClick={() => setActiveNavTab('PORTFOLIO')}
-            style={{
-              padding: '7px 16px',
-              borderRadius: '7px',
-              border: 'none',
-              background: activeNavTab === 'PORTFOLIO' ? 'var(--surface)' : 'transparent',
-              color: activeNavTab === 'PORTFOLIO' ? 'var(--ink)' : 'var(--muted)',
-              fontSize: '12.5px',
-              fontWeight: activeNavTab === 'PORTFOLIO' ? 800 : 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: activeNavTab === 'PORTFOLIO' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <FolderKanban size={15} color={activeNavTab === 'PORTFOLIO' ? 'var(--accent)' : 'currentColor'} />
-            {currentUser.role === 'DRAFTER' ? 'Drafting Cockpit' : 'Portfolio Master'}
-          </button>
-
-          {/* Tab: Formalities Docket (Only for Paralegal & Super Admin) */}
-          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
-            <button
-              onClick={() => setActiveNavTab('FORMALITIES')}
-              style={{
-                padding: '7px 16px',
-                borderRadius: '7px',
-                border: 'none',
-                background: activeNavTab === 'FORMALITIES' ? 'var(--surface)' : 'transparent',
-                color: activeNavTab === 'FORMALITIES' ? 'var(--ink)' : 'var(--muted)',
-                fontSize: '12.5px',
-                fontWeight: activeNavTab === 'FORMALITIES' ? 800 : 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-                boxShadow: activeNavTab === 'FORMALITIES' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-                transition: 'all 0.15s ease',
-              }}
-              title="Rule 135/137 petitions, Form 9/18 RFE clock, IPO discrepancies & Sec 53 renewals"
-            >
-              <Shield size={15} color={activeNavTab === 'FORMALITIES' ? '#059669' : 'currentColor'} />
-              Formalities Docket
-            </button>
-          )}
-
-          {/* Tab 2: Deadlines Checklist (Requirement 8) */}
-          <button
-            onClick={() => setActiveNavTab('DEADLINES')}
-            style={{
-              padding: '7px 16px',
-              borderRadius: '7px',
-              border: 'none',
-              background: activeNavTab === 'DEADLINES' ? 'var(--surface)' : 'transparent',
-              color: activeNavTab === 'DEADLINES' ? 'var(--ink)' : 'var(--muted)',
-              fontSize: '12.5px',
-              fontWeight: activeNavTab === 'DEADLINES' ? 800 : 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: activeNavTab === 'DEADLINES' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease',
-            }}
-            title="Action-based statutory checklist where you tick completed filings"
-          >
-            <CheckSquare size={15} color={activeNavTab === 'DEADLINES' ? '#10B981' : 'currentColor'} />
-            Statutory Deadlines
-          </button>
-
-          {/* Tab 3: Calendar View (Requirement 14) */}
-          <button
-            onClick={() => setActiveNavTab('CALENDAR')}
-            style={{
-              padding: '7px 16px',
-              borderRadius: '7px',
-              border: 'none',
-              background: activeNavTab === 'CALENDAR' ? 'var(--surface)' : 'transparent',
-              color: activeNavTab === 'CALENDAR' ? 'var(--ink)' : 'var(--muted)',
-              fontSize: '12.5px',
-              fontWeight: activeNavTab === 'CALENDAR' ? 800 : 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: activeNavTab === 'CALENDAR' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              transition: 'all 0.15s ease',
-            }}
-            title="Monthly statutory deadline calendar with Zoho Calendar sync"
-          >
-            <Calendar size={15} color={activeNavTab === 'CALENDAR' ? '#8B5CF6' : 'currentColor'} />
-            Calendar View
-          </button>
-        </nav>
-
-        {/* Right Header Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Quick Docketing Desk Button (Paralegal & Super Admin) */}
-          {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
-            <button
-              onClick={() => handleOpenQuickDocket()}
-              style={{
-                padding: '7px 12px',
-                borderRadius: '7px',
-                border: 'none',
-                background: 'linear-gradient(135deg, #059669, #047857)',
+                background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
                 color: '#fff',
                 fontSize: '12px',
                 fontWeight: 800,
@@ -968,24 +885,24 @@ export default function App() {
                 alignItems: 'center',
                 gap: '6px',
                 cursor: 'pointer',
-                boxShadow: '0 2px 6px rgba(5, 150, 105, 0.3)',
+                boxShadow: '0 2px 4px rgba(37, 99, 235, 0.3)',
               }}
-              title="Quick Docket: record IPO Application No, CBR receipt, Form 1/26 and prosecution dates"
             >
-              <CheckSquare size={14} /> Quick Docket
+              <Plus size={14} /> New Application
             </button>
-          )}
 
-          {/* Reassign Button (Super Admin) */}
-          {currentUser.role === 'SUPER_ADMIN' && (
+            {/* Export Report Modal Button */}
             <button
-              onClick={() => handleOpenReassign()}
+              onClick={() => {
+                setExportRecordsSelection(roleFilteredRecords);
+                setIsExportOpen(true);
+              }}
               style={{
-                padding: '7px 12px',
-                borderRadius: '7px',
+                padding: '6px 12px',
+                borderRadius: '6px',
                 border: '1px solid var(--line)',
                 background: 'var(--surface)',
-                color: '#2563EB',
+                color: 'var(--ink)',
                 fontSize: '12px',
                 fontWeight: 700,
                 display: 'flex',
@@ -993,160 +910,268 @@ export default function App() {
                 gap: '6px',
                 cursor: 'pointer',
               }}
-              title="Rebalance workload across associate drafters"
+              title="Generate custom report with selected columns"
             >
-              <UserCheck size={14} /> Reassign
+              <Download size={14} /> Export
             </button>
-          )}
 
-          {/* New Application Button */}
-          <button
-            onClick={() => setIsCreateOpen(true)}
-            style={{
-              padding: '7px 13px',
-              borderRadius: '7px',
-              border: 'none',
-              background: 'linear-gradient(135deg, #2563EB, #1D4ED8)',
-              color: '#fff',
-              fontSize: '12px',
-              fontWeight: 800,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.3)',
-            }}
-          >
-            <Plus size={14} /> New Application
-          </button>
-
-          {/* Export Report Modal Button (Requirement 9) */}
-          <button
-            onClick={() => {
-              setExportRecordsSelection(roleFilteredRecords);
-              setIsExportOpen(true);
-            }}
-            style={{
-              padding: '7px 12px',
-              borderRadius: '7px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-            }}
-            title="Generate custom report with selected columns"
-          >
-            <Download size={14} /> Export
-          </button>
-
-          {/* TV Screen Departure Board Button (Requirement 16) */}
-          <button
-            onClick={() => setIsTvMode(true)}
-            style={{
-              padding: '7px 12px',
-              borderRadius: '7px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              fontSize: '12px',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer',
-            }}
-            title="Launch Fullscreen Operations TV Board"
-          >
-            <Tv size={14} color="#C98A2C" /> TV Board
-          </button>
-
-          {/* Firm Settings Button (Requirement 10, 14, 15) */}
-          <button
-            onClick={() => setIsSettingsOpen(true)}
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '7px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            title="Settings (Custom Tags, Zoho Cliq, Zoho Calendar, Audit History)"
-          >
-            <Settings size={15} />
-          </button>
-
-          {/* Theme Toggle Button */}
-          <button
-            onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
-            style={{
-              width: '34px',
-              height: '34px',
-              borderRadius: '7px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-            title="Toggle Light / Dark Mode"
-          >
-            {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
-          </button>
-
-          {/* User Account / Profile Switcher Pill (Requirement 1 & 3) */}
-          <button
-            onClick={() => setIsAuthOpen(true)}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
-              padding: '4px 10px 4px 5px',
-              borderRadius: '20px',
-              background: 'var(--page)',
-              border: '1px solid var(--line)',
-              cursor: 'pointer',
-              color: 'var(--ink)',
-              transition: 'all 0.15s ease',
-            }}
-            title="Click to switch authenticated user account"
-          >
-            <div
+            {/* TV Screen Departure Board Button */}
+            <button
+              onClick={() => setIsTvMode(true)}
               style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '50%',
-                background: currentUser.color || '#3B82F6',
-                color: '#fff',
-                fontSize: '11px',
-                fontWeight: 800,
+                padding: '6px 11px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
+                fontSize: '12px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+              title="Launch Fullscreen Operations TV Board"
+            >
+              <Tv size={14} color="#C98A2C" /> TV Board
+            </button>
+
+            {/* Firm Settings Button */}
+            <button
+              onClick={() => setIsSettingsOpen(true)}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              title="Settings (Custom Tags, Zoho Integrations, Audit History)"
+            >
+              <Settings size={15} />
+            </button>
+
+            {/* Theme Toggle Button */}
+            <button
+              onClick={() => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'))}
+              style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+              title="Toggle Light / Dark Mode"
+            >
+              {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
+            </button>
+
+            {/* User Account / Profile Switcher Pill */}
+            <button
+              onClick={() => setIsAuthOpen(true)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '3px 10px 3px 4px',
+                borderRadius: '20px',
+                background: 'var(--page)',
+                border: '1px solid var(--line)',
+                cursor: 'pointer',
+                color: 'var(--ink)',
+                transition: 'all 0.15s ease',
+              }}
+              title="Click to switch authenticated user account"
+            >
+              <div
+                style={{
+                  width: '24px',
+                  height: '24px',
+                  borderRadius: '50%',
+                  background: currentUser.color || '#3B82F6',
+                  color: '#fff',
+                  fontSize: '11px',
+                  fontWeight: 800,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                {currentUser.initials}
+              </div>
+              <div style={{ textAlign: 'left' }}>
+                <div style={{ fontSize: '11.5px', fontWeight: 800, lineHeight: 1.1 }}>
+                  {currentUser.name}
+                </div>
+                <div style={{ fontSize: '9.5px', color: 'var(--muted)', fontWeight: 600 }}>
+                  {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser.role === 'PARALEGAL' ? 'Paralegal' : 'Drafter')}
+                </div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        {/* Tier 2: Dedicated Navigation Tabs Bar */}
+        <div
+          style={{
+            height: '42px',
+            padding: '0 24px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'var(--surface)',
+          }}
+        >
+          {/* Functional Navigation Tabs */}
+          <nav
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+            }}
+          >
+            {/* Tab 0: Team Overview (Patent Admin & Super Admin) */}
+            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+              <button
+                onClick={() => setActiveNavTab('TEAM_OVERVIEW')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--page)' : 'transparent',
+                  color: activeNavTab === 'TEAM_OVERVIEW' ? 'var(--ink)' : 'var(--muted)',
+                  fontSize: '12px',
+                  fontWeight: activeNavTab === 'TEAM_OVERVIEW' ? 800 : 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  borderBottom: activeNavTab === 'TEAM_OVERVIEW' ? '2.5px solid #2563EB' : '2.5px solid transparent',
+                  transition: 'all 0.15s ease',
+                }}
+                title="Executive team workload, 14-day capacity heatmap & urgent deliveries across all 8 drafters"
+              >
+                <Users size={14} color={activeNavTab === 'TEAM_OVERVIEW' ? '#2563EB' : 'currentColor'} />
+                Team Overview
+              </button>
+            )}
+
+            {/* Tab 1: Portfolio Master / Drafting Cockpit */}
+            <button
+              onClick={() => setActiveNavTab('PORTFOLIO')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: 'none',
+                background: activeNavTab === 'PORTFOLIO' ? 'var(--page)' : 'transparent',
+                color: activeNavTab === 'PORTFOLIO' ? 'var(--ink)' : 'var(--muted)',
+                fontSize: '12px',
+                fontWeight: activeNavTab === 'PORTFOLIO' ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                borderBottom: activeNavTab === 'PORTFOLIO' ? '2.5px solid var(--accent)' : '2.5px solid transparent',
+                transition: 'all 0.15s ease',
               }}
             >
-              {currentUser.initials}
-            </div>
-            <div style={{ textAlign: 'left' }}>
-              <div style={{ fontSize: '11.5px', fontWeight: 800, lineHeight: 1.1 }}>
-                {currentUser.name}
-              </div>
-              <div style={{ fontSize: '9.5px', color: 'var(--muted)', fontWeight: 600 }}>
-                {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser.role === 'PARALEGAL' ? 'Paralegal' : 'Drafter')}
-              </div>
-            </div>
-          </button>
+              <FolderKanban size={14} color={activeNavTab === 'PORTFOLIO' ? 'var(--accent)' : 'currentColor'} />
+              {currentUser.role === 'DRAFTER' ? 'Drafting Cockpit' : 'Portfolio Master'}
+            </button>
+
+            {/* Tab: Formalities Docket (Only for Paralegal & Super Admin) */}
+            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+              <button
+                onClick={() => setActiveNavTab('FORMALITIES')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '6px',
+                  border: 'none',
+                  background: activeNavTab === 'FORMALITIES' ? 'var(--page)' : 'transparent',
+                  color: activeNavTab === 'FORMALITIES' ? 'var(--ink)' : 'var(--muted)',
+                  fontSize: '12px',
+                  fontWeight: activeNavTab === 'FORMALITIES' ? 800 : 600,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                  borderBottom: activeNavTab === 'FORMALITIES' ? '2.5px solid #059669' : '2.5px solid transparent',
+                  transition: 'all 0.15s ease',
+                }}
+                title="Rule 135/137 petitions, Form 9/18 RFE clock, IPO discrepancies & Sec 53 renewals"
+              >
+                <Shield size={14} color={activeNavTab === 'FORMALITIES' ? '#059669' : 'currentColor'} />
+                Formalities Docket
+              </button>
+            )}
+
+            {/* Tab 2: Deadlines Checklist */}
+            <button
+              onClick={() => setActiveNavTab('DEADLINES')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: 'none',
+                background: activeNavTab === 'DEADLINES' ? 'var(--page)' : 'transparent',
+                color: activeNavTab === 'DEADLINES' ? 'var(--ink)' : 'var(--muted)',
+                fontSize: '12px',
+                fontWeight: activeNavTab === 'DEADLINES' ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                borderBottom: activeNavTab === 'DEADLINES' ? '2.5px solid #10B981' : '2.5px solid transparent',
+                transition: 'all 0.15s ease',
+              }}
+              title="Action-based statutory checklist where you tick completed filings"
+            >
+              <CheckSquare size={14} color={activeNavTab === 'DEADLINES' ? '#10B981' : 'currentColor'} />
+              Statutory Deadlines
+            </button>
+
+            {/* Tab 3: Calendar View */}
+            <button
+              onClick={() => setActiveNavTab('CALENDAR')}
+              style={{
+                padding: '6px 14px',
+                borderRadius: '6px',
+                border: 'none',
+                background: activeNavTab === 'CALENDAR' ? 'var(--page)' : 'transparent',
+                color: activeNavTab === 'CALENDAR' ? 'var(--ink)' : 'var(--muted)',
+                fontSize: '12px',
+                fontWeight: activeNavTab === 'CALENDAR' ? 800 : 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                borderBottom: activeNavTab === 'CALENDAR' ? '2.5px solid #8B5CF6' : '2.5px solid transparent',
+                transition: 'all 0.15s ease',
+              }}
+              title="Monthly statutory deadline calendar with Zoho Calendar sync"
+            >
+              <Calendar size={14} color={activeNavTab === 'CALENDAR' ? '#8B5CF6' : 'currentColor'} />
+              Calendar View
+            </button>
+          </nav>
+
+          {/* Right: Real-time Docket Stats Context */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '11.5px', color: 'var(--muted)', fontWeight: 600 }}>
+              {currentUser.role === 'DRAFTER' 
+                ? `${roleFilteredRecords.length} Assigned Patent Matters`
+                : `${records.length || 878} Active Matters • 8 Drafters`}
+            </span>
+          </div>
         </div>
       </header>
 
