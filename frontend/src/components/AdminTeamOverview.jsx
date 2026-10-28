@@ -78,7 +78,6 @@ export default function AdminTeamOverview({
   currentUser = {},
   onOpenDrawer,
   onOpenEdit,
-  onOpenQuickDocket,
   onOpenReassign,
   onNavigateToPortfolio,
 }) {
@@ -456,27 +455,6 @@ export default function AdminTeamOverview({
 
           {/* Quick Action Buttons */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {onOpenQuickDocket && (
-              <button
-                onClick={() => onOpenQuickDocket()}
-                style={{
-                  padding: '7px 14px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--line)',
-                  background: 'var(--surface)',
-                  color: 'var(--ink)',
-                  fontSize: '12.5px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
-                }}
-              >
-                <CheckCircle2 size={14} color="#059669" /> Quick Docket
-              </button>
-            )}
 
             {isSuperAdmin && onOpenReassign && (
               <button

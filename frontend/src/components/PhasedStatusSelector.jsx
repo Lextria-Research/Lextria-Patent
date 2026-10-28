@@ -15,8 +15,8 @@ export default function PhasedStatusSelector({
 }) {
   // Determine which phase the current value belongs to
   const initialPhase = useMemo(() => {
-    return getStatusPhase(value);
-  }, [value]);
+    return getStatusPhase(value, applicationType);
+  }, [value, applicationType]);
 
   const [activePhase, setActivePhase] = useState(initialPhase);
   const [searchQuery, setSearchQuery] = useState('');
@@ -25,10 +25,10 @@ export default function PhasedStatusSelector({
   // Sync activePhase when value changes externally
   useEffect(() => {
     if (value) {
-      const p = getStatusPhase(value);
+      const p = getStatusPhase(value, applicationType);
       if (p) setActivePhase(p);
     }
-  }, [value]);
+  }, [value, applicationType]);
 
   // Extract renewal year if value is a renewal status
   useEffect(() => {
@@ -42,14 +42,29 @@ export default function PhasedStatusSelector({
 
   // Filter statuses for the active phase or search
   const visibleStatuses = useMemo(() => {
+    const normType = String(applicationType || '').toUpperCase().trim();
+    const isPsCs = normType === 'PS-CS' || normType === 'PS_TO_CS' || normType === 'CS-PS';
+
+    let list = STATUTORY_STATUSES;
+
+    // Filter out "Due diligence report sent" in Phase 2 for PS-CS matters
+    if (isPsCs) {
+      list = list.filter((s) => !(s.excludeForPsCs && s.phase === 'PHASE_2_CS'));
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      return STATUTORY_STATUSES.filter(
-        (s) => s.name.toLowerCase().includes(q) || (s.tip && s.tip.toLowerCase().includes(q))
-      );
+      const seen = new Set();
+      return list.filter((s) => {
+        const matches = s.name.toLowerCase().includes(q) || (s.tip && s.tip.toLowerCase().includes(q));
+        if (!matches) return false;
+        if (seen.has(s.name)) return false;
+        seen.add(s.name);
+        return true;
+      });
     }
-    return STATUTORY_STATUSES.filter((s) => s.phase === activePhase);
-  }, [activePhase, searchQuery]);
+    return list.filter((s) => s.phase === activePhase);
+  }, [activePhase, searchQuery, applicationType]);
 
   // Current selected color styling
   const currentColor = getStatusColor(value);

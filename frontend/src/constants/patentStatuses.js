@@ -120,6 +120,14 @@ export const STATUTORY_STATUSES = [
     tip: 'Invention Disclosure Form (IDF) dispatched to client, awaiting initial technical input.'
   },
   {
+    id: 'STATUS_1B',
+    name: 'Due diligence report sent',
+    phase: 'PHASE_1_PS',
+    colorKey: 'ORANGE',
+    colorName: 'orange',
+    tip: 'Patentability / due diligence search report dispatched to client, awaiting confirmation before drafting PS.'
+  },
+  {
     id: 'STATUS_2',
     name: 'PS Underdrafting',
     phase: 'PHASE_1_PS',
@@ -176,6 +184,23 @@ export const STATUTORY_STATUSES = [
     colorKey: 'PURPLE',
     colorName: 'purple',
     tip: 'Complete Specification technical checklist & claims questionnaire sent to client.'
+  },
+  {
+    id: 'STATUS_8B',
+    name: 'Further checklist sent for CS',
+    phase: 'PHASE_2_CS',
+    colorKey: 'PURPLE',
+    colorName: 'purple',
+    tip: 'Further / follow-up technical checklist dispatched to client for Complete Specification, awaiting data.'
+  },
+  {
+    id: 'STATUS_8C',
+    name: 'Due diligence report sent',
+    phase: 'PHASE_2_CS',
+    colorKey: 'ORANGE',
+    colorName: 'orange',
+    excludeForPsCs: true,
+    tip: 'Patentability / due diligence search report dispatched to client for direct CS, awaiting confirmation before drafting CS.'
   },
   {
     id: 'STATUS_9',
@@ -457,7 +482,8 @@ export function getStatusColor(statusName) {
     norm.includes('awaiting data') || 
     norm.includes('awaiting information') || 
     norm.includes('idf sent') ||
-    norm.includes('checklist sent')
+    norm.includes('checklist sent') ||
+    norm.includes('further checklist')
   ) {
     return STATUS_COLORS.PURPLE;
   }
@@ -484,6 +510,8 @@ export function getStatusColor(statusName) {
     norm.includes('waiting confirmation') || 
     norm.includes('waiting for confirmation') || 
     norm.includes('draft sent') ||
+    norm.includes('report sent') ||
+    norm.includes('due diligence') ||
     norm.includes('awaiting instruction') ||
     norm.includes('awaiting instructions') ||
     norm.includes('extension of date')
@@ -514,14 +542,21 @@ export function getStatusColor(statusName) {
 /**
  * Get Phase ID for a given status
  */
-export function getStatusPhase(statusName) {
+export function getStatusPhase(statusName, specType = null) {
   if (!statusName) return 'PHASE_1_PS';
   const norm = String(statusName).trim().toLowerCase();
+
+  // Due diligence report sent can belong to Phase 1 (for PS) or Phase 2 (for direct CS)
+  if (norm === 'due diligence report sent') {
+    const isCs = specType && (String(specType).toUpperCase().includes('CS') || String(specType).toUpperCase() === 'COMPLETE');
+    return isCs ? 'PHASE_2_CS' : 'PHASE_1_PS';
+  }
+
   const found = STATUTORY_STATUSES.find((s) => s.name.toLowerCase() === norm);
   if (found) return found.phase;
 
   if (norm.includes('ps ') || norm.includes('idf ') || norm.includes('provisional')) return 'PHASE_1_PS';
-  if (norm.includes('cs ') || norm.includes('complete')) return 'PHASE_2_CS';
+  if (norm.includes('cs ') || norm.includes('complete') || norm.includes('checklist')) return 'PHASE_2_CS';
   if (norm.includes('f9') || norm.includes('f18') || norm.includes('published')) return 'PHASE_3_PUB_EXAM';
   if (norm.includes('fer') || norm.includes('form-3')) return 'PHASE_4_FER';
   if (norm.includes('hearing') || norm.includes('ws ') || norm.includes('form-30')) return 'PHASE_5_HEARING';

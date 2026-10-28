@@ -11,7 +11,6 @@ export default function FormalitiesDocket({
   currentUser,
   onOpenDrawer,
   onOpenEdit,
-  onOpenQuickDocket,
   onOpenTimeline,
 }) {
   const [activeSection, setActiveSection] = useState('f1f26'); // f1f26, f9f18, discrepancies, renewals

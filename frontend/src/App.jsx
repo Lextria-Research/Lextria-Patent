@@ -14,7 +14,6 @@ import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
 import FormalitiesDocket from './components/FormalitiesDocket';
 import AdminTeamOverview from './components/AdminTeamOverview';
-import QuickDocketModal from './components/QuickDocketModal';
 import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
@@ -64,8 +63,6 @@ export default function App() {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [timelineRecord, setTimelineRecord] = useState(null);
-  const [isQuickDocketOpen, setIsQuickDocketOpen] = useState(false);
-  const [quickDocketRecord, setQuickDocketRecord] = useState(null);
   const [isReassignOpen, setIsReassignOpen] = useState(false);
   const [reassignSourceDrafter, setReassignSourceDrafter] = useState(null);
   const [reassignRecord, setReassignRecord] = useState(null);
@@ -651,13 +648,8 @@ export default function App() {
   };
 
   // ==========================================
-  // SUPER ADMIN / PARALEGAL: QUICK DOCKETING & REASSIGNMENT
+  // SUPER ADMIN: REASSIGNMENT
   // ==========================================
-  const handleOpenQuickDocket = (rec = null) => {
-    setQuickDocketRecord(rec);
-    setIsQuickDocketOpen(true);
-  };
-
   const handleOpenReassign = (param = null) => {
     if (typeof param === 'string') {
       setReassignSourceDrafter(param);
@@ -835,30 +827,6 @@ export default function App() {
 
           {/* Right: Global Utility Actions & User Profile */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-            {/* Quick Docketing Desk Button (Paralegal & Super Admin) */}
-            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
-              <button
-                onClick={() => handleOpenQuickDocket()}
-                style={{
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #059669, #047857)',
-                  color: '#fff',
-                  fontSize: '12px',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(5, 150, 105, 0.25)',
-                }}
-                className="action-btn-interactive"
-                title="Quick Docket: record IPO Application No, CBR receipt, Form 1/26 and prosecution dates"
-              >
-                <CheckSquare size={14} /> Quick Docket
-              </button>
-            )}
 
             {/* Reassign Button (Super Admin) */}
             {currentUser.role === 'SUPER_ADMIN' && (
@@ -1220,7 +1188,6 @@ export default function App() {
               currentUser={currentUser}
               onOpenDrawer={(rec) => setSelectedRecord(rec)}
               onOpenEdit={(rec) => setEditingRecord(rec)}
-              onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
               onOpenReassign={(drafter) => handleOpenReassign(drafter)}
               onNavigateToPortfolio={(filterOrMatter) => {
                 if (filterOrMatter) {
@@ -1310,7 +1277,6 @@ export default function App() {
                 onOpenCreate={() => setIsCreateOpen(true)}
                 onOpenEdit={(rec) => setEditingRecord(rec)}
                 onOpenTimeline={(rec) => setTimelineRecord(rec)}
-                onOpenQuickDocket={(rec) => handleOpenQuickDocket(rec)}
                 onOpenReassign={(item) => handleOpenReassign(item)}
                 userRole={currentUser.role}
                 selectedDrafter={currentUser.drafterName}
@@ -1449,18 +1415,6 @@ export default function App() {
         onImportSuccess={handleImportSuccess}
       />
 
-      {/* Quick Docketing Desk Modal (Paralegal / Super Admin) */}
-      <QuickDocketModal
-        isOpen={isQuickDocketOpen}
-        onClose={() => {
-          setIsQuickDocketOpen(false);
-          setQuickDocketRecord(null);
-        }}
-        record={quickDocketRecord}
-        allRecords={records}
-        clients={clients}
-        onUpdate={handleUpdateApplication}
-      />
 
       {/* Reassign Matter Modal (Super Admin) */}
       <ReassignMatterModal

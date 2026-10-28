@@ -26,7 +26,6 @@ export default function MasterDataGrid({
   onOpenCreate,
   onOpenEdit,
   onOpenTimeline,
-  onOpenQuickDocket,
   onOpenReassign,
   userRole = 'SUPER_ADMIN',
   selectedDrafter = null,
@@ -620,7 +619,7 @@ export default function MasterDataGrid({
         },
       },
     ];
-  }, [onSelectRecord, onOpenTimeline, onOpenEdit, onOpenQuickDocket, userRole, tags]);
+  }, [onSelectRecord, onOpenTimeline, onOpenEdit, userRole, tags]);
 
   const table = useReactTable({
     data: filteredData,
