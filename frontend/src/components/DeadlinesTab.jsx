@@ -324,7 +324,7 @@ export default function DeadlinesTab({
             assigned_to: r.assigned_to,
             type: 'MISC_FORMS',
             subType: mf.status,
-            typeLabel: mf.form_type === 'FORM_13' ? 'Form 13' : 'Form 30',
+            typeLabel: mf.form_type === 'FORM_6' ? 'Form 6' : mf.form_type === 'FORM_16' ? 'Form 16' : mf.form_type === 'FORM_13' ? 'Form 13' : 'Form 30',
             actionText,
             statutoryRef: mf.sub_type_label,
             dueDate,
@@ -589,7 +589,7 @@ export default function DeadlinesTab({
             { id: 'FER', label: 'FER objections' },
             { id: 'WS', label: 'Hearing WS' },
             { id: 'FORMS', label: 'Forms 1 & 26' },
-            { id: 'MISC_FORMS', label: 'Misc Forms (F13 / F30)' },
+            { id: 'MISC_FORMS', label: 'Misc Forms (F6/F13/F16/F30)' },
             { id: 'INVENTOR', label: 'Inventor Acks & Updates' },
             { id: 'RENEWALS', label: 'Annuity renewals' },
           ].map((cat) => (

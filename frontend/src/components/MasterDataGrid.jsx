@@ -349,22 +349,47 @@ export default function MasterDataGrid({
                 <span style={{ fontWeight: 800, color: 'var(--ink)', fontSize: '13px' }}>
                   {code}
                 </span>
-                {activeMisc && (
-                  <span
-                    title={`${activeMisc.sub_type_label} (${activeMisc.status})`}
-                    style={{
-                      fontSize: '9px',
-                      fontWeight: 800,
-                      padding: '1px 4px',
-                      borderRadius: '3px',
-                      background: activeMisc.form_type === 'FORM_13' ? 'rgba(37, 99, 235, 0.15)' : 'rgba(124, 58, 237, 0.15)',
-                      color: activeMisc.form_type === 'FORM_13' ? '#2563EB' : '#7C3AED',
-                      border: `1px solid ${activeMisc.form_type === 'FORM_13' ? 'rgba(37, 99, 235, 0.3)' : 'rgba(124, 58, 237, 0.3)'}`,
-                    }}
-                  >
-                    {activeMisc.form_type === 'FORM_13' ? 'F13' : 'F30'}
-                  </span>
-                )}
+                {(() => {
+                  if (!activeMisc) return null;
+                  let tag = 'F30';
+                  let bg = 'rgba(124, 58, 237, 0.15)';
+                  let color = '#7C3AED';
+                  let border = 'rgba(124, 58, 237, 0.3)';
+
+                  if (activeMisc.form_type === 'FORM_6') {
+                    tag = 'F6';
+                    bg = 'rgba(16, 185, 129, 0.15)';
+                    color = '#059669';
+                    border = 'rgba(16, 185, 129, 0.3)';
+                  } else if (activeMisc.form_type === 'FORM_16') {
+                    tag = 'F16';
+                    bg = 'rgba(217, 119, 6, 0.15)';
+                    color = '#D97706';
+                    border = 'rgba(217, 119, 6, 0.3)';
+                  } else if (activeMisc.form_type === 'FORM_13') {
+                    tag = 'F13';
+                    bg = 'rgba(37, 99, 235, 0.15)';
+                    color = '#2563EB';
+                    border = 'rgba(37, 99, 235, 0.3)';
+                  }
+
+                  return (
+                    <span
+                      title={`${activeMisc.sub_type_label} (${activeMisc.status})`}
+                      style={{
+                        fontSize: '9px',
+                        fontWeight: 800,
+                        padding: '1px 4px',
+                        borderRadius: '3px',
+                        background: bg,
+                        color: color,
+                        border: `1px solid ${border}`,
+                      }}
+                    >
+                      {tag}
+                    </span>
+                  );
+                })()}
               </div>
               <span
                 style={{
@@ -741,7 +766,7 @@ export default function MasterDataGrid({
             title="Filter by Tag (Priority, Ticket Raised, Critical, Political...)"
           >
             <option value="ALL">All Tags</option>
-            <option value="MISC_FORMS">Misc Forms (F13 / F30)</option>
+            <option value="MISC_FORMS">Misc Forms (F6 / F13 / F16 / F30)</option>
             <option value="Priority">Priority</option>
             <option value="Ticket Raised">Ticket Raised</option>
             <option value="Critical">Critical</option>

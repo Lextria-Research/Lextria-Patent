@@ -6,9 +6,13 @@ import {
 } from 'lucide-react';
 import {
   MISC_FORM_STATUSES,
+  MISC_FORM_MAIN_TYPES,
   FORM_13_SUBTYPES,
+  FORM_6_SUBTYPES,
+  FORM_16_SUBTYPES,
   FORM_30_ENTRIES,
-  getMiscFormStatusInfo
+  getMiscFormStatusInfo,
+  getMainFormTypeInfo
 } from '../constants/miscFormsConstants';
 
 export default function MiscFormsManager({
@@ -44,6 +48,12 @@ export default function MiscFormsManager({
     if (selectedMainType === 'FORM_13') {
       return FORM_13_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_13_SUBTYPES[0];
     }
+    if (selectedMainType === 'FORM_6') {
+      return FORM_6_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_6_SUBTYPES[0];
+    }
+    if (selectedMainType === 'FORM_16') {
+      return FORM_16_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_16_SUBTYPES[0];
+    }
     return FORM_30_ENTRIES.find((s) => s.id === selectedSubtype) || availableForm30Entries[0] || FORM_30_ENTRIES[0];
   }, [selectedMainType, selectedSubtype, availableForm30Entries]);
 
@@ -51,16 +61,8 @@ export default function MiscFormsManager({
   const handleCreate = (e) => {
     e.preventDefault();
 
-    let subTypeObj = null;
-    let subTypeLabel = '';
-
-    if (selectedMainType === 'FORM_13') {
-      subTypeObj = FORM_13_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_13_SUBTYPES[0];
-      subTypeLabel = subTypeObj.label;
-    } else {
-      subTypeObj = FORM_30_ENTRIES.find((s) => s.id === selectedSubtype) || FORM_30_ENTRIES[0];
-      subTypeLabel = subTypeObj.shortLabel;
-    }
+    const subTypeObj = currentSubtypeObj;
+    const subTypeLabel = subTypeObj.shortLabel || subTypeObj.label;
 
     const newItem = {
       id: `mf_${Date.now()}`,
@@ -225,19 +227,24 @@ export default function MiscFormsManager({
                 {/* Title & Badge Row */}
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                    <span
-                      style={{
-                        padding: '2px 8px',
-                        borderRadius: '4px',
-                        fontSize: '11px',
-                        fontWeight: 800,
-                        background: item.form_type === 'FORM_13' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(139, 92, 246, 0.15)',
-                        color: item.form_type === 'FORM_13' ? '#2563EB' : '#7C3AED',
-                        border: `1px solid ${item.form_type === 'FORM_13' ? 'rgba(59, 130, 246, 0.3)' : 'rgba(139, 92, 246, 0.3)'}`,
-                      }}
-                    >
-                      {item.form_type === 'FORM_13' ? 'Form 13' : 'Form 30'}
-                    </span>
+                    {(() => {
+                      const typeInfo = getMainFormTypeInfo(item.form_type);
+                      return (
+                        <span
+                          style={{
+                            padding: '2px 8px',
+                            borderRadius: '4px',
+                            fontSize: '11px',
+                            fontWeight: 800,
+                            background: typeInfo.badgeBg,
+                            color: typeInfo.badgeFg,
+                            border: `1px solid ${typeInfo.badgeBorder}`,
+                          }}
+                        >
+                          {typeInfo.shortTitle}
+                        </span>
+                      );
+                    })()}
 
                     <span style={{ fontWeight: 800, fontSize: '13px', color: 'var(--ink)' }}>
                       {item.sub_type_label}
@@ -485,56 +492,73 @@ export default function MiscFormsManager({
             </div>
 
             <form onSubmit={handleCreate} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              {/* Form Category Selector: Form 13 vs Form 30 */}
+              {/* Form Category Selector: Form 13, Form 6, Form 16, Form 30 */}
               <div>
                 <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '6px' }}>
-                  Select Statutory Form Type *
+                  Select Statutory Form Category *
                 </label>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedMainType('FORM_13');
-                      setSelectedSubtype('FORM_13_ADD_INVENTOR');
-                      setTargetNumber(record.application_number || '');
-                    }}
-                    style={{
-                      padding: '9px 12px',
-                      borderRadius: '6px',
-                      border: selectedMainType === 'FORM_13' ? '2px solid var(--accent)' : '1px solid var(--line)',
-                      background: selectedMainType === 'FORM_13' ? 'rgba(37, 99, 235, 0.1)' : 'var(--page)',
-                      color: selectedMainType === 'FORM_13' ? 'var(--accent)' : 'var(--ink)',
-                      fontWeight: selectedMainType === 'FORM_13' ? 800 : 600,
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Form 13 (Amendments)
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedMainType('FORM_30');
-                      setFeeMode('WITH_FEE');
-                      setSelectedSubtype('ENTRY_S142_3_RESPONSE');
-                      setTargetNumber(record.application_number || '');
-                    }}
-                    style={{
-                      padding: '9px 12px',
-                      borderRadius: '6px',
-                      border: selectedMainType === 'FORM_30' ? '2px solid var(--accent)' : '1px solid var(--line)',
-                      background: selectedMainType === 'FORM_30' ? 'rgba(37, 99, 235, 0.1)' : 'var(--page)',
-                      color: selectedMainType === 'FORM_30' ? 'var(--accent)' : 'var(--ink)',
-                      fontWeight: selectedMainType === 'FORM_30' ? 800 : 600,
-                      fontSize: '12px',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Form 30 (Omnibus Petitions)
-                  </button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(115px, 1fr))', gap: '8px' }}>
+                  {MISC_FORM_MAIN_TYPES.map((mainType) => {
+                    const isSelected = selectedMainType === mainType.id;
+                    return (
+                      <button
+                        key={mainType.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedMainType(mainType.id);
+                          if (mainType.id === 'FORM_13') {
+                            setSelectedSubtype('FORM_13_ADD_INVENTOR');
+                            setTargetNumber(record.application_number || '');
+                            setFeeMode('WITH_FEE');
+                          } else if (mainType.id === 'FORM_6') {
+                            setSelectedSubtype('FORM_6_TRANSFER');
+                            setTargetNumber(record.application_number || '');
+                            setFeeMode('WITH_FEE');
+                          } else if (mainType.id === 'FORM_16') {
+                            setSelectedSubtype('FORM_16_TRANSFER');
+                            setTargetNumber(record.patent_number || record.application_number || '');
+                            setFeeMode('WITH_FEE');
+                          } else {
+                            setSelectedSubtype('ENTRY_S142_3_RESPONSE');
+                            setTargetNumber(record.application_number || '');
+                            setFeeMode('WITH_FEE');
+                          }
+                        }}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          border: isSelected ? `2px solid ${mainType.badgeFg}` : '1px solid var(--line)',
+                          background: isSelected ? mainType.badgeBg : 'var(--page)',
+                          color: isSelected ? mainType.badgeFg : 'var(--ink)',
+                          fontWeight: isSelected ? 800 : 600,
+                          fontSize: '11.5px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'center',
+                          gap: '2px',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <span style={{ fontWeight: 800 }}>{mainType.shortTitle}</span>
+                        <span style={{ fontSize: '9.5px', opacity: 0.85 }}>{mainType.timing}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Informational context banners for Form 6 and Form 16 */}
+              {selectedMainType === 'FORM_6' && (
+                <div style={{ fontSize: '11px', color: '#059669', background: 'rgba(16, 185, 129, 0.08)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <strong>Form 6 (Pre-Grant):</strong> Request for transfer, assignment or addition of patent applicant under Section 20 & Rule 34 prior to grant.
+                </div>
+              )}
+              {selectedMainType === 'FORM_16' && (
+                <div style={{ fontSize: '11px', color: '#D97706', background: 'rgba(217, 119, 6, 0.08)', padding: '6px 10px', borderRadius: '4px', border: '1px solid rgba(217, 119, 6, 0.2)' }}>
+                  <strong>Form 16 (Post-Grant):</strong> Application for registration of title, assignment, transmission or addition of patentee post-grant under Section 68, 69 & Rule 90.
+                </div>
+              )}
 
               {/* Form 30 Specific: Radio buttons With Fee vs Without Fee (From Reference Screenshots) */}
               {selectedMainType === 'FORM_30' && (
@@ -587,7 +611,13 @@ export default function MiscFormsManager({
                   onChange={(e) => {
                     const val = e.target.value;
                     setSelectedSubtype(val);
-                    if (val === 'ENTRY_19_23_RESTORATION') {
+                    let found = null;
+                    if (selectedMainType === 'FORM_13') found = FORM_13_SUBTYPES.find((s) => s.id === val);
+                    else if (selectedMainType === 'FORM_6') found = FORM_6_SUBTYPES.find((s) => s.id === val);
+                    else if (selectedMainType === 'FORM_16') found = FORM_16_SUBTYPES.find((s) => s.id === val);
+                    else found = FORM_30_ENTRIES.find((s) => s.id === val);
+
+                    if (found && found.numberField === 'patent_number') {
                       setTargetNumber(record.patent_number || '');
                     } else {
                       setTargetNumber(record.application_number || '');
@@ -604,13 +634,28 @@ export default function MiscFormsManager({
                     fontWeight: 600,
                   }}
                 >
-                  {selectedMainType === 'FORM_13' ? (
+                  {selectedMainType === 'FORM_13' && (
                     FORM_13_SUBTYPES.map((s) => (
                       <option key={s.id} value={s.id}>
                         {s.label} ({s.rule})
                       </option>
                     ))
-                  ) : (
+                  )}
+                  {selectedMainType === 'FORM_6' && (
+                    FORM_6_SUBTYPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.rule})
+                      </option>
+                    ))
+                  )}
+                  {selectedMainType === 'FORM_16' && (
+                    FORM_16_SUBTYPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.rule})
+                      </option>
+                    ))
+                  )}
+                  {selectedMainType === 'FORM_30' && (
                     availableForm30Entries.map((e) => (
                       <option key={e.id} value={e.id}>
                         {e.code}
@@ -620,7 +665,7 @@ export default function MiscFormsManager({
                 </select>
 
                 {/* Blue confirmation text matching IPO portal screenshots */}
-                {selectedMainType === 'FORM_30' && currentSubtypeObj && (
+                {currentSubtypeObj && (
                   <div style={{
                     color: '#0284c7',
                     fontWeight: 700,
