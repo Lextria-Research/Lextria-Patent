@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   X, Settings, Tag, Calendar, MessageSquare, History, Plus,
-  Trash2, Save, Send, CheckCircle2, AlertTriangle, Shield, ExternalLink,
+  Trash2, Save, Send, CheckCircle2, AlertTriangle, ExternalLink,
   HardDrive, Key, Lock, RefreshCw, Check, Users, UserPlus, Edit3, UserCheck, Eye, EyeOff
 } from 'lucide-react';
 import {
@@ -173,16 +173,6 @@ export default function SettingsModal({
   const [cliqChannel, setCliqChannel] = useState(settings.cliqChannel || 'patent-deadlines');
   const [testSent, setTestSent] = useState(false);
 
-  // Ecosystem Bridges state (IP Ledger & Litigator)
-  const [bridgesConfig, setBridgesConfig] = useState(
-    settings.bridgesConfig || {
-      ipLedgerUrl: 'https://ip-ledger.lextriaresearch.com',
-      litigatorUrl: 'https://litigator.lextriaresearch.com',
-      autoSyncFees: true,
-      autoLinkOppositions: true,
-    }
-  );
-
   // Zoho Calendar state
   const [firmCalendarUrl, setFirmCalendarUrl] = useState(
     settings.firmCalendarUrl || 'https://calendar.zoho.com/eventreq/lextria-patents'
@@ -249,7 +239,6 @@ export default function SettingsModal({
       firmCalendarUrl,
       drafterCalendarMap,
       workdriveConfig,
-      bridgesConfig,
     });
     onClose();
   };
@@ -259,10 +248,7 @@ export default function SettingsModal({
     ...(isSuperAdmin ? [
       { id: 'USERS', label: 'User Management', icon: Users },
       { id: 'WORKDRIVE', label: 'Zoho WorkDrive Storage', icon: HardDrive },
-      { id: 'BRIDGES', label: 'Ecosystem Bridges', icon: Shield },
-    ] : [
-      { id: 'BRIDGES', label: 'Ecosystem Bridges', icon: Shield },
-    ]),
+    ] : []),
     { id: 'TAGS', label: 'Custom Tags', icon: Tag },
     ...(isSuperAdmin ? [
       { id: 'CLIQ', label: 'Zoho Cliq Alerts', icon: MessageSquare },
@@ -1214,197 +1200,6 @@ export default function SettingsModal({
               </div>
             </div>
           )}
-                    {/* TAB: UNIFIED LEXTRIA ECOSYSTEM BRIDGES */}
-          {activeTab === 'BRIDGES' && (
-            <div>
-              <div style={{ marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Shield size={18} color="#2563EB" />
-                    <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                      Unified Lextria Ecosystem Bridges
-                    </h3>
-                    <span style={{
-                      fontSize: '10.5px',
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: '10px',
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      color: '#10B981',
-                      border: '1px solid rgba(16, 185, 129, 0.3)'
-                    }}>
-                      ● Live Connected
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '4px 0 0' }}>
-                    Interconnect the Patent Prosecution & Docketing Dashboard with external firm platforms: IP Ledger (Finance) and Lextria Litigator (Disputes).
-                  </p>
-                </div>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {/* Bridge 1: Lextria IP Ledger */}
-                <div style={{
-                  padding: '16px 18px',
-                  borderRadius: '8px',
-                  background: 'var(--page)',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#2563EB' }}>
-                        Lextria IP Ledger (Finance & Statutory Fees)
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
-                        Synchronize CBR official filing fees, Section 142 statutory renewals, and matter billing.
-                      </div>
-                    </div>
-                    <a
-                      href={bridgesConfig.ipLedgerUrl || 'https://ip-ledger.lextriaresearch.com'}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: '#2563EB',
-                        background: 'var(--surface)',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(37, 99, 235, 0.3)',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      Sync Fee Milestones in IP Ledger <ExternalLink size={13} />
-                    </a>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
-                      IP Ledger Base Endpoint URL
-                    </label>
-                    <input
-                      type="url"
-                      value={bridgesConfig.ipLedgerUrl || 'https://ip-ledger.lextriaresearch.com'}
-                      onChange={(e) => setBridgesConfig({ ...bridgesConfig, ipLedgerUrl: e.target.value })}
-                      placeholder="https://ip-ledger.lextriaresearch.com"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--surface)',
-                        color: 'var(--ink)',
-                        fontSize: '12px',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Bridge 2: Lextria Litigator */}
-                <div style={{
-                  padding: '16px 18px',
-                  borderRadius: '8px',
-                  background: 'var(--page)',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px'
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-                    <div>
-                      <div style={{ fontSize: '13px', fontWeight: 800, color: '#8B5CF6' }}>
-                        Lextria Litigator (Disputes & Oppositions)
-                      </div>
-                      <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '2px' }}>
-                        Link Section 25 pre-grant & post-grant oppositions, Section 64 revocation suits, and High Court IPD appeals.
-                      </div>
-                    </div>
-                    <a
-                      href={bridgesConfig.litigatorUrl || 'https://litigator.lextriaresearch.com'}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '5px',
-                        fontSize: '12px',
-                        fontWeight: 700,
-                        color: '#8B5CF6',
-                        background: 'var(--surface)',
-                        padding: '6px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid rgba(139, 92, 246, 0.3)',
-                        textDecoration: 'none'
-                      }}
-                    >
-                      Link Oppositions in Litigator <ExternalLink size={13} />
-                    </a>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
-                      Litigator Base Endpoint URL
-                    </label>
-                    <input
-                      type="url"
-                      value={bridgesConfig.litigatorUrl || 'https://litigator.lextriaresearch.com'}
-                      onChange={(e) => setBridgesConfig({ ...bridgesConfig, litigatorUrl: e.target.value })}
-                      placeholder="https://litigator.lextriaresearch.com"
-                      style={{
-                        width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--surface)',
-                        color: 'var(--ink)',
-                        fontSize: '12px',
-                        outline: 'none'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Automated Policies */}
-                <div style={{
-                  padding: '14px 16px',
-                  borderRadius: '8px',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--line)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px'
-                }}>
-                  <div style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
-                    Automated Cross-Platform Synchronization Policies
-                  </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--ink)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={bridgesConfig.autoSyncFees ?? true}
-                      onChange={(e) => setBridgesConfig({ ...bridgesConfig, autoSyncFees: e.target.checked })}
-                    />
-                    Automatically record statutory CBR receipt fee milestones to IP Ledger upon filing
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12px', color: 'var(--ink)', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={bridgesConfig.autoLinkOppositions ?? true}
-                      onChange={(e) => setBridgesConfig({ ...bridgesConfig, autoLinkOppositions: e.target.checked })}
-                    />
-                    Automatically cross-reference Section 25 opposition notices with Lextria Litigator
-                  </label>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* TAB 1: TAG SYSTEM (Requirement 10) */}
           {activeTab === 'TAGS' && (
             <div>
