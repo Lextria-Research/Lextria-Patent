@@ -823,64 +823,104 @@ export default function EditApplicationModal({
                 {showAddInventor && (
                   <div
                     style={{
-                      padding: '12px',
-                      borderRadius: '6px',
+                      padding: '14px',
+                      borderRadius: '8px',
                       background: 'var(--surface)',
                       border: '1px solid var(--line)',
-                      marginBottom: '10px',
+                      marginBottom: '12px',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: '8px',
+                      gap: '12px',
                     }}
                   >
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink)' }}>
-                      New Inventor Info (Institution, Gender, Nationality, Residence)
-                    </span>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="Full Name (e.g. Dr. Rajesh Kumar) *"
-                        value={newInventor.name}
-                        onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
-                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Institution / University (e.g. MIT Manipal) *"
-                        value={newInventor.institution}
-                        onChange={(e) => setNewInventor({ ...newInventor, institution: e.target.value })}
-                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
-                      />
-                      <select
-                        value={newInventor.gender}
-                        onChange={(e) => setNewInventor({ ...newInventor, gender: e.target.value })}
-                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
-                      >
-                        <option value="Male">Male</option>
-                        <option value="Female">Female</option>
-                        <option value="Other">Other</option>
-                        <option value="Prefer not to say">Prefer not to say</option>
-                      </select>
-                      <input
-                        type="text"
-                        placeholder="Nationality (e.g. Indian)"
-                        value={newInventor.nationality}
-                        onChange={(e) => setNewInventor({ ...newInventor, nationality: e.target.value })}
-                        style={{ padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
-                      />
-                      <input
-                        type="text"
-                        placeholder="Country of Residence (e.g. India)"
-                        value={newInventor.country_of_residence}
-                        onChange={(e) => setNewInventor({ ...newInventor, country_of_residence: e.target.value })}
-                        style={{ gridColumn: 'span 2', padding: '6px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px' }}
-                      />
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
+                        New Inventor Details
+                      </span>
+                      <span style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
+                        All fields will be docketed on Form 1 & Form 2
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                      {/* 1. Full Name */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Inventor Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Dr. Rajesh Kumar"
+                          value={newInventor.name}
+                          onChange={(e) => setNewInventor({ ...newInventor, name: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 2. Institution / University */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Institution / Organization / Affiliation *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. MIT Manipal or Applicant Entity"
+                          value={newInventor.institution}
+                          onChange={(e) => setNewInventor({ ...newInventor, institution: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 3. Gender */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Gender
+                        </label>
+                        <select
+                          value={newInventor.gender}
+                          onChange={(e) => setNewInventor({ ...newInventor, gender: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box', cursor: 'pointer' }}
+                        >
+                          <option value="Male">Male</option>
+                          <option value="Female">Female</option>
+                          <option value="Other">Other</option>
+                          <option value="Prefer not to say">Prefer not to say</option>
+                        </select>
+                      </div>
+
+                      {/* 4. Nationality */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Nationality
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Indian"
+                          value={newInventor.nationality}
+                          onChange={(e) => setNewInventor({ ...newInventor, nationality: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 5. Country of Residence */}
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Country of Residence
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. India"
+                          value={newInventor.country_of_residence}
+                          onChange={(e) => setNewInventor({ ...newInventor, country_of_residence: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '4px' }}>
                       <button
                         type="button"
                         onClick={() => setShowAddInventor(false)}
-                        style={{ padding: '4px 8px', borderRadius: '4px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11px', cursor: 'pointer' }}
+                        style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11.5px', cursor: 'pointer', color: 'var(--muted)' }}
                       >
                         Cancel
                       </button>
