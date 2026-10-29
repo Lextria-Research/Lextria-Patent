@@ -57,6 +57,30 @@ export const MISC_FORM_STATUSES = [
 
 export const MISC_FORM_MAIN_TYPES = [
   {
+    id: 'FORM_1',
+    label: 'Form 1 (POR)',
+    name: 'Form 1 - Proof of Right (POR)',
+    shortTitle: 'Form 1 (POR)',
+    badgeBg: 'rgba(14, 165, 233, 0.15)',
+    badgeFg: '#0284C7',
+    badgeBorder: 'rgba(14, 165, 233, 0.3)',
+    tag: 'F1',
+    timing: 'Within 6 Months of Filing',
+    description: 'Proof of Right (POR) / Assignment Deed from inventor to applicant under Section 7(2) & Rule 10'
+  },
+  {
+    id: 'FORM_26',
+    label: 'Form 26 (POA)',
+    name: 'Form 26 - Power of Authority (POA)',
+    shortTitle: 'Form 26 (POA)',
+    badgeBg: 'rgba(99, 102, 241, 0.15)',
+    badgeFg: '#4F46E5',
+    badgeBorder: 'rgba(99, 102, 241, 0.3)',
+    tag: 'F26',
+    timing: 'Within 3 Months of Filing',
+    description: 'Authorization of patent agent or attorney on Form 26 under Section 127, 132 & Rule 135'
+  },
+  {
     id: 'FORM_13',
     label: 'Form 13',
     name: 'Form 13 (Amendments & Inventors)',
@@ -127,6 +151,56 @@ export const MISC_FORM_MAIN_TYPES = [
     tag: 'F4',
     timing: 'Pre/Post Grant',
     description: 'Request for extension of time or condonation of delay (Section 53(2), 142(4), Rules 12(5), 13(6), 24B(6), 24C(11), 80(1A), 130, 131, 138)'
+  }
+];
+
+export const FORM_1_SUBTYPES = [
+  {
+    id: 'FORM_1_POR_ASSIGNMENT',
+    label: 'Form 1: Assignment Deed / Proof of Right u/s 7(2)',
+    shortLabel: 'Form 1: Assignment Deed (Sec 7(2))',
+    code: 'FORM 1 => PROOF OF RIGHT (ASSIGNMENT DEED)',
+    description: 'Filing of Assignment Deed executed by inventor(s) in favor of the applicant under Section 7(2) & Rule 10',
+    rule: 'Section 7(2) & Rule 10',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_1_POR_ENDORSEMENT',
+    label: 'Form 1: Inventor Endorsement in Paragraph 9(i)',
+    shortLabel: 'Form 1: Inventor Endorsement',
+    code: 'FORM 1 => INVENTOR ENDORSEMENT DECLARATION',
+    description: 'Inventor declaration and endorsement signed directly on Form 1 (paragraph 9(i))',
+    rule: 'Section 7(2) & Rule 10',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
+  }
+];
+
+export const FORM_26_SUBTYPES = [
+  {
+    id: 'FORM_26_SPECIFIC_POA',
+    label: 'Form 26: Specific Power of Authority (POA)',
+    shortLabel: 'Form 26: Specific POA',
+    code: 'FORM 26 => SPECIFIC POWER OF AUTHORITY',
+    description: 'Executed Form 26 appointing patent agent/attorney for this specific patent application under Section 127, 132 & Rule 135',
+    rule: 'Section 127, 132 & Rule 135',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITHOUT_FEE'
+  },
+  {
+    id: 'FORM_26_GENERAL_POA',
+    label: 'Form 26: General Power of Authority (GPA Reference)',
+    shortLabel: 'Form 26: General POA (GPA)',
+    code: 'FORM 26 => GENERAL POWER OF AUTHORITY REFERENCE',
+    description: 'Reference to registered General Power of Authority on record with IPO under Section 127, 132 & Rule 135',
+    rule: 'Section 127, 132 & Rule 135',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITHOUT_FEE'
   }
 ];
 

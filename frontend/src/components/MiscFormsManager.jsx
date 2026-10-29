@@ -9,6 +9,8 @@ import {
 import {
   MISC_FORM_STATUSES,
   MISC_FORM_MAIN_TYPES,
+  FORM_1_SUBTYPES,
+  FORM_26_SUBTYPES,
   FORM_13_SUBTYPES,
   FORM_6_SUBTYPES,
   FORM_16_SUBTYPES,
@@ -56,6 +58,12 @@ export default function MiscFormsManager({
   }, [record?.grant_date, record?.patent_grant_date]);
 
   const currentSubtypeObj = useMemo(() => {
+    if (selectedMainType === 'FORM_1') {
+      return FORM_1_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_1_SUBTYPES[0];
+    }
+    if (selectedMainType === 'FORM_26') {
+      return FORM_26_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_26_SUBTYPES[0];
+    }
     if (selectedMainType === 'FORM_13') {
       return FORM_13_SUBTYPES.find((s) => s.id === selectedSubtype) || FORM_13_SUBTYPES[0];
     }
@@ -624,7 +632,15 @@ export default function MiscFormsManager({
                         type="button"
                         onClick={() => {
                           setSelectedMainType(mainType.id);
-                          if (mainType.id === 'FORM_13') {
+                          if (mainType.id === 'FORM_1') {
+                            setSelectedSubtype('FORM_1_POR_ASSIGNMENT');
+                            setTargetNumber(record.application_number || '');
+                            setFeeMode('WITH_FEE');
+                          } else if (mainType.id === 'FORM_26') {
+                            setSelectedSubtype('FORM_26_SPECIFIC_POA');
+                            setTargetNumber(record.application_number || '');
+                            setFeeMode('WITHOUT_FEE');
+                          } else if (mainType.id === 'FORM_13') {
                             setSelectedSubtype('FORM_13_ADD_INVENTOR');
                             setTargetNumber(record.application_number || '');
                             setFeeMode('WITH_FEE');
@@ -887,6 +903,20 @@ export default function MiscFormsManager({
                     fontWeight: 600,
                   }}
                 >
+                  {selectedMainType === 'FORM_1' && (
+                    FORM_1_SUBTYPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.rule})
+                      </option>
+                    ))
+                  )}
+                  {selectedMainType === 'FORM_26' && (
+                    FORM_26_SUBTYPES.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.label} ({s.rule})
+                      </option>
+                    ))
+                  )}
                   {selectedMainType === 'FORM_13' && (
                     FORM_13_SUBTYPES.map((s) => (
                       <option key={s.id} value={s.id}>

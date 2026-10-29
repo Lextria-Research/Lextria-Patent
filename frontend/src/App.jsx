@@ -8,7 +8,6 @@ import SmartImporterModal from './components/SmartImporterModal';
 import LiveDueBoard from './components/LiveDueBoard';
 import CreateApplicationModal from './components/CreateApplicationModal';
 import EditApplicationModal from './components/EditApplicationModal';
-import MasterTimelineModal from './components/MasterTimelineModal';
 import AuthModal, { USER_ACCOUNTS } from './components/AuthModal';
 import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
@@ -41,6 +40,17 @@ export default function App() {
   );
   const [records, setRecords] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
+  const [drawerInitialTab, setDrawerInitialTab] = useState('overview');
+
+  const handleOpenTimeline = (rec) => {
+    setSelectedRecord(rec);
+    setDrawerInitialTab('timeline');
+  };
+
+  const handleSelectRecord = (rec) => {
+    setSelectedRecord(rec);
+    setDrawerInitialTab('overview');
+  };
   const [activeKpiFilter, setActiveKpiFilter] = useState(null);
   const [activeNavTab, setActiveNavTab] = useState(() => {
     try {
@@ -62,7 +72,7 @@ export default function App() {
   const [isTvMode, setIsTvMode] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
-  const [timelineRecord, setTimelineRecord] = useState(null);
+  // timelineRecord replaced by SlideOverDrawer Master Timeline tab
   const [isReassignOpen, setIsReassignOpen] = useState(false);
   const [reassignSourceDrafter, setReassignSourceDrafter] = useState(null);
   const [reassignRecord, setReassignRecord] = useState(null);
@@ -1204,7 +1214,7 @@ export default function App() {
             <AdminTeamOverview
               records={records}
               currentUser={currentUser}
-              onOpenDrawer={(rec) => setSelectedRecord(rec)}
+              onOpenDrawer={(rec) => handleSelectRecord(rec)}
               onOpenEdit={(rec) => setEditingRecord(rec)}
               onOpenReassign={(drafter) => handleOpenReassign(drafter)}
               onNavigateToPortfolio={(filterOrMatter) => {
@@ -1282,7 +1292,7 @@ export default function App() {
             <div style={{ flex: 1, overflow: 'hidden', marginTop: '12px' }}>
               <MasterDataGrid
                 records={roleFilteredRecords}
-                onSelectRecord={(rec) => setSelectedRecord(rec)}
+                onSelectRecord={(rec) => handleSelectRecord(rec)}
                 selectedCode={selectedRecord?.project_code}
                 onOpenImport={() => setIsImporterOpen(true)}
                 onExportExcel={handleQuickExport}
@@ -1294,7 +1304,7 @@ export default function App() {
                 onClearKpiFilter={() => setActiveKpiFilter(null)}
                 onOpenCreate={() => setIsCreateOpen(true)}
                 onOpenEdit={(rec) => setEditingRecord(rec)}
-                onOpenTimeline={(rec) => setTimelineRecord(rec)}
+                onOpenTimeline={(rec) => handleOpenTimeline(rec)}
                 onOpenReassign={(item) => handleOpenReassign(item)}
                 userRole={currentUser.role}
                 selectedDrafter={currentUser.drafterName}
@@ -1313,8 +1323,8 @@ export default function App() {
             <DeadlinesTab
               records={roleFilteredRecords}
               currentUser={currentUser}
-              onOpenDrawer={(rec) => setSelectedRecord(rec)}
-              onOpenTimeline={(rec) => setTimelineRecord(rec)}
+              onOpenDrawer={(rec) => handleSelectRecord(rec)}
+              onOpenTimeline={(rec) => handleOpenTimeline(rec)}
               onActionComplete={handleDeadlineActionComplete}
               onNavigateToCalendar={() => setActiveNavTab('CALENDAR')}
               onNavigateToPortfolio={() => setActiveNavTab('PORTFOLIO')}
@@ -1328,8 +1338,8 @@ export default function App() {
             <CalendarView
               records={roleFilteredRecords}
               currentUser={currentUser}
-              onOpenDrawer={(rec) => setSelectedRecord(rec)}
-              onOpenTimeline={(rec) => setTimelineRecord(rec)}
+              onOpenDrawer={(rec) => handleSelectRecord(rec)}
+              onOpenTimeline={(rec) => handleOpenTimeline(rec)}
               onNavigateToDeadlines={() => setActiveNavTab('DEADLINES')}
             />
           </div>
@@ -1347,8 +1357,8 @@ export default function App() {
           clients={clients}
           allRecords={records}
           onOpenEdit={(rec) => setEditingRecord(rec)}
-          onOpenTimeline={(rec) => setTimelineRecord(rec)}
           auditLogs={auditLogs.filter((l) => l.project_code === selectedRecord.project_code)}
+          initialTab={drawerInitialTab}
         />
       )}
 
@@ -1419,12 +1429,7 @@ export default function App() {
         onClientCreated={handleClientCreated}
       />
 
-      {/* Master Statutory Prosecution Timeline Modal */}
-      <MasterTimelineModal
-        isOpen={!!timelineRecord}
-        record={timelineRecord}
-        onClose={() => setTimelineRecord(null)}
-      />
+      {/* Master Statutory Prosecution Timeline now integrated directly into SlideOverDrawer */} 
 
       {/* Smart Excel & CSV Staging Importer Modal */}
       <SmartImporterModal
