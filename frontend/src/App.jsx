@@ -8,7 +8,16 @@ import SmartImporterModal from './components/SmartImporterModal';
 import LiveDueBoard from './components/LiveDueBoard';
 import CreateApplicationModal from './components/CreateApplicationModal';
 import EditApplicationModal from './components/EditApplicationModal';
-import AuthModal, { USER_ACCOUNTS } from './components/AuthModal';
+import LoginPage from './components/LoginPage';
+import {
+  getCurrentUser,
+  setCurrentUser as setStoredUser,
+  logout,
+  isSuperAdmin,
+  isParalegal,
+  isDrafter,
+  getRoleLabel
+} from './lib/authStore';
 import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
 import FormalitiesDocket from './components/FormalitiesDocket';
@@ -22,7 +31,7 @@ import { normalizeStatus } from './constants/patentStatuses';
 import { supabase, patentDb, coreDb } from './lib/supabase';
 import DEFAULT_CLIENTS from './data/clients.json';
 import {
-  FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings,
+  FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings, LogOut,
   Plus, Download, UserCheck, Shield, Briefcase, Scale,
   Sparkles, CheckCircle2, AlertTriangle, Layers, Users
 } from 'lucide-react';
@@ -54,17 +63,13 @@ export default function App() {
   const [activeKpiFilter, setActiveKpiFilter] = useState(null);
   const [activeNavTab, setActiveNavTab] = useState(() => {
     try {
-      const savedUser = localStorage.getItem('patent_current_user');
-      if (savedUser) {
-        const u = JSON.parse(savedUser);
-        if (u.role === 'DRAFTER') return 'PORTFOLIO';
-      }
+      const savedUser = getCurrentUser();
+      if (savedUser && isDrafter(savedUser)) return 'PORTFOLIO';
     } catch {}
     return 'TEAM_OVERVIEW'; // Default for Super Admin & Paralegal
   });
   
   // Modals state
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [exportRecordsSelection, setExportRecordsSelection] = useState(null);
@@ -80,13 +85,7 @@ export default function App() {
   const [selectedDrafterFilter, setSelectedDrafterFilter] = useState(null);
 
   // Authenticated User Account State (Requirement 1 & 3)
-  const [currentUser, setCurrentUser] = useState(() => {
-    try {
-      const saved = localStorage.getItem('patent_current_user');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return USER_ACCOUNTS[0]; // Default: Pranav Bhat (Super Admin)
-  });
+  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
 
   // Interconnected Clients State from core.clients (Requirement 12)
   const [clients, setClients] = useState(() => {
@@ -156,9 +155,20 @@ export default function App() {
   // Persist current user
   useEffect(() => {
     try {
-      localStorage.setItem('patent_current_user', JSON.stringify(currentUser));
+      if (currentUser) {
+        setStoredUser(currentUser);
+      } else {
+        logout();
+      }
     } catch {}
   }, [currentUser]);
+
+  const handleLogout = () => {
+    logout();
+    setCurrentUser(null);
+    setSelectedRecord(null);
+    showToast('You have been securely signed out.');
+  };
 
   // Persist tags
   useEffect(() => {
@@ -323,14 +333,16 @@ export default function App() {
 
   // Filter records strictly by authenticated drafter (Requirement 3 & Super Admin Drafter Matrix)
   const roleFilteredRecords = useMemo(() => {
-    if (currentUser.role === 'DRAFTER' && currentUser.drafterName) {
+    if (!currentUser) return records;
+    if (isDrafter(currentUser)) {
+      const drafterKey = (currentUser.drafterName || currentUser.name || '').trim().toLowerCase();
       return records.filter(
         (r) =>
           r.assigned_to &&
-          r.assigned_to.trim().toLowerCase() === currentUser.drafterName.trim().toLowerCase()
+          r.assigned_to.trim().toLowerCase() === drafterKey
       );
     }
-    if (currentUser.role === 'SUPER_ADMIN' && selectedDrafterFilter) {
+    if (isSuperAdmin(currentUser) && selectedDrafterFilter) {
       return records.filter(
         (r) =>
           r.assigned_to &&
@@ -763,6 +775,21 @@ export default function App() {
     })();
   };
 
+  if (!currentUser) {
+    return (
+      <LoginPage
+        onLogin={(user) => {
+          setCurrentUser(user);
+          if (isSuperAdmin(user) || isParalegal(user)) {
+            setActiveNavTab('TEAM_OVERVIEW');
+          } else {
+            setActiveNavTab('PORTFOLIO');
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <div
       style={{
@@ -857,7 +884,7 @@ export default function App() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
 
             {/* Reassign Button (Super Admin) */}
-            {currentUser.role === 'SUPER_ADMIN' && (
+            {isSuperAdmin(currentUser) && (
               <button
                 onClick={() => handleOpenReassign()}
                 style={{
@@ -991,9 +1018,8 @@ export default function App() {
               {theme === 'light' ? <Moon size={15} /> : <Sun size={15} />}
             </button>
 
-            {/* User Account / Profile Switcher Pill */}
-            <button
-              onClick={() => setIsAuthOpen(true)}
+            {/* User Account Profile Pill */}
+            <div
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -1002,12 +1028,8 @@ export default function App() {
                 borderRadius: '20px',
                 background: 'var(--page)',
                 border: '1px solid var(--line)',
-                cursor: 'pointer',
                 color: 'var(--ink)',
-                transition: 'all 0.15s ease',
               }}
-              className="action-btn-interactive"
-              title="Click to switch authenticated user account"
             >
               <div
                 style={{
@@ -1030,9 +1052,33 @@ export default function App() {
                   {currentUser.name}
                 </div>
                 <div style={{ fontSize: '9.5px', color: 'var(--muted)', fontWeight: 600 }}>
-                  {currentUser.role === 'SUPER_ADMIN' ? 'Super Admin' : (currentUser.role === 'PARALEGAL' ? 'Paralegal' : 'Drafter')}
+                  {getRoleLabel(currentUser.role)}
                 </div>
               </div>
+            </div>
+
+            {/* Logout Action Button */}
+            <button
+              onClick={handleLogout}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 11px',
+                borderRadius: '7px',
+                background: 'rgba(239, 68, 68, 0.08)',
+                border: '1px solid rgba(239, 68, 68, 0.22)',
+                color: '#EF4444',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 700,
+                transition: 'all 0.15s ease',
+              }}
+              title="Sign out of patent dashboard"
+              className="action-btn-interactive"
+            >
+              <LogOut size={13} />
+              <span>Log Out</span>
             </button>
           </div>
         </div>
@@ -1057,7 +1103,7 @@ export default function App() {
             }}
           >
             {/* Tab 0: Team Overview (Patent Admin & Super Admin) */}
-            {(currentUser.role === 'PARALEGAL' || currentUser.role === 'SUPER_ADMIN') && (
+            {(isParalegal(currentUser) || isSuperAdmin(currentUser)) && (
               <button
                 onClick={() => setActiveNavTab('TEAM_OVERVIEW')}
                 className="nav-tab-btn"
@@ -1104,7 +1150,7 @@ export default function App() {
               }}
             >
               <FolderKanban size={14} color={activeNavTab === 'PORTFOLIO' ? 'var(--accent)' : 'currentColor'} />
-              {currentUser.role === 'DRAFTER' ? 'Drafting Cockpit' : 'Portfolio Master'}
+              {isDrafter(currentUser) ? 'Drafting Cockpit' : 'Portfolio Master'}
             </button>
 
 
@@ -1163,7 +1209,7 @@ export default function App() {
           {/* Right: Real-time Docket Stats Context */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '11.5px', color: 'var(--muted)', fontWeight: 600 }}>
-              {currentUser.role === 'DRAFTER' 
+              {isDrafter(currentUser) 
                 ? `${roleFilteredRecords.length} Assigned Patent Matters`
                 : `${records.length || 878} Active Matters • 8 Drafters`}
             </span>
@@ -1172,7 +1218,7 @@ export default function App() {
       </header>
 
       {/* Drafter Filter Context Banner (Only when logged in as a Drafter) */}
-      {currentUser.role === 'DRAFTER' && (
+      {isDrafter(currentUser) && (
         <div
           style={{
             padding: '6px 24px',
@@ -1362,21 +1408,7 @@ export default function App() {
         />
       )}
 
-      {/* User Accounts Switcher Modal (Requirement 1 & 3) */}
-      <AuthModal
-        isOpen={isAuthOpen}
-        onClose={() => setIsAuthOpen(false)}
-        currentUser={currentUser}
-        onSelectUser={(user) => {
-          setCurrentUser(user);
-          if (user.role === 'PARALEGAL' || user.role === 'SUPER_ADMIN') {
-            setActiveNavTab('TEAM_OVERVIEW');
-          } else {
-            setActiveNavTab('PORTFOLIO');
-          }
-          showToast(`Logged in as ${user.name} (${user.roleLabel})`);
-        }}
-      />
+
 
       {/* Settings Modal (Requirement 10, 14, 15) */}
       <SettingsModal

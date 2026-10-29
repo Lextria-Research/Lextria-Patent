@@ -1,14 +1,12 @@
 // frontend/src/components/ReassignMatterModal.jsx
 import React, { useState, useMemo } from 'react';
+import { getActiveDrafters } from '../lib/authStore';
 import {
   X, UserCheck, ArrowRight, Shield, AlertTriangle, CheckCircle2,
   Briefcase, Search, Filter
 } from 'lucide-react';
 
-const DRAFTERS = [
-  'Anusha', 'Ayush', 'Abhishek', 'Fiona',
-  'Pramith', 'Pratham', 'Thanush', 'Thilak', 'Pranav Bhat'
-];
+
 
 const REASSIGNMENT_REASONS = [
   'Workload Rebalancing & Capacity Optimization',
@@ -37,20 +35,22 @@ export default function ReassignMatterModal({
   const [notes, setNotes] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
 
+  const availableDrafters = useMemo(() => getActiveDrafters(allRecords), [allRecords]);
+
   // Drafter workload stats (active cases count per drafter)
   const drafterLoads = useMemo(() => {
     const counts = {};
-    DRAFTERS.forEach((d) => { counts[d] = 0; });
+    availableDrafters.forEach((d) => { counts[d] = 0; });
     allRecords.forEach((r) => {
       if (!r.is_abandoned && r.assigned_to) {
-        const match = DRAFTERS.find((d) => d.toLowerCase() === r.assigned_to.trim().toLowerCase());
+        const match = availableDrafters.find((d) => d.toLowerCase() === r.assigned_to.trim().toLowerCase());
         if (match) {
           counts[match] = (counts[match] || 0) + 1;
         }
       }
     });
     return counts;
-  }, [allRecords]);
+  }, [allRecords, availableDrafters]);
 
   // Matters assigned to current source drafter
   const candidateMatters = useMemo(() => {
@@ -228,7 +228,7 @@ export default function ReassignMatterModal({
                 }}
               >
                 <option value="">-- All Active Matters --</option>
-                {DRAFTERS.map((d) => (
+                {availableDrafters.map((d) => (
                   <option key={d} value={d}>
                     {d} ({drafterLoads[d] || 0} active matters)
                   </option>
@@ -262,7 +262,7 @@ export default function ReassignMatterModal({
                 }}
               >
                 <option value="">-- Select Target Drafter --</option>
-                {DRAFTERS.filter((d) => d !== sourceDrafter).map((d) => (
+                {availableDrafters.filter((d) => d !== sourceDrafter).map((d) => (
                   <option key={d} value={d}>
                     {d} (Current: {drafterLoads[d] || 0} active cases)
                   </option>

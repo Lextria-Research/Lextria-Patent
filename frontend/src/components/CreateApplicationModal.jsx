@@ -1,4 +1,5 @@
 // frontend/src/components/CreateApplicationModal.jsx
+import { getActiveDrafters } from '../lib/authStore';
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   X, Plus, Trash2, FileText, Calendar, User, Building, Tag as TagIcon,
@@ -12,10 +13,7 @@ import PhasedStatusSelector from './PhasedStatusSelector';
 import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
-const DRAFTERS = [
-  'Anusha', 'Ayush', 'Abhishek', 'Fiona',
-  'Pramith', 'Pratham', 'Thanush', 'Thilak', 'Pranav Bhat'
-];
+const DRAFTERS = getActiveDrafters();
 
 const SPEC_TYPES = [
   { value: 'PS', label: 'Provisional Specification (PS)' },
@@ -881,7 +879,7 @@ export default function CreateApplicationModal({
                     color: 'var(--ink)',
                   }}
                 >
-                  {DRAFTERS.map((d) => (
+                  {getActiveDrafters().map((d) => (
                     <option key={d} value={d}>
                       👤 {d}
                     </option>

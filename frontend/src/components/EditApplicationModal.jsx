@@ -1,4 +1,5 @@
 // frontend/src/components/EditApplicationModal.jsx
+import { getActiveDrafters } from '../lib/authStore';
 import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Save, Edit3, Calendar, User, Tag as TagIcon,
@@ -12,10 +13,7 @@ import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
 import MiscFormsManager from './MiscFormsManager';
 
-const DRAFTERS = [
-  'Anusha', 'Ayush', 'Abhishek', 'Fiona',
-  'Pramith', 'Pratham', 'Thanush', 'Thilak', 'Pranav Bhat'
-];
+const DRAFTERS = getActiveDrafters();
 
 const SPEC_TYPES = [
   { value: 'PS', label: 'Provisional Specification (PS)' },
@@ -976,7 +974,7 @@ export default function EditApplicationModal({
                       color: 'var(--ink)',
                     }}
                   >
-                    {DRAFTERS.map((d) => (
+                    {getActiveDrafters().map((d) => (
                       <option key={d} value={d}>
                         👤 {d}
                       </option>

@@ -1,10 +1,19 @@
-// frontend/src/components/SettingsModal.jsx
 import React, { useState } from 'react';
 import {
   X, Settings, Tag, Calendar, MessageSquare, History, Plus,
   Trash2, Save, Send, CheckCircle2, AlertTriangle, Shield, ExternalLink,
-  HardDrive, Key, Lock, RefreshCw, Check
+  HardDrive, Key, Lock, RefreshCw, Check, Users, UserPlus, Edit3, UserCheck, Eye, EyeOff
 } from 'lucide-react';
+import {
+  getRegisteredUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  ROLE_OPTIONS,
+  ROLES,
+  ROOT_SUPER_ADMIN,
+  getRoleLabel
+} from '../lib/authStore';
 
 export default function SettingsModal({
   isOpen,
@@ -15,16 +24,130 @@ export default function SettingsModal({
   settings = {},
   onSaveSettings,
   currentUser = {},
+  onUsersUpdated,
 }) {
   if (!isOpen) return null;
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
-  const [activeTab, setActiveTab] = useState(isSuperAdmin ? 'WORKDRIVE' : 'TAGS');
+  const [activeTab, setActiveTab] = useState(isSuperAdmin ? 'USERS' : 'TAGS');
   const [tagList, setTagList] = useState(tags);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('#EF4444');
   const [newTagDesc, setNewTagDesc] = useState('');
+
+  // User Management state (Super Admin exclusive)
+  const [registeredUsers, setRegisteredUsers] = useState(() => getRegisteredUsers());
+  const [isUserFormOpen, setIsUserFormOpen] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [formName, setFormName] = useState('');
+  const [formEmail, setFormEmail] = useState('');
+  const [formPassword, setFormPassword] = useState('');
+  const [formRole, setFormRole] = useState('PATENT_DRAFTER');
+  const [formDrafterName, setFormDrafterName] = useState('');
+  const [formDepartment, setFormDepartment] = useState('');
+  const [userFormError, setUserFormError] = useState('');
+  const [userFormSuccess, setUserFormSuccess] = useState('');
+  const [showFormPassword, setShowFormPassword] = useState(false);
+
+  const refreshUsers = () => {
+    const list = getRegisteredUsers();
+    setRegisteredUsers(list);
+    if (onUsersUpdated) onUsersUpdated(list);
+  };
+
+  const handleOpenAddUser = () => {
+    setEditingUserId(null);
+    setFormName('');
+    setFormEmail('');
+    setFormPassword('');
+    setFormRole('PATENT_DRAFTER');
+    setFormDrafterName('');
+    setFormDepartment('');
+    setUserFormError('');
+    setUserFormSuccess('');
+    setShowFormPassword(false);
+    setIsUserFormOpen(true);
+  };
+
+  const handleOpenEditUser = (user) => {
+    setEditingUserId(user.id);
+    setFormName(user.name);
+    setFormEmail(user.email);
+    setFormPassword('');
+    setFormRole(user.role);
+    setFormDrafterName(user.drafterName || user.name);
+    setFormDepartment(user.department || '');
+    setUserFormError('');
+    setUserFormSuccess('');
+    setShowFormPassword(false);
+    setIsUserFormOpen(true);
+  };
+
+  const handleSaveUser = (e) => {
+    e.preventDefault();
+    setUserFormError('');
+    setUserFormSuccess('');
+
+    if (!formName.trim()) {
+      setUserFormError('User full name is required.');
+      return;
+    }
+    if (!formEmail.trim()) {
+      setUserFormError('Email / Login ID is required.');
+      return;
+    }
+
+    try {
+      if (editingUserId) {
+        updateUser(editingUserId, {
+          name: formName,
+          email: formEmail,
+          role: formRole,
+          password: formPassword.trim() ? formPassword : undefined,
+          drafterName: formRole === 'PATENT_DRAFTER' ? (formDrafterName.trim() || formName.trim()) : undefined,
+          department: formDepartment.trim() || undefined,
+        });
+        setUserFormSuccess('User credentials updated successfully.');
+      } else {
+        if (!formPassword.trim()) {
+          setUserFormError('Password is required for new accounts.');
+          return;
+        }
+        createUser({
+          name: formName,
+          email: formEmail,
+          password: formPassword,
+          role: formRole,
+          drafterName: formRole === 'PATENT_DRAFTER' ? (formDrafterName.trim() || formName.trim()) : undefined,
+          department: formDepartment.trim() || undefined,
+        });
+        setUserFormSuccess('New user account provisioned successfully.');
+      }
+      refreshUsers();
+      setTimeout(() => {
+        setIsUserFormOpen(false);
+        setUserFormSuccess('');
+      }, 700);
+    } catch (err) {
+      setUserFormError(err.message || 'Failed to save user.');
+    }
+  };
+
+  const handleDeleteUser = (user) => {
+    if (user.isRoot || user.email?.toLowerCase() === ROOT_SUPER_ADMIN.email.toLowerCase()) {
+      alert('The master Superadmin account cannot be deleted.');
+      return;
+    }
+    if (window.confirm(`Are you sure you want to permanently delete "${user.name}" (${user.email})?`)) {
+      try {
+        deleteUser(user.id);
+        refreshUsers();
+      } catch (err) {
+        alert(err.message || 'Failed to delete user.');
+      }
+    }
+  };
 
   // Zoho WorkDrive Storage state (Super Admin only)
   const [workdriveConfig, setWorkdriveConfig] = useState(
@@ -134,6 +257,7 @@ export default function SettingsModal({
   // Available tabs filtered strictly by user role
   const availableTabs = [
     ...(isSuperAdmin ? [
+      { id: 'USERS', label: 'User Management', icon: Users },
       { id: 'WORKDRIVE', label: 'Zoho WorkDrive Storage', icon: HardDrive },
       { id: 'BRIDGES', label: 'Ecosystem Bridges', icon: Shield },
     ] : [
@@ -273,6 +397,544 @@ export default function SettingsModal({
         {/* Tab Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           <div key={activeTab} className="animate-tab-pane">
+          {/* TAB: FIRM USER & ROLE MANAGEMENT (Super Admin Only) */}
+          {activeTab === 'USERS' && isSuperAdmin && (
+            <div>
+              {/* Header with Title and Add Button */}
+              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                <div>
+                  <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                    Firm User & Role Management
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                    Superadmin exclusive cockpit: Provision and configure accounts for Patent Drafters, Paralegals, and firm attorneys.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleOpenAddUser}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '8px 16px',
+                    borderRadius: '8px',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    border: 'none',
+                    fontWeight: 800,
+                    fontSize: '12.5px',
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                  }}
+                >
+                  <UserPlus size={15} />
+                  Provision New User
+                </button>
+              </div>
+
+              {/* 4 Role Summary Cards */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                {ROLE_OPTIONS.map((opt) => {
+                  const roleMeta = ROLES[opt.value] || {};
+                  const count = registeredUsers.filter((u) => u.role === opt.value).length;
+                  return (
+                    <div
+                      key={opt.value}
+                      style={{
+                        padding: '12px',
+                        borderRadius: '10px',
+                        background: 'var(--page)',
+                        border: '1px solid var(--line)',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+                          {opt.label}
+                        </span>
+                        <span
+                          style={{
+                            width: '8px',
+                            height: '8px',
+                            borderRadius: '50%',
+                            background: roleMeta.color || '#3B82F6',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--ink)' }}>
+                        {count}
+                      </div>
+                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                        Active accounts
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Users Table */}
+              <div
+                style={{
+                  borderRadius: '10px',
+                  border: '1px solid var(--line)',
+                  background: 'var(--page)',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
+                    padding: '10px 16px',
+                    borderBottom: '1px solid var(--line)',
+                    background: 'var(--surface)',
+                    fontSize: '11px',
+                    fontWeight: 800,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.5px',
+                    color: 'var(--muted)',
+                  }}
+                >
+                  <div>User & Email ID</div>
+                  <div>Role / Privilege</div>
+                  <div>Department / Drafter</div>
+                  <div style={{ textAlign: 'right' }}>Actions</div>
+                </div>
+
+                <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                  {registeredUsers.map((user) => {
+                    const roleMeta = ROLES[user.role] || ROLES.PATENT_DRAFTER;
+                    const isMaster = user.isRoot || user.email?.toLowerCase() === ROOT_SUPER_ADMIN.email.toLowerCase();
+
+                    return (
+                      <div
+                        key={user.id}
+                        style={{
+                          display: 'grid',
+                          gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
+                          padding: '12px 16px',
+                          borderBottom: '1px solid var(--line)',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}
+                      >
+                        {/* User identity */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                          <div
+                            style={{
+                              width: '32px',
+                              height: '32px',
+                              borderRadius: '50%',
+                              background: roleMeta.color || '#3B82F6',
+                              color: '#fff',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                            }}
+                          >
+                            {user.initials || 'US'}
+                          </div>
+                          <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                                {user.name}
+                              </span>
+                              {isMaster && (
+                                <span
+                                  style={{
+                                    fontSize: '9px',
+                                    fontWeight: 900,
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    background: '#FEF3C7',
+                                    color: '#B45309',
+                                    border: '1px solid #FCD34D',
+                                  }}
+                                >
+                                  ROOT
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ fontSize: '11px', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {user.email}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Role */}
+                        <div>
+                          <span
+                            style={{
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '5px',
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 800,
+                              background: `${roleMeta.color || '#3B82F6'}15`,
+                              color: roleMeta.color || '#3B82F6',
+                              border: `1px solid ${roleMeta.color || '#3B82F6'}30`,
+                            }}
+                          >
+                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: roleMeta.color || '#3B82F6' }} />
+                            {roleMeta.label || user.roleLabel || user.role}
+                          </span>
+                        </div>
+
+                        {/* Department / Drafter */}
+                        <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 600 }}>
+                          {user.role === 'PATENT_DRAFTER' && user.drafterName ? (
+                            <div>
+                              <span>{user.drafterName}</span>
+                              <div style={{ fontSize: '10px', color: 'var(--muted)' }}>Assigned Drafter</div>
+                            </div>
+                          ) : (
+                            <span>{user.department || 'Legal Operations'}</span>
+                          )}
+                        </div>
+
+                        {/* Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditUser(user)}
+                            style={{
+                              padding: '5px 8px',
+                              background: 'var(--surface)',
+                              border: '1px solid var(--line)',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              color: 'var(--ink)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                            }}
+                            title="Edit user details or reset password"
+                          >
+                            <Edit3 size={13} />
+                            Edit
+                          </button>
+                          {!isMaster && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteUser(user)}
+                              style={{
+                                padding: '5px 8px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                border: '1px solid rgba(239, 68, 68, 0.25)',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                color: '#EF4444',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                              }}
+                              title="Delete user account"
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Sub-form Modal for Add / Edit User */}
+              {isUserFormOpen && (
+                <div
+                  style={{
+                    position: 'fixed',
+                    inset: 0,
+                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                    backdropFilter: 'blur(4px)',
+                    zIndex: 2600,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20px',
+                  }}
+                  onClick={() => setIsUserFormOpen(false)}
+                >
+                  <div
+                    style={{
+                      background: 'var(--surface)',
+                      borderRadius: '14px',
+                      width: '100%',
+                      maxWidth: '480px',
+                      boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                      border: '1px solid var(--line)',
+                      overflow: 'hidden',
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div
+                      style={{
+                        padding: '16px 20px',
+                        borderBottom: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <UserCheck size={18} color="var(--accent)" />
+                        <h4 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                          {editingUserId ? 'Edit User Credentials & Role' : 'Provision New Firm User'}
+                        </h4>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setIsUserFormOpen(false)}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: 'var(--muted)',
+                          padding: '4px',
+                        }}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    <form onSubmit={handleSaveUser} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {userFormError && (
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            background: 'rgba(239, 68, 68, 0.1)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#EF4444',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {userFormError}
+                        </div>
+                      )}
+                      {userFormSuccess && (
+                        <div
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            color: '#10B981',
+                            fontSize: '12px',
+                          }}
+                        >
+                          {userFormSuccess}
+                        </div>
+                      )}
+
+                      {/* Full Name */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Full Name *
+                        </label>
+                        <input
+                          type="text"
+                          value={formName}
+                          onChange={(e) => setFormName(e.target.value)}
+                          placeholder="e.g. Aditi Rao"
+                          required
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            background: 'var(--page)',
+                            border: '1px solid var(--line)',
+                            borderRadius: '8px',
+                            padding: '0 12px',
+                            fontSize: '13px',
+                            color: 'var(--ink)',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      {/* Login Email */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Login ID / Email Address *
+                        </label>
+                        <input
+                          type="email"
+                          value={formEmail}
+                          onChange={(e) => setFormEmail(e.target.value)}
+                          placeholder="e.g. aditi@lextria.in"
+                          required
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            background: 'var(--page)',
+                            border: '1px solid var(--line)',
+                            borderRadius: '8px',
+                            padding: '0 12px',
+                            fontSize: '13px',
+                            color: 'var(--ink)',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                          }}
+                        />
+                      </div>
+
+                      {/* Role Dropdown */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Firm Role & Permissions *
+                        </label>
+                        <select
+                          value={formRole}
+                          onChange={(e) => setFormRole(e.target.value)}
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            background: 'var(--page)',
+                            border: '1px solid var(--line)',
+                            borderRadius: '8px',
+                            padding: '0 12px',
+                            fontSize: '13px',
+                            color: 'var(--ink)',
+                            outline: 'none',
+                            boxSizing: 'border-box',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {ROLE_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label} — {opt.description}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Drafter Name if Patent Drafters */}
+                      {formRole === 'PATENT_DRAFTER' && (
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                            Assigned Drafter Identifier (For Matter Docketing)
+                          </label>
+                          <input
+                            type="text"
+                            value={formDrafterName}
+                            onChange={(e) => setFormDrafterName(e.target.value)}
+                            placeholder={formName || "e.g. Aditi"}
+                            style={{
+                              width: '100%',
+                              height: '38px',
+                              background: 'var(--page)',
+                              border: '1px solid var(--line)',
+                              borderRadius: '8px',
+                              padding: '0 12px',
+                              fontSize: '13px',
+                              color: 'var(--ink)',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px', display: 'block' }}>
+                            Matches the "Assigned Drafter" value in portfolio matters for automatic filtering.
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Password */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                          {editingUserId ? 'New Password (Leave blank to keep current)' : 'Security Password *'}
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                          <input
+                            type={showFormPassword ? 'text' : 'password'}
+                            value={formPassword}
+                            onChange={(e) => setFormPassword(e.target.value)}
+                            placeholder={editingUserId ? '••••••••' : 'Enter account password'}
+                            required={!editingUserId}
+                            style={{
+                              width: '100%',
+                              height: '38px',
+                              background: 'var(--page)',
+                              border: '1px solid var(--line)',
+                              borderRadius: '8px',
+                              padding: '0 38px 0 12px',
+                              fontSize: '13px',
+                              color: 'var(--ink)',
+                              outline: 'none',
+                              boxSizing: 'border-box',
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowFormPassword(!showFormPassword)}
+                            style={{
+                              position: 'absolute',
+                              right: '8px',
+                              top: '50%',
+                              transform: 'translateY(-50%)',
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--muted)',
+                              cursor: 'pointer',
+                              padding: '4px',
+                              display: 'flex',
+                            }}
+                          >
+                            {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Buttons */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setIsUserFormOpen(false)}
+                          style={{
+                            padding: '8px 14px',
+                            background: 'transparent',
+                            border: '1px solid var(--line)',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 700,
+                            color: 'var(--muted)',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          style={{
+                            padding: '8px 18px',
+                            background: 'var(--accent)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            color: '#fff',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {editingUserId ? 'Update User' : 'Provision User'}
+                        </button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* TAB: ZOHO WORKDRIVE STORAGE INTEGRATION (Super Admin Only) */}
           {activeTab === 'WORKDRIVE' && isSuperAdmin && (
             <div>
