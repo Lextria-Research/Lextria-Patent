@@ -85,7 +85,8 @@ export default function App() {
   const [selectedDrafterFilter, setSelectedDrafterFilter] = useState(null);
 
   // Authenticated User Account State (Requirement 1 & 3)
-  const [currentUser, setCurrentUser] = useState(() => getCurrentUser());
+  // Authenticated User Account State (Strictly ephemeral: refresh & links always open at Login)
+  const [currentUser, setCurrentUser] = useState(null);
 
   // Interconnected Clients State from core.clients (Requirement 12)
   const [clients, setClients] = useState(() => {
@@ -152,16 +153,7 @@ export default function App() {
     localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Persist current user
-  useEffect(() => {
-    try {
-      if (currentUser) {
-        setStoredUser(currentUser);
-      } else {
-        logout();
-      }
-    } catch {}
-  }, [currentUser]);
+
 
   const handleLogout = () => {
     logout();

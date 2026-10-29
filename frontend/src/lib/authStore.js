@@ -126,39 +126,18 @@ export function authenticate(loginId, password) {
 }
 
 export function getCurrentUser() {
+  // Always return null on page load / refresh so the user must authenticate on login page
   try {
-    const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    if (!raw) return null;
-    const user = JSON.parse(raw);
-    if (!user || !user.email) return null;
-
-    // Verify user still exists in registered roster
-    const users = getRegisteredUsers();
-    const exists = users.find(
-      (u) => u.email?.trim().toLowerCase() === user.email?.trim().toLowerCase()
-    );
-    if (!exists) {
-      localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
-      return null;
-    }
-    const { password: _, ...safeUser } = exists;
-    return safeUser;
-  } catch {
-    return null;
-  }
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+  } catch {}
+  return null;
 }
 
 export function setCurrentUser(user) {
+  // Ephemeral in-memory session: do not persist to localStorage so refresh always requires login
   try {
-    if (!user) {
-      localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
-    } else {
-      const { password: _, ...safeUser } = user;
-      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(safeUser));
-    }
-  } catch (err) {
-    console.error('Failed to set current user:', err);
-  }
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+  } catch {}
 }
 
 export function logout() {
@@ -316,3 +295,4 @@ export const getRoleLabel = (role) => {
     default: return role || 'User';
   }
 };
+
