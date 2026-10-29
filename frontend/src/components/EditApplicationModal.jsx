@@ -71,6 +71,13 @@ export default function EditApplicationModal({
     specification_type: 'PS',
     classification: '',
     applicant_name: '',
+    applicant_type: 'OTHER',
+    applicant_gender: '',
+    applicant_nationality: 'Indian',
+    applicant_country: 'India',
+    applicant_address: '',
+    applicant_email: '',
+    applicant_phone: '',
     assigned_to: '',
     current_status: '',
     color_code_status: 'PURPLE',
@@ -132,6 +139,9 @@ export default function EditApplicationModal({
     gender: 'Male',
     nationality: 'Indian',
     country_of_residence: 'India',
+    email: '',
+    phone: '',
+    address: '',
   });
   const [showAddInventor, setShowAddInventor] = useState(false);
   const [miscForms, setMiscForms] = useState(() => {
@@ -197,7 +207,14 @@ export default function EditApplicationModal({
         patent_number: record.patent_number || '',
         specification_type: record.specification_type || 'PS',
         classification: record.classification || '',
-        applicant_name: record.applicant_name || 'Manipal Academy of Higher Education',
+        applicant_name: record.applicant_name || '',
+        applicant_type: record.applicant_type || record.entity_category || record.entity_type || 'OTHER',
+        applicant_gender: record.applicant_gender || '',
+        applicant_nationality: record.applicant_nationality || 'Indian',
+        applicant_country: record.applicant_country || record.applicant_country_of_residence || 'India',
+        applicant_address: record.applicant_address || '',
+        applicant_email: record.applicant_email || '',
+        applicant_phone: record.applicant_phone || '',
         assigned_to: record.assigned_to || '',
         current_status: record.current_status || '',
         color_code_status: record.color_code_status || 'PURPLE',
@@ -608,153 +625,336 @@ export default function EditApplicationModal({
                 </div>
               </div>
 
-              {/* Client & Tags Selection */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 700 }}>
-                      Interconnected Client (core.clients)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => setIsAddClientOpen(true)}
-                      style={{
-                        background: '#eff6ff',
-                        color: '#2563eb',
-                        border: '1px solid #bfdbfe',
-                        borderRadius: '5px',
-                        padding: '3px 8px',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}
-                    >
-                      <Plus size={12} /> Add New Client
-                    </button>
+              {/* Applicant / Assignee Details Section */}
+              <div
+                style={{
+                  padding: '16px',
+                  borderRadius: '8px',
+                  background: 'var(--page)',
+                  border: '1px solid var(--line)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Building size={16} color="var(--accent)" />
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                      Applicant / Assignee Details & Legal Classification
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
-                    <input
-                      type="text"
-                      value={clientSearchQuery}
-                      onChange={(e) => setClientSearchQuery(e.target.value)}
-                      placeholder="Search 200+ clients..."
-                      style={{
-                        flex: 1,
-                        padding: '6px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--page)',
-                        color: 'var(--ink)',
-                        fontSize: '12px',
-                      }}
-                    />
-                    {clientSearchQuery && (
+                  <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                    Official Entity & Contact Data for Form 1 & Form 2
+                  </span>
+                </div>
+
+                {/* Firm Client Selector & Type of Applicant */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '5px' }}>
+                      <label style={{ fontSize: '11.5px', fontWeight: 700, color: 'var(--ink)' }}>
+                        Select from Firm Clients (core.clients)
+                      </label>
                       <button
                         type="button"
-                        onClick={() => setClientSearchQuery('')}
+                        onClick={() => setIsAddClientOpen(true)}
                         style={{
-                          padding: '4px 8px',
-                          borderRadius: '5px',
-                          border: '1px solid var(--line)',
-                          background: 'var(--surface)',
-                          color: 'var(--muted)',
+                          background: 'rgba(37, 99, 235, 0.08)',
+                          color: '#2563EB',
+                          border: '1px solid rgba(37, 99, 235, 0.25)',
+                          borderRadius: '4px',
+                          padding: '2px 7px',
                           fontSize: '11px',
+                          fontWeight: 700,
                           cursor: 'pointer',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '3px'
                         }}
                       >
-                        Clear
+                        <Plus size={11} /> New Client
                       </button>
-                    )}
-                  </div>
-                  <select
-                    value={selectedClientId}
-                    onChange={(e) => {
-                      const cId = e.target.value;
-                      setSelectedClientId(cId);
-                      const found = effectiveClients.find((c) => c.id === cId);
-                      if (found) {
-                        setFormData((prev) => ({
-                          ...prev,
-                          applicant_name: found.client_name,
-                        }));
-                      }
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1.5px solid #2563EB',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                      fontWeight: 600,
-                    }}
-                  >
-                    <option value="">-- Choose Interconnected Client ({filteredClients.length} of {effectiveClients.length} Available) --</option>
-                    {filteredClients.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
-                      </option>
-                    ))}
-                  </select>
+                    </div>
 
-                  {selectedClient && (
-                    <div
-                      style={{
-                        marginTop: '8px',
-                        padding: '8px 10px',
-                        borderRadius: '6px',
-                        background: 'rgba(37, 99, 235, 0.08)',
-                        border: '1px solid rgba(37, 99, 235, 0.2)',
-                        fontSize: '11.5px',
-                        color: '#1D4ED8',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 800 }}>
-                          {selectedClient.client_code && `[${selectedClient.client_code}] `}{selectedClient.client_name}
-                        </span>
-                        <span style={{ fontSize: '10px', fontWeight: 700, padding: '1px 6px', borderRadius: '4px', background: '#2563EB', color: '#fff' }}>
-                          Interconnected ✓
-                        </span>
-                      </div>
-                      {selectedClient.entity_type && (
-                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
-                          Entity: <strong>{selectedClient.entity_type}</strong>
-                        </div>
+                    <div style={{ display: 'flex', gap: '6px', marginBottom: '6px' }}>
+                      <input
+                        type="text"
+                        value={clientSearchQuery}
+                        onChange={(e) => setClientSearchQuery(e.target.value)}
+                        placeholder="Search 200+ firm clients..."
+                        style={{
+                          flex: 1,
+                          padding: '6px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          color: 'var(--ink)',
+                          fontSize: '12px',
+                        }}
+                      />
+                      {clientSearchQuery && (
+                        <button
+                          type="button"
+                          onClick={() => setClientSearchQuery('')}
+                          style={{
+                            padding: '4px 8px',
+                            borderRadius: '5px',
+                            border: '1px solid var(--line)',
+                            background: 'var(--surface)',
+                            color: 'var(--muted)',
+                            fontSize: '11px',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Clear
+                        </button>
                       )}
                     </div>
-                  )}
 
-                  <div style={{ marginTop: '8px' }}>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '3px' }}>
-                      Custom / Override Applicant Name
+                    <select
+                      value={selectedClientId}
+                      onChange={(e) => {
+                        const cId = e.target.value;
+                        setSelectedClientId(cId);
+                        const found = effectiveClients.find((c) => c.id === cId);
+                        if (found) {
+                          setFormData((prev) => ({
+                            ...prev,
+                            applicant_name: found.client_name || prev.applicant_name,
+                            applicant_type: found.entity_type === 'INDIVIDUAL' ? 'NATURAL_PERSON' : (found.entity_type || prev.applicant_type),
+                            applicant_address: found.address || prev.applicant_address,
+                            applicant_email: found.email || prev.applicant_email,
+                            applicant_phone: found.phone || prev.applicant_phone,
+                          }));
+                        }
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '6px',
+                        border: '1.5px solid #2563EB',
+                        background: 'var(--surface)',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                        color: 'var(--ink)',
+                      }}
+                    >
+                      <option value="">-- Choose Client ({filteredClients.length} Available) --</option>
+                      {filteredClients.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                      Type of Applicant *
+                    </label>
+                    <select
+                      name="applicant_type"
+                      value={formData.applicant_type || 'OTHER'}
+                      onChange={handleChange}
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12.5px',
+                        fontWeight: 600,
+                      }}
+                    >
+                      <option value="NATURAL_PERSON">Natural Person / Individual</option>
+                      <option value="STARTUP">Startup (Eligible for 80% fee rebate)</option>
+                      <option value="SMALL_ENTITY">Small Entity (MSME)</option>
+                      <option value="EDUCATIONAL">Educational Institution / University</option>
+                      <option value="OTHER">Other / Large Entity / Corporate</option>
+                    </select>
+                    <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '4px' }}>
+                      Determines statutory government fee rates on Form 1, Form 9, and Form 18
+                    </div>
+                  </div>
+                </div>
+
+                {/* Detailed Applicant Input Fields */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
+                  <div style={{ gridColumn: formData.applicant_type === 'NATURAL_PERSON' ? 'auto' : 'span 2' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Name of Applicant *
                     </label>
                     <input
                       type="text"
                       name="applicant_name"
                       value={formData.applicant_name}
                       onChange={handleChange}
-                      placeholder="Applicant Name..."
+                      placeholder="e.g. Manipal Academy of Higher Education or Dr. Rajesh Kumar"
+                      required
                       style={{
                         width: '100%',
-                        padding: '8px 12px',
-                        borderRadius: '6px',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
                         border: '1px solid var(--line)',
-                        background: 'var(--page)',
+                        background: 'var(--surface)',
                         color: 'var(--ink)',
-                        fontSize: '13px',
+                        fontSize: '12px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  {formData.applicant_type === 'NATURAL_PERSON' && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                        Gender (Individual Applicant) *
+                      </label>
+                      <select
+                        name="applicant_gender"
+                        value={formData.applicant_gender || 'Male'}
+                        onChange={handleChange}
+                        style={{
+                          width: '100%',
+                          padding: '7px 10px',
+                          borderRadius: '5px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          color: 'var(--ink)',
+                          fontSize: '12px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <option value="Other">Other</option>
+                        <option value="Prefer not to say">Prefer not to say</option>
+                      </select>
+                    </div>
+                  )}
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Nationality *
+                    </label>
+                    <input
+                      type="text"
+                      name="applicant_nationality"
+                      value={formData.applicant_nationality || 'Indian'}
+                      onChange={handleChange}
+                      placeholder="e.g. Indian"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Country of Residence / Incorporation *
+                    </label>
+                    <input
+                      type="text"
+                      name="applicant_country"
+                      value={formData.applicant_country || 'India'}
+                      onChange={handleChange}
+                      placeholder="e.g. India"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Official Email Address
+                    </label>
+                    <input
+                      type="email"
+                      name="applicant_email"
+                      value={formData.applicant_email || ''}
+                      onChange={handleChange}
+                      placeholder="e.g. ip-office@institution.edu"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Official Phone / Mobile Number
+                    </label>
+                    <input
+                      type="text"
+                      name="applicant_phone"
+                      value={formData.applicant_phone || ''}
+                      onChange={handleChange}
+                      placeholder="e.g. +91 820 2922400"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
+                        boxSizing: 'border-box'
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ gridColumn: 'span 2' }}>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '4px' }}>
+                      Full Registered / Postal Address *
+                    </label>
+                    <textarea
+                      name="applicant_address"
+                      value={formData.applicant_address || ''}
+                      onChange={handleChange}
+                      rows={2}
+                      placeholder="e.g. Madhav Nagar, Manipal, Udupi District, Karnataka 576104, India"
+                      style={{
+                        width: '100%',
+                        padding: '7px 10px',
+                        borderRadius: '5px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '12px',
                         boxSizing: 'border-box',
+                        resize: 'vertical'
                       }}
                     />
                   </div>
                 </div>
 
+                {/* Tags Selection inside Applicant / Metadata */}
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, marginBottom: '6px' }}>
-                    Assigned Tags (Requirement 10)
+                  <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 700, color: 'var(--ink)', marginBottom: '6px' }}>
+                    Assigned Tags
                   </label>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                     {['Priority', 'Ticket Raised', 'Critical', 'Political', ...tags.filter(t => !['priority','ticket raised','critical','political'].includes(t.name.toLowerCase())).map(t => t.name)].map((tg) => {
@@ -768,7 +968,7 @@ export default function EditApplicationModal({
                             padding: '4px 10px',
                             borderRadius: '16px',
                             border: `1px solid ${isSelected ? '#2563EB' : 'var(--line)'}`,
-                            background: isSelected ? 'rgba(37, 99, 235, 0.15)' : 'var(--page)',
+                            background: isSelected ? 'rgba(37, 99, 235, 0.15)' : 'var(--surface)',
                             color: isSelected ? '#1D4ED8' : 'var(--muted)',
                             fontSize: '11px',
                             fontWeight: isSelected ? 800 : 600,
@@ -903,7 +1103,7 @@ export default function EditApplicationModal({
                       </div>
 
                       {/* 5. Country of Residence */}
-                      <div style={{ gridColumn: 'span 2' }}>
+                      <div>
                         <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
                           Country of Residence
                         </label>
@@ -913,6 +1113,48 @@ export default function EditApplicationModal({
                           value={newInventor.country_of_residence}
                           onChange={(e) => setNewInventor({ ...newInventor, country_of_residence: e.target.value })}
                           style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 6. Email */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="e.g. rajesh.kumar@institution.edu"
+                          value={newInventor.email || ''}
+                          onChange={(e) => setNewInventor({ ...newInventor, email: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 7. Phone */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Phone / Mobile Number
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. +91 98765 43210"
+                          value={newInventor.phone || ''}
+                          onChange={(e) => setNewInventor({ ...newInventor, phone: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box' }}
+                        />
+                      </div>
+
+                      {/* 8. Full Postal Address */}
+                      <div style={{ gridColumn: 'span 2' }}>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--ink)', marginBottom: '5px' }}>
+                          Full Postal Address
+                        </label>
+                        <textarea
+                          rows={2}
+                          placeholder="e.g. Dept of Biotechnology, Main Campus, Bengaluru, Karnataka 560001, India"
+                          value={newInventor.address || ''}
+                          onChange={(e) => setNewInventor({ ...newInventor, address: e.target.value })}
+                          style={{ width: '100%', padding: '7px 10px', borderRadius: '5px', border: '1px solid var(--line)', background: 'var(--page)', color: 'var(--ink)', fontSize: '12px', boxSizing: 'border-box', resize: 'vertical' }}
                         />
                       </div>
                     </div>
@@ -935,6 +1177,9 @@ export default function EditApplicationModal({
                             gender: 'Male',
                             nationality: 'Indian',
                             country_of_residence: 'India',
+                            email: '',
+                            phone: '',
+                            address: '',
                           });
                           setShowAddInventor(false);
                         }}
@@ -968,15 +1213,24 @@ export default function EditApplicationModal({
                         }}
                       >
                         <div>
-                          <span style={{ fontWeight: 800, color: 'var(--ink)', marginRight: '6px' }}>
-                            {idx + 1}. {inv.name}
-                          </span>
-                          <span style={{ color: 'var(--accent)', fontWeight: 600, marginRight: '6px' }}>
-                            • {inv.institution || 'No institution'}
-                          </span>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>
-                            ({inv.gender} • {inv.nationality} • {inv.country_of_residence})
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--ink)' }}>
+                              {idx + 1}. {inv.name}
+                            </span>
+                            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>
+                              • {inv.institution || 'No institution'}
+                            </span>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>
+                              ({inv.gender} • {inv.nationality} • {inv.country_of_residence})
+                            </span>
+                          </div>
+                          {(inv.email || inv.phone || inv.address) && (
+                            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px', display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                              {inv.email && <span>Email: <strong style={{ color: 'var(--ink)' }}>{inv.email}</strong></span>}
+                              {inv.phone && <span>Phone: <strong style={{ color: 'var(--ink)' }}>{inv.phone}</strong></span>}
+                              {inv.address && <span>Address: {inv.address}</span>}
+                            </div>
+                          )}
                         </div>
                         <button
                           type="button"

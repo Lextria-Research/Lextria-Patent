@@ -198,6 +198,10 @@ export default function SlideOverDrawer({
 
   // Applicant Profile state
   const [applicantName, setApplicantName] = useState(record.applicant_name || '');
+  const [applicantType, setApplicantType] = useState(record.applicant_type || record.entity_category || 'OTHER');
+  const [applicantGender, setApplicantGender] = useState(record.applicant_gender || '');
+  const [applicantNationality, setApplicantNationality] = useState(record.applicant_nationality || 'Indian');
+  const [applicantCountry, setApplicantCountry] = useState(record.applicant_country || record.applicant_country_of_residence || 'India');
   const [applicantAddress, setApplicantAddress] = useState(record.applicant_address || '');
   const [entityCategory, setEntityCategory] = useState(record.entity_category || 'EDUCATIONAL_INSTITUTION');
   const [applicantEmail, setApplicantEmail] = useState(record.applicant_email || '');
@@ -282,6 +286,10 @@ export default function SlideOverDrawer({
     setCommitmentDate(record.client_commitment_date || '');
     setWorkdriveLink(record.workdrive_folder_url || '');
     setApplicantName(record.applicant_name || '');
+    setApplicantType(record.applicant_type || record.entity_category || 'OTHER');
+    setApplicantGender(record.applicant_gender || '');
+    setApplicantNationality(record.applicant_nationality || 'Indian');
+    setApplicantCountry(record.applicant_country || record.applicant_country_of_residence || 'India');
     setApplicantAddress(record.applicant_address || '');
     setEntityCategory(record.entity_category || 'EDUCATIONAL_INSTITUTION');
     setStatusNotes(record.status_notes || '');
@@ -357,7 +365,10 @@ export default function SlideOverDrawer({
     const text = [
       `APPLICANT DETAILS:`,
       `Name: ${applicantName || record.applicant_name || 'N/A'}`,
-      `Entity Classification: ${entityCategory || record.entity_category || 'N/A'}`,
+      `Type / Classification: ${applicantType || record.applicant_type || entityCategory || record.entity_category || 'N/A'}`,
+      ...(applicantGender ? [`Gender: ${applicantGender}`] : []),
+      `Nationality: ${applicantNationality || record.applicant_nationality || 'Indian'}`,
+      `Country of Residence: ${applicantCountry || record.applicant_country || 'India'}`,
       `Address: ${applicantAddress || record.applicant_address || 'Address on file'}`,
       `Email: ${applicantEmail || record.applicant_email || 'N/A'}`,
       `Phone: ${applicantPhone || record.applicant_phone || 'N/A'}`
@@ -376,7 +387,8 @@ export default function SlideOverDrawer({
         `${idx + 1}. ${inv.name}\n` +
         `   Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}\n` +
         `   Gender: ${inv.gender || 'N/A'} | Nationality: ${inv.nationality || 'N/A'} | Country of Residence: ${inv.country_of_residence || 'N/A'}\n` +
-        `   Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}`
+        `   Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}\n` +
+        `   Address: ${inv.address || 'N/A'}`
       )
     ].join('\n\n');
     copyToClipboard(text, 'inventors_all');
@@ -390,7 +402,8 @@ export default function SlideOverDrawer({
       `Nationality: ${inv.nationality || 'N/A'}`,
       `Country of Residence: ${inv.country_of_residence || 'N/A'}`,
       `Email: ${inv.email || 'N/A'}`,
-      `Phone: ${inv.phone || 'N/A'}`
+      `Phone: ${inv.phone || 'N/A'}`,
+      `Address: ${inv.address || 'N/A'}`
     ].join('\n');
     copyToClipboard(text, `inv_${inv.id || idx}`);
   };
@@ -852,8 +865,20 @@ export default function SlideOverDrawer({
                   </div>
 
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: 'var(--muted)' }}>
-                    <span>Classification: <strong>{entityCategory || record.entity_category || 'General Entity'}</strong></span>
+                    <span>Type: <strong>{applicantType || record.applicant_type || entityCategory || record.entity_category || 'General Entity'}</strong></span>
+                    {applicantGender && (
+                      <>
+                        <span>•</span>
+                        <span>Gender: <strong>{applicantGender}</strong></span>
+                      </>
+                    )}
                     <span>•</span>
+                    <span>Nationality: <strong>{applicantNationality || record.applicant_nationality || 'Indian'}</strong></span>
+                    <span>•</span>
+                    <span>Residence: <strong>{applicantCountry || record.applicant_country || 'India'}</strong></span>
+                  </div>
+
+                  <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--muted)' }}>
                     <span>Address: {applicantAddress || record.applicant_address || 'Address on file'}</span>
                   </div>
 
@@ -977,13 +1002,15 @@ export default function SlideOverDrawer({
                                 <span>{inv.department}</span>
                               </>
                             )}
-                            {inv.email && (
-                              <>
-                                <span>•</span>
-                                <span>{inv.email}</span>
-                              </>
-                            )}
                           </div>
+
+                          {(inv.email || inv.phone || inv.address) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                              {inv.email && <span>Email: <strong style={{ color: 'var(--ink)' }}>{inv.email}</strong></span>}
+                              {inv.phone && <span>Phone: <strong style={{ color: 'var(--ink)' }}>{inv.phone}</strong></span>}
+                              {inv.address && <span>Address: {inv.address}</span>}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
