@@ -12,6 +12,14 @@ import { validateSection17PostDating, addDays, addMonths, calculateForm27Deadlin
 import { getMiscFormStatusInfo, getMainFormTypeInfo } from '../constants/miscFormsConstants';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
+const APPLICANT_TYPE_LABELS = {
+  NATURAL_PERSON: 'Natural Person / Individual',
+  STARTUP: 'Startup (80% fee rebate)',
+  SMALL_ENTITY: 'Small Entity (MSME)',
+  EDUCATIONAL: 'Educational Institution / University',
+  OTHER: 'Other / Large Entity / Corporate',
+};
+
 export default function SlideOverDrawer({
   record,
   onClose,
@@ -207,6 +215,36 @@ export default function SlideOverDrawer({
   const [applicantEmail, setApplicantEmail] = useState(record.applicant_email || '');
   const [applicantPhone, setApplicantPhone] = useState(record.applicant_phone || '');
 
+  // Normalized Multiple Applicants List
+  const applicantsList = useMemo(() => {
+    try {
+      const saved = localStorage.getItem(`patent_applicants_${record.project_code}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    if (record.applicants && Array.isArray(record.applicants) && record.applicants.length > 0) {
+      return record.applicants;
+    }
+    if (record.applicant_name) {
+      const names = record.applicant_name.split(/;\s*/).filter(Boolean);
+      return names.map((nm, idx) => ({
+        id: `app_${idx + 1}`,
+        name: nm,
+        type: idx === 0 ? (record.applicant_type || record.entity_category || record.entity_type || 'OTHER') : 'OTHER',
+        gender: idx === 0 ? (record.applicant_gender || '') : '',
+        nationality: idx === 0 ? (record.applicant_nationality || 'Indian') : 'Indian',
+        country_of_residence: idx === 0 ? (record.applicant_country || record.applicant_country_of_residence || 'India') : 'India',
+        address: idx === 0 ? (record.applicant_address || '') : '',
+        email: idx === 0 ? (record.applicant_email || '') : '',
+        phone: idx === 0 ? (record.applicant_phone || '') : '',
+        is_primary: idx === 0,
+      }));
+    }
+    return [];
+  }, [record.project_code, record.applicants, record.applicant_name, record.applicant_type, record.applicant_address, record.applicant_email, record.applicant_phone, record.applicant_gender, record.applicant_nationality, record.applicant_country]);
+
   // Normalized Inventors Roster state (read-only in overview, editable via Edit modal)
   const inventorsList = useMemo(() => {
     try {
@@ -329,12 +367,18 @@ export default function SlideOverDrawer({
       `--- TITLE OF INVENTION ---`,
       `${record.title || 'Untitled Invention'}`,
       ``,
-      `--- APPLICANT / ASSIGNEE ---`,
-      `Applicant Name: ${applicantName || record.applicant_name || 'N/A'}`,
-      `Entity Classification: ${entityCategory || record.entity_category || 'N/A'}`,
-      `Registered Address: ${applicantAddress || record.applicant_address || 'Address on file'}`,
-      `Contact Email: ${applicantEmail || record.applicant_email || 'N/A'}`,
-      `Contact Phone: ${applicantPhone || record.applicant_phone || 'N/A'}`,
+      `--- APPLICANTS ROSTER (${applicantsList.length}) ---`,
+      (applicantsList && applicantsList.length > 0
+        ? applicantsList.map((app, idx) =>
+            `  ${idx + 1}. ${app.name} ${app.is_primary ? '(PRIMARY APPLICANT)' : ''}\n` +
+            `     Type: ${APPLICANT_TYPE_LABELS[app.type] || app.type || 'N/A'}\n` +
+            (app.gender ? `     Gender: ${app.gender}\n` : '') +
+            `     Nationality: ${app.nationality || 'Indian'} | Country: ${app.country_of_residence || 'India'}\n` +
+            `     Address: ${app.address || 'Address on file'}\n` +
+            `     Email: ${app.email || 'N/A'} | Phone: ${app.phone || 'N/A'}`
+          ).join('\n\n')
+        : `  Applicant Name: ${applicantName || record.applicant_name || 'N/A'}\n  Address: ${applicantAddress || record.applicant_address || 'Address on file'}`
+      ),
       ``,
       `--- INVENTORS ROSTER (${inventorsList.length}) ---`,
       inventorsText,
@@ -362,18 +406,36 @@ export default function SlideOverDrawer({
   };
 
   const handleCopyApplicantDetails = () => {
+    if (!applicantsList || applicantsList.length === 0) {
+      copyToClipboard('No applicant details available.', 'applicant');
+      return;
+    }
     const text = [
-      `APPLICANT DETAILS:`,
-      `Name: ${applicantName || record.applicant_name || 'N/A'}`,
-      `Type / Classification: ${applicantType || record.applicant_type || entityCategory || record.entity_category || 'N/A'}`,
-      ...(applicantGender ? [`Gender: ${applicantGender}`] : []),
-      `Nationality: ${applicantNationality || record.applicant_nationality || 'Indian'}`,
-      `Country of Residence: ${applicantCountry || record.applicant_country || 'India'}`,
-      `Address: ${applicantAddress || record.applicant_address || 'Address on file'}`,
-      `Email: ${applicantEmail || record.applicant_email || 'N/A'}`,
-      `Phone: ${applicantPhone || record.applicant_phone || 'N/A'}`
-    ].join('\n');
+      `APPLICANTS ROSTER (${applicantsList.length}):`,
+      ...applicantsList.map((app, idx) => 
+        `${idx + 1}. ${app.name} ${app.is_primary ? '(PRIMARY APPLICANT)' : ''}\n` +
+        `   Type: ${APPLICANT_TYPE_LABELS[app.type] || app.type || 'N/A'}\n` +
+        (app.gender ? `   Gender: ${app.gender}\n` : '') +
+        `   Nationality: ${app.nationality || 'Indian'} | Residence: ${app.country_of_residence || 'India'}\n` +
+        `   Address: ${app.address || 'Address on file'}\n` +
+        `   Email: ${app.email || 'N/A'} | Phone: ${app.phone || 'N/A'}`
+      )
+    ].join('\n\n');
     copyToClipboard(text, 'applicant');
+  };
+
+  const handleCopySingleApplicant = (app, idx) => {
+    const text = [
+      `Applicant ${idx + 1}: ${app.name} ${app.is_primary ? '(PRIMARY APPLICANT)' : ''}`,
+      `Type: ${APPLICANT_TYPE_LABELS[app.type] || app.type || 'N/A'}`,
+      ...(app.gender ? [`Gender: ${app.gender}`] : []),
+      `Nationality: ${app.nationality || 'Indian'}`,
+      `Country of Residence: ${app.country_of_residence || 'India'}`,
+      `Address: ${app.address || 'Address on file'}`,
+      `Email: ${app.email || 'N/A'}`,
+      `Phone: ${app.phone || 'N/A'}`
+    ].join('\n');
+    copyToClipboard(text, `app_${app.id || idx}`);
   };
 
   const handleCopyAllInventors = () => {
@@ -831,11 +893,11 @@ export default function SlideOverDrawer({
                   </div>
                 </div>
 
-                {/* 3. Applicant Details */}
-                <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                {/* 3. Applicants Details Roster */}
+                <div style={{ padding: '14px', borderRadius: '8px', background: 'var(--page)', border: '1px solid var(--line)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 700, textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Building size={14} color="var(--accent)" /> Applicant Details
+                      <Building size={14} color="var(--accent)" /> Applicants Details ({applicantsList.length})
                     </div>
                     <button
                       type="button"
@@ -853,45 +915,86 @@ export default function SlideOverDrawer({
                         alignItems: 'center',
                         gap: '4px'
                       }}
-                      title="Copy Applicant Information"
+                      title="Copy All Applicants"
                     >
                       {copiedField === 'applicant' ? <Check size={11} color="#059669" /> : <Copy size={11} />}
-                      {copiedField === 'applicant' ? 'Copied' : 'Copy Applicant'}
+                      {copiedField === 'applicant' ? 'Copied All' : 'Copy All Applicants'}
                     </button>
                   </div>
 
-                  <div style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ink)' }}>
-                    {applicantName || record.applicant_name || 'N/A'}
-                  </div>
+                  {/* List of Applicants */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {applicantsList.map((app, idx) => (
+                      <div
+                        key={app.id || idx}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          background: 'var(--surface)',
+                          border: app.is_primary ? '1.5px solid rgba(37, 99, 235, 0.35)' : '1px solid var(--line)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '5px'
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '13.5px', fontWeight: 800, color: 'var(--ink)' }}>
+                              {idx + 1}. {app.name}
+                            </span>
+                            {app.is_primary && (
+                              <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 7px', borderRadius: '10px', background: 'rgba(37, 99, 235, 0.15)', color: '#2563EB' }}>
+                                ★ PRIMARY
+                              </span>
+                            )}
+                            <span style={{ fontSize: '10.5px', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', background: 'var(--page)', color: 'var(--muted)', border: '1px solid var(--line)' }}>
+                              {APPLICANT_TYPE_LABELS[app.type] || app.type || 'General Entity'}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                              ({app.nationality || 'Indian'} · {app.country_of_residence || 'India'})
+                            </span>
+                          </div>
 
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '6px', fontSize: '12px', color: 'var(--muted)' }}>
-                    <span>Type: <strong>{applicantType || record.applicant_type || entityCategory || record.entity_category || 'General Entity'}</strong></span>
-                    {applicantGender && (
-                      <>
-                        <span>•</span>
-                        <span>Gender: <strong>{applicantGender}</strong></span>
-                      </>
+                          <button
+                            type="button"
+                            onClick={() => handleCopySingleApplicant(app, idx)}
+                            style={{
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--line)',
+                              background: copiedField === `app_${app.id || idx}` ? 'rgba(16, 185, 129, 0.15)' : 'var(--page)',
+                              color: copiedField === `app_${app.id || idx}` ? '#059669' : 'var(--muted)',
+                              fontSize: '10.5px',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '3px'
+                            }}
+                            title="Copy Applicant Info"
+                          >
+                            {copiedField === `app_${app.id || idx}` ? <Check size={10} color="#059669" /> : <Copy size={10} />}
+                            {copiedField === `app_${app.id || idx}` ? 'Copied' : 'Copy'}
+                          </button>
+                        </div>
+
+                        <div style={{ fontSize: '11.5px', color: 'var(--muted)', lineHeight: 1.4 }}>
+                          <span>Address: <strong>{app.address || 'Address on file'}</strong></span>
+                          <div style={{ display: 'flex', gap: '12px', marginTop: '3px', flexWrap: 'wrap' }}>
+                            {app.type === 'NATURAL_PERSON' && app.gender && <span>Gender: <strong>{app.gender}</strong></span>}
+                            {app.email && <span>Email: <strong>{app.email}</strong></span>}
+                            {app.phone && <span>Phone: <strong>{app.phone}</strong></span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+
+                    {applicantsList.length === 0 && (
+                      <div style={{ padding: '12px', textAlign: 'center', color: 'var(--muted)', fontSize: '12px' }}>
+                        No applicant details available for this record.
+                      </div>
                     )}
-                    <span>•</span>
-                    <span>Nationality: <strong>{applicantNationality || record.applicant_nationality || 'Indian'}</strong></span>
-                    <span>•</span>
-                    <span>Residence: <strong>{applicantCountry || record.applicant_country || 'India'}</strong></span>
                   </div>
-
-                  <div style={{ marginTop: '6px', fontSize: '12px', color: 'var(--muted)' }}>
-                    <span>Address: {applicantAddress || record.applicant_address || 'Address on file'}</span>
-                  </div>
-
-                  {(applicantEmail || record.applicant_email || applicantPhone || record.applicant_phone) && (
-                    <div style={{ display: 'flex', gap: '14px', marginTop: '6px', fontSize: '11.5px', color: 'var(--muted)' }}>
-                      {(applicantEmail || record.applicant_email) && (
-                        <span>Email: <strong>{applicantEmail || record.applicant_email}</strong></span>
-                      )}
-                      {(applicantPhone || record.applicant_phone) && (
-                        <span>Phone: <strong>{applicantPhone || record.applicant_phone}</strong></span>
-                      )}
-                    </div>
-                  )}
                 </div>
 
                 {/* 4. Inventors Details Roster (Read-only, additions/edits inside Edit modal) */}
