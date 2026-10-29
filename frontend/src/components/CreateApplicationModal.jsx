@@ -7,7 +7,6 @@ import {
   Layers, AlertCircle
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
-import { getFormFee, isReducedFeeEntity, formatINR } from '../utils/feeSchedule';
 import { getStatusColor } from '../constants/patentStatuses';
 import PhasedStatusSelector from './PhasedStatusSelector';
 import AddClientModal from './AddClientModal';
@@ -299,20 +298,6 @@ export default function CreateApplicationModal({
   const statutoryCalculations = useMemo(() => {
     return calculateAllStatutoryDeadlines(formData);
   }, [formData]);
-
-  // Government Statutory Fees for Current Applicant Entity Category
-  const statutoryFees = useMemo(() => {
-    const cat = formData.entity_category || 'OTHER';
-    return {
-      f1: getFormFee('F1', cat),
-      f2: getFormFee('F2', cat),
-      f3: getFormFee('F3', cat),
-      f9: getFormFee('F9', cat),
-      f18: getFormFee('F18', cat),
-      f30: getFormFee('F30', cat),
-      sec17: getFormFee('SEC17', cat)
-    };
-  }, [formData.entity_category]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -1694,83 +1679,6 @@ export default function CreateApplicationModal({
                 <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
                   No word limit for claims. First 10 claims included in basic fee; subsequent claims incur ₹320 (Reduced) / ₹1,600 (Others) each.
                 </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 6: Official IPO Statutory Government Fee Schedule (Requirement 1) */}
-          <div style={{ marginBottom: '20px', paddingTop: '16px', borderTop: '1px solid var(--line)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)', margin: 0 }}>
-                6. Government Fee Schedule (First Schedule of Indian Patents Rules)
-              </h3>
-              <span style={{
-                fontSize: '11px',
-                fontWeight: 700,
-                padding: '2px 8px',
-                borderRadius: '6px',
-                background: isReducedFeeEntity(formData.entity_category) ? '#dbeafe' : '#f1f5f9',
-                color: isReducedFeeEntity(formData.entity_category) ? '#1e40af' : '#475569'
-              }}>
-                Current Applicant Rate: {isReducedFeeEntity(formData.entity_category) ? '80% Reduced (Natural / Startup / Small / Edu)' : 'Standard (Others / Large Entity)'}
-              </span>
-            </div>
-
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))',
-              gap: '8px',
-              padding: '12px',
-              borderRadius: '8px',
-              background: 'var(--page)',
-              border: '1px solid var(--line)'
-            }}>
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 1 (Application)</span>
-                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f1.label}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Basic fee up to 30p, 10c</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 2 (Specification)</span>
-                <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Up to 30p & 10 claims</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 3 (Sec 8 Statement)</span>
-                <strong style={{ fontSize: '13px', color: '#059669' }}>Free (₹0)</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Foreign applications</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 9 (Early Pub)</span>
-                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f9.label}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11A(2)</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 18 (RFE Exam)</span>
-                <strong style={{ fontSize: '13px', color: '#2563eb' }}>{statutoryFees.f18.label}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Section 11B</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 17 (Postdating)</span>
-                <strong style={{ fontSize: '13px', color: '#7c3aed' }}>{statutoryFees.sec17.label}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Max 6 months leeway</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Form 30 (Hearing Attendance)</span>
-                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{statutoryFees.f30.label}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>Rule 62(2) notice</span>
-              </div>
-
-              <div style={{ padding: '6px 8px', borderRadius: '5px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
-                <span style={{ fontSize: '10.5px', color: 'var(--muted)', display: 'block' }}>Sec 53 Renewals (Y3-Y6)</span>
-                <strong style={{ fontSize: '13px', color: 'var(--ink)' }}>{isReducedFeeEntity(formData.entity_category) ? '₹800/yr' : '₹4,000/yr'}</strong>
-                <span style={{ fontSize: '9.5px', color: 'var(--muted)', display: 'block' }}>10% discount for 4+ yr e-filing</span>
               </div>
             </div>
           </div>
