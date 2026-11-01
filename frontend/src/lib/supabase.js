@@ -43,3 +43,4 @@ export const coreSupabase = createClient(supabaseUrl, serviceRoleKey, {
 export const patentDb = supabase.schema('patent');
 export const coreDb = coreSupabase.schema('core');
 export const litigatorDb = coreSupabase.schema('litigator');
+export const financeDb = coreSupabase.schema('finance');

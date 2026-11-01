@@ -29,6 +29,12 @@ import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
 import { normalizeStatus } from './constants/patentStatuses';
 import { supabase, patentDb, coreDb } from './lib/supabase';
+import {
+  ensurePatentProjectCode,
+  publishPatentMatterEvent,
+  recordOfficialGovtFee,
+  resolveClientId
+} from './lib/ecosystemSync';
 import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings, LogOut,
@@ -398,8 +404,13 @@ export default function App() {
         );
 
         const syncTask = async () => {
+          const pcId = await ensurePatentProjectCode(newRecord);
+          const resolvedClientId = newRecord.client_id || resolveClientId(newRecord.applicant_name, newRecord.is_mahe);
+
           await patentDb.from('applications').insert({
             project_code: newRecord.project_code,
+            project_code_id: pcId,
+            client_id: resolvedClientId,
             title: newRecord.title,
             application_number: newRecord.application_number || null,
             specification_type: newRecord.specification_type || 'PS',
@@ -428,6 +439,19 @@ export default function App() {
             form_26_deadline: newRecord.form_26_deadline || null,
             f1_status: newRecord.f1_status,
             f26_status: newRecord.f26_status,
+          });
+
+          // Ecosystem Interlinking: Publish filing matter event
+          const isCS = newRecord.specification_type === 'CS';
+          await publishPatentMatterEvent({
+            projectCode: newRecord.project_code,
+            projectCodeId: pcId,
+            eventCode: isCS ? 'CS_FILED' : 'PS_FILED',
+            title: isCS ? `Complete Patent Application Lodged: ${newRecord.title || newRecord.project_code}` : `Provisional Patent Application Lodged: ${newRecord.title || newRecord.project_code}`,
+            detail: `Filed with Indian Patent Office. Applicant: ${newRecord.applicant_name || 'MAHE'}`,
+            occurredAt: newRecord.ps_filing_date || newRecord.cs_filing_date || new Date().toISOString(),
+            clientVisible: true,
+            clientLabel: isCS ? 'Complete specification filed' : 'Provisional application filed',
           });
         };
 
@@ -548,10 +572,15 @@ export default function App() {
         );
 
         const syncTask = async () => {
+          const pcId = await ensurePatentProjectCode(finalizedRecord);
+          const resolvedClientId = finalizedRecord.client_id || resolveClientId(finalizedRecord.applicant_name, finalizedRecord.is_mahe);
+
           // 1. Applications table
           await patentDb
             .from('applications')
             .update({
+              project_code_id: pcId,
+              client_id: resolvedClientId,
               title: finalizedRecord.title,
               application_number: finalizedRecord.application_number || null,
               patent_number: finalizedRecord.patent_number || null,
@@ -602,6 +631,111 @@ export default function App() {
               form_18_filing_date: finalizedRecord.form_18_filing_date || null,
               rfe_deadline: finalizedRecord.rfe_deadline || null,
             });
+
+          // 4. Milestone Event Detection & Emission into core.matter_events
+          if (finalizedRecord.cs_filing_date && finalizedRecord.cs_filing_date !== existing.cs_filing_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'CS_FILED',
+              title: `Complete Specification Filed: ${finalizedRecord.title || projectCode}`,
+              detail: `Complete specification successfully lodged on ${finalizedRecord.cs_filing_date}`,
+              occurredAt: finalizedRecord.cs_filing_date,
+              clientVisible: true,
+              clientLabel: 'Complete specification filed',
+            });
+          }
+
+          if (finalizedRecord.form_18_filing_date && finalizedRecord.form_18_filing_date !== existing.form_18_filing_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'RFE_FILED',
+              title: `Request for Examination (Form 18) Filed: ${finalizedRecord.title || projectCode}`,
+              detail: `Examination requested before the Indian Patent Office on ${finalizedRecord.form_18_filing_date}`,
+              occurredAt: finalizedRecord.form_18_filing_date,
+              clientVisible: true,
+              clientLabel: 'Examination requested',
+            });
+          }
+
+          if (finalizedRecord.fer_notice_date && finalizedRecord.fer_notice_date !== existing.fer_notice_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'FER_ISSUED',
+              title: `First Examination Report (FER) Issued: ${finalizedRecord.title || projectCode}`,
+              detail: `Examination report issued by Patent Office on ${finalizedRecord.fer_notice_date}. Reply deadline: ${finalizedRecord.fer_reply_deadline || '6 months'}`,
+              occurredAt: finalizedRecord.fer_notice_date,
+              clientVisible: true,
+              clientLabel: 'First examination report received',
+            });
+          }
+
+          if (finalizedRecord.fer_reply_filing_date && finalizedRecord.fer_reply_filing_date !== existing.fer_reply_filing_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'FER_REPLY_FILED',
+              title: `FER Response Lodged: ${finalizedRecord.title || projectCode}`,
+              detail: `Formal response and amended claims submitted to Patent Office on ${finalizedRecord.fer_reply_filing_date}`,
+              occurredAt: finalizedRecord.fer_reply_filing_date,
+              clientVisible: true,
+              clientLabel: 'Response to examination report filed',
+            });
+          }
+
+          if (finalizedRecord.hearing_date && finalizedRecord.hearing_date !== existing.hearing_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'PATENT_HEARING_ATTENDED',
+              title: `Patent Hearing Attended: ${finalizedRecord.title || projectCode}`,
+              detail: `Hearing conducted before the Controller of Patents on ${finalizedRecord.hearing_date}`,
+              occurredAt: finalizedRecord.hearing_date,
+              clientVisible: true,
+              clientLabel: 'Hearing held at the Patent Office',
+            });
+          }
+
+          if (finalizedRecord.ws_filing_date && finalizedRecord.ws_filing_date !== existing.ws_filing_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'PATENT_WS_FILED',
+              title: `Post-Hearing Written Submissions Filed: ${finalizedRecord.title || projectCode}`,
+              detail: `Rule 28(7) written submission and arguments submitted on ${finalizedRecord.ws_filing_date}`,
+              occurredAt: finalizedRecord.ws_filing_date,
+              clientVisible: true,
+              clientLabel: 'Written submission filed',
+            });
+          }
+
+          if (finalizedRecord.publication_date && finalizedRecord.publication_date !== existing.publication_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'PATENT_PUBLISHED',
+              title: `Patent Published: ${finalizedRecord.title || projectCode}`,
+              detail: `Published in the official Patent Office Journal on ${finalizedRecord.publication_date}`,
+              occurredAt: finalizedRecord.publication_date,
+              clientVisible: true,
+              clientLabel: 'Patent published',
+            });
+          }
+
+          if (finalizedRecord.grant_date && finalizedRecord.grant_date !== existing.grant_date) {
+            await publishPatentMatterEvent({
+              projectCode,
+              projectCodeId: pcId,
+              eventCode: 'PATENT_GRANTED',
+              title: `Patent Granted: ${finalizedRecord.title || projectCode}`,
+              detail: `Patent granted by Indian Patent Office on ${finalizedRecord.grant_date}${finalizedRecord.patent_number ? ' (Patent No: ' + finalizedRecord.patent_number + ')' : ''}`,
+              occurredAt: finalizedRecord.grant_date,
+              clientVisible: true,
+              clientLabel: 'Patent granted',
+            });
+          }
         };
 
         await Promise.race([syncTask(), timeoutPromise]);

@@ -7,7 +7,8 @@ import {
   Minimize2, Search, FileCode, CheckCircle, ChevronRight
 } from 'lucide-react';
 import { getStatusColor, STATUTORY_STATUSES } from '../constants/patentStatuses';
-import { getFormFee, formatINR } from '../utils/feeSchedule';
+import { getFormFee, formatINR, isReducedFeeEntity } from '../utils/feeSchedule';
+import { recordOfficialGovtFee } from '../lib/ecosystemSync.js';
 import { validateSection17PostDating, addDays, addMonths, calculateForm27Deadlines } from '../utils/statutoryDeadlines';
 import { getMiscFormStatusInfo, getMainFormTypeInfo } from '../constants/miscFormsConstants';
 import DEFAULT_CLIENTS from '../data/clients.json';
@@ -38,6 +39,32 @@ export default function SlideOverDrawer({
 
   const [copiedField, setCopiedField] = useState(null);
   const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+  const [feeStatusMsg, setFeeStatusMsg] = useState(null);
+  const [loggingFee, setLoggingFee] = useState(false);
+
+  const handleLogGovtFee = async (formName, amount) => {
+    if (loggingFee) return;
+    setLoggingFee(true);
+    try {
+      const res = await recordOfficialGovtFee({
+        projectCode: record.project_code,
+        description: `Official IPO ${formName} Fee (${record.project_code})`,
+        amount,
+        costDate: new Date().toISOString().split('T')[0],
+        category: 'OFFICIAL_FEE'
+      });
+      if (res) {
+        setFeeStatusMsg(`✓ ₹${amount} ${formName} fee posted to Finance Recoverable Costs.`);
+      } else {
+        setFeeStatusMsg(`⚠️ Could not log fee to Finance.`);
+      }
+    } catch (err) {
+      setFeeStatusMsg(`Error: ${err.message}`);
+    } finally {
+      setLoggingFee(false);
+      setTimeout(() => setFeeStatusMsg(null), 4000);
+    }
+  };
 
   useEffect(() => {
     if (initialTab) {
@@ -1629,6 +1656,117 @@ export default function SlideOverDrawer({
                             })}
                           </div>
                         )}
+                        {/* Official Statutory Govt Fee & Finance Hand-off */}
+                        <div style={{
+                          marginTop: '16px',
+                          padding: '16px',
+                          borderRadius: '8px',
+                          background: 'var(--surface)',
+                          border: '1.5px solid var(--line)',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '12px'
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <div style={{
+                                width: '28px',
+                                height: '28px',
+                                borderRadius: '6px',
+                                background: 'rgba(16, 185, 129, 0.15)',
+                                color: '#10B981',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                              }}>
+                                <IndianRupee size={16} />
+                              </div>
+                              <div>
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                                  Statutory Government Fees (Finance Hand-Off)
+                                </span>
+                                <div style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                                  Log official IPO fees directly to Finance recoverable costs for client invoicing
+                                </div>
+                              </div>
+                            </div>
+                            {feeStatusMsg && (
+                              <span style={{ fontSize: '11px', fontWeight: 700, padding: '4px 8px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.15)', color: '#059669', border: '1px solid rgba(16, 185, 129, 0.3)' }}>
+                                {feeStatusMsg}
+                              </span>
+                            )}
+                          </div>
+
+                          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                            {(() => {
+                              const isReduced = isReducedFeeEntity(record.entity_category || (record.is_mahe ? 'EDUCATIONAL' : 'OTHER'));
+                              const f1Fee = isReduced ? 1600 : 8000;
+                              const f18Fee = isReduced ? 4000 : 20000;
+                              const f9Fee = isReduced ? 2500 : 12500;
+                              return (
+                                <>
+                                  <button
+                                    onClick={() => handleLogGovtFee('Form 1 (Filing)', f1Fee)}
+                                    disabled={loggingFee}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      background: 'var(--page)',
+                                      border: '1px solid var(--line)',
+                                      color: 'var(--ink)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Plus size={13} /> Form 1 Filing Fee: ₹{f1Fee.toLocaleString('en-IN')}
+                                  </button>
+                                  <button
+                                    onClick={() => handleLogGovtFee('Form 18 (RFE)', f18Fee)}
+                                    disabled={loggingFee}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      background: 'var(--page)',
+                                      border: '1px solid var(--line)',
+                                      color: 'var(--ink)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Plus size={13} /> Form 18 RFE Fee: ₹{f18Fee.toLocaleString('en-IN')}
+                                  </button>
+                                  <button
+                                    onClick={() => handleLogGovtFee('Form 9 (Early Pub)', f9Fee)}
+                                    disabled={loggingFee}
+                                    style={{
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      fontSize: '11.5px',
+                                      fontWeight: 700,
+                                      background: 'var(--page)',
+                                      border: '1px solid var(--line)',
+                                      color: 'var(--ink)',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px'
+                                    }}
+                                  >
+                                    <Plus size={13} /> Form 9 Pub Fee: ₹{f9Fee.toLocaleString('en-IN')}
+                                  </button>
+                                </>
+                              );
+                            })()}
+                          </div>
+                        </div>
                       </div>
                     );
                   })()}
