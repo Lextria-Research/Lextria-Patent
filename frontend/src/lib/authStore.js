@@ -22,7 +22,7 @@ export const ROLES = {
   },
   PATENT_DRAFTER: {
     key: 'PATENT_DRAFTER',
-    label: 'Patent Drafters',
+    label: 'Drafter',
     description: 'Preparation of provisional and complete specifications, claims drafting, and FER response notes.',
     color: '#8B5CF6',
   },
@@ -184,22 +184,36 @@ export async function authenticate(loginId, password) {
         .eq('id', authUser.id)
         .maybeSingle();
 
-      const isSuper = userProfile?.role === 'SUPER_ADMIN' || meta.role === 'SUPER_ADMIN';
+      const isRootAdmin = finalEmail === ROOT_SUPER_ADMIN.email.toLowerCase() || 
+                          finalEmail === 'pranavbhat@lextria.in';
       const patAccess = dashAccess.patent || {};
 
-      if (!isSuper && patAccess.enabled === false) {
+      if (!isRootAdmin && patAccess.enabled === false) {
         throw new Error('Access to Patent Dashboard is not enabled for your account. Please contact an Administrator.');
       }
 
+      // Explicit role mapping from dashboard_access.patent.role configured in Universal Settings
       let patentRole = 'PATENT_DRAFTER';
-      if (isSuper) {
+      const configuredRole = (patAccess.role || '').toUpperCase();
+
+      if (configuredRole === 'DRAFTER' || configuredRole === 'PATENT_DRAFTER') {
+        patentRole = 'PATENT_DRAFTER';
+      } else if (configuredRole === 'FILER' || configuredRole === 'PARALEGAL_ASSOCIATE' || configuredRole === 'PARALEGAL') {
+        patentRole = 'PARALEGAL_ASSOCIATE';
+      } else if (configuredRole === 'AUDITOR' || configuredRole === 'PARALEGAL_HEAD') {
+        patentRole = 'PARALEGAL_HEAD';
+      } else if (configuredRole === 'ADMIN' || configuredRole === 'SUPER_ADMIN') {
         patentRole = 'SUPER_ADMIN';
-      } else if (patAccess.role) {
-        patentRole = patAccess.role;
+      } else if (isRootAdmin) {
+        patentRole = 'SUPER_ADMIN';
+      } else if (userProfile?.role === 'SUPER_ADMIN' && !configuredRole) {
+        patentRole = 'SUPER_ADMIN';
       } else if (userProfile?.role === 'PARALEGAL' || userProfile?.department === 'PARALEGAL') {
         patentRole = 'PARALEGAL_ASSOCIATE';
       } else if (userProfile?.role === 'DEPT_ADMIN') {
         patentRole = 'PARALEGAL_HEAD';
+      } else {
+        patentRole = 'PATENT_DRAFTER';
       }
 
       const roleMeta = ROLES[patentRole] || ROLES.PATENT_DRAFTER;
@@ -213,9 +227,9 @@ export async function authenticate(loginId, password) {
         roleLabel: roleMeta.label,
         initials: getInitials(displayName),
         color: roleMeta.color,
-        department: userProfile?.department || 'Patent Prosecution',
+        department: userProfile?.department || 'Patent Drafting',
         drafterName: displayName,
-        isRoot: isSuper,
+        isRoot: patentRole === 'SUPER_ADMIN',
         isUniversal: true,
       };
 
@@ -415,9 +429,9 @@ export const getRoleLabel = (role) => {
     case 'SUPER_ADMIN': return 'Superadmin';
     case 'PARALEGAL_HEAD': return 'Paralegal Head';
     case 'PARALEGAL_ASSOCIATE': return 'Paralegal Associates';
-    case 'PATENT_DRAFTER': return 'Patent Drafters';
+    case 'PATENT_DRAFTER': return 'Drafter';
     case 'PARALEGAL': return 'Paralegal';
-    case 'DRAFTER': return 'Patent Drafter';
+    case 'DRAFTER': return 'Drafter';
     default: return role || 'User';
   }
 };
