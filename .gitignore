@@ -41,3 +41,7 @@ Thumbs.db
 
 # Vercel
 .vercel/
+
+# Backups and Dumps
+*.dump
+data/extracted_pg_dump/
