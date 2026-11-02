@@ -141,9 +141,31 @@ export async function authenticate(loginId, password) {
 
     const finalEmail = authEmail || cleanId.toLowerCase();
 
-    // Convenience password normalization for legacy 334
-    if (cleanPassword === '334' && finalEmail === 'pranavbhat@lextria.in') {
+    // Map common names to email if needed
+    const NAME_MAP = {
+      'pranav': 'pranavbhat@lextria.in',
+      'pranav bhat': 'pranavbhat@lextria.in',
+      'sharan': 'sharan@lextria.in',
+      'mounisha': 'mounisha@lextria.in',
+      'anusha': 'anusha@lextria.in',
+      'ayush': 'ayush@lextria.in',
+      'chaitra': 'chaitra@lextria.in',
+      'kaushal': 'kaushal.kamath@lextria.in',
+      'manoj': 'exec@lextria-demo.test',
+      'manoj kumar': 'exec@lextria-demo.test',
+      'exec': 'exec@lextria-demo.test'
+    };
+    if (!authEmail && NAME_MAP[cleanId.toLowerCase()]) {
+      authEmail = NAME_MAP[cleanId.toLowerCase()];
+    }
+
+    // Convenience password normalization for legacy passwords
+    if ((cleanPassword === '334' || cleanPassword === 'LextriaPT@334') && finalEmail === 'pranavbhat@lextria.in') {
       cleanPassword = 'Pranav@334';
+    }
+    if (cleanPassword === '334') {
+      if (finalEmail === 'sharan@lextria.in') cleanPassword = 'Sharan@334';
+      if (finalEmail === 'mounisha@lextria.in') cleanPassword = 'Mounisha@334';
     }
 
     const { data: authResult, error: authErr } = await supabase.auth.signInWithPassword({

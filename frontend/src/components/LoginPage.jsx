@@ -187,10 +187,10 @@ export default function LoginPage({ onLogin }) {
                 <Mail size={17} />
               </div>
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="e.g. pranavbhat@lextria.in"
+                placeholder="e.g. pranavbhat@lextria.in or Pranav Bhat"
                 autoFocus
                 autoComplete="email"
                 required
