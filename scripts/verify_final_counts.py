@@ -30,3 +30,4 @@ for schema, tbl in tables:
         cr = resp.headers.get('content-range')
         total = cr.split('/')[-1] if cr else 'unknown'
         print(f"  {schema}.{name:25}: {total} rows")
+

@@ -290,10 +290,17 @@ export default function App() {
         const resp = await fetch('/master_records.json');
         if (resp.ok) {
           const rawData = await resp.json();
-          const data = seedCommitmentDates(rawData).map((r) => ({
-            ...r,
-            current_status: normalizeStatus(r.current_status, r.specification_type)
-          }));
+          const data = seedCommitmentDates(rawData).map((r) => {
+            const pd = r.prosecution_dates || {};
+            const ft = r.forms_tracker || {};
+            return {
+              ...pd,
+              ...ft,
+              ...r,
+              id: r.id,
+              current_status: normalizeStatus(r.current_status, r.specification_type)
+            };
+          });
           try {
             const rawOverrides = localStorage.getItem('patent_local_overrides');
             if (rawOverrides) {
