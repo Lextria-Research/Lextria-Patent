@@ -151,6 +151,8 @@ export async function authenticate(loginId, password) {
       'ayush': 'ayush@lextria.in',
       'chaitra': 'chaitra@lextria.in',
       'kaushal': 'kaushal.kamath@lextria.in',
+      'thanush': 'thanush@lextria.in',
+      'akshara': 'akshara@lextria.in',
       'manoj': 'exec@lextria-demo.test',
       'manoj kumar': 'exec@lextria-demo.test',
       'exec': 'exec@lextria-demo.test'
@@ -166,6 +168,8 @@ export async function authenticate(loginId, password) {
     if (cleanPassword === '334') {
       if (finalEmail === 'sharan@lextria.in') cleanPassword = 'Sharan@334';
       if (finalEmail === 'mounisha@lextria.in') cleanPassword = 'Mounisha@334';
+      if (finalEmail === 'thanush@lextria.in') cleanPassword = 'Thanush@334';
+      if (finalEmail === 'akshara@lextria.in') cleanPassword = 'Akshara@334';
     }
 
     const { data: authResult, error: authErr } = await supabase.auth.signInWithPassword({
@@ -264,7 +268,19 @@ export async function authenticate(loginId, password) {
 export function getCurrentUser() {
   try {
     const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const user = JSON.parse(raw);
+    if (!user) return null;
+    // Defensive check: if Thanush was cached as SUPER_ADMIN from old test sessions, correct to Drafter
+    if (user.email === 'thanush@lextria.in' && user.role === 'SUPER_ADMIN') {
+      user.role = 'PATENT_DRAFTER';
+      user.roleLabel = 'Drafter';
+      user.isRoot = false;
+      user.drafterName = 'Thanush';
+      user.color = '#8B5CF6';
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+    }
+    return user;
   } catch {
     return null;
   }
