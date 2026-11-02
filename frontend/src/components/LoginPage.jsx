@@ -10,32 +10,38 @@ export default function LoginPage({ onLogin }) {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    if (!email.trim()) {
-      setError('Please enter your login email ID.');
+    const cleanInput = email.trim();
+    const cleanPassword = password.trim();
+
+    if (!cleanInput) {
+      setError('Please enter your Universal Email or Login ID.');
       return;
     }
-    if (!password) {
+    if (!cleanPassword) {
       setError('Please enter your password.');
       return;
     }
 
     setIsLoading(true);
 
-    setTimeout(() => {
-      const user = authenticate(email, password);
+    try {
+      const user = await authenticate(cleanInput, cleanPassword);
       setIsLoading(false);
 
       if (user) {
         setCurrentUser(user);
         onLogin(user);
       } else {
-        setError('Invalid login credentials. Please check your email and password, or contact the Superadmin.');
+        setError('Invalid login credentials. Please check your universal email and password, or contact the Administrator.');
       }
-    }, 250);
+    } catch (err) {
+      setIsLoading(false);
+      setError(err.message || 'Authentication error. Please check your connection.');
+    }
   };
 
   return (
@@ -123,7 +129,7 @@ export default function LoginPage({ onLogin }) {
               lineHeight: 1.5,
             }}
           >
-            Enterprise Patent Prosecution & Docketing Cockpit
+            Enterprise Patent Prosecution &amp; Docketing • Universal SSO
           </p>
         </div>
 

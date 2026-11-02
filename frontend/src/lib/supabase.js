@@ -1,13 +1,26 @@
 // frontend/src/lib/supabase.js
 import { createClient } from '@supabase/supabase-js';
 
+const getEnv = (key, fallback = '') => {
+  try {
+    if (typeof import.meta !== 'undefined' && import.meta?.env?.[key]) {
+      return import.meta.env[key];
+    }
+  } catch {}
+  try {
+    if (typeof process !== 'undefined' && process?.env?.[key]) {
+      return process.env[key];
+    }
+  } catch {}
+  return fallback;
+};
+
 const supabaseUrl =
-  import.meta.env.VITE_SUPABASE_URL ||
-  'https://eafciegebhuhoneypsqy.supabase.co';
+  getEnv('VITE_SUPABASE_URL', 'https://eafciegebhuhoneypsqy.supabase.co');
 
 const serviceRoleKey =
-  import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhZmNpZWdlYmh1aG9uZXlwc3F5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTA5NTU1NywiZXhwIjoyMTA2NjcxNTU3fQ.rxJJ-BO6bAeJYBu-tonvwxNZ3rh1D5ugjIpQMPk4qNo';
+  getEnv('VITE_SUPABASE_SERVICE_ROLE_KEY',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhZmNpZWdlYmh1aG9uZXlwc3F5Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTA5NTU1NywiZXhwIjoyMTA2NjcxNTU3fQ.rxJJ-BO6bAeJYBu-tonvwxNZ3rh1D5ugjIpQMPk4qNo');
 
 const supabaseKey = serviceRoleKey;
 

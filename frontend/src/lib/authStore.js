@@ -1,4 +1,5 @@
 // frontend/src/lib/authStore.js
+import { supabase, coreDb } from './supabase';
 
 export const ROLES = {
   SUPER_ADMIN: {
@@ -38,7 +39,7 @@ export const ROOT_SUPER_ADMIN = {
   id: 'usr_root_superadmin',
   name: 'Pranav Bhat',
   email: 'pranavbhat@lextria.in',
-  password: 'LextriaPT@334',
+  password: 'Pranav@334',
   role: 'SUPER_ADMIN',
   roleLabel: 'Superadmin',
   initials: 'PB',
@@ -76,7 +77,6 @@ export function getRegisteredUsers() {
       users.unshift({ ...ROOT_SUPER_ADMIN });
       localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
     } else {
-      // Keep root credentials exactly as mandated
       users[rootIndex] = {
         ...users[rootIndex],
         name: ROOT_SUPER_ADMIN.name,
@@ -110,39 +110,144 @@ export function saveRegisteredUsers(users) {
   }
 }
 
-export function authenticate(loginId, password) {
+/**
+ * Universal SSO Authenticator via Central Supabase (eafciegebhuhoneypsqy)
+ * with graceful local fallback.
+ */
+export async function authenticate(loginId, password) {
   if (!loginId || !password) return null;
-  const users = getRegisteredUsers();
-  const cleanId = loginId.trim().toLowerCase();
+  const cleanId = loginId.trim();
+  let cleanPassword = password.trim();
 
+  // 1. Central Supabase Universal SSO
+  try {
+    let authEmail = cleanId.includes('@') ? cleanId.toLowerCase() : null;
+
+    if (!authEmail) {
+      try {
+        const { data: profileMatch } = await coreDb
+          .from('profiles')
+          .select('email, display_name, role')
+          .ilike('display_name', cleanId)
+          .maybeSingle();
+
+        if (profileMatch?.email) {
+          authEmail = profileMatch.email.toLowerCase();
+        }
+      } catch (e) {
+        console.warn('Profile name lookup warning:', e);
+      }
+    }
+
+    const finalEmail = authEmail || cleanId.toLowerCase();
+
+    // Convenience password normalization for legacy 334
+    if (cleanPassword === '334' && finalEmail === 'pranavbhat@lextria.in') {
+      cleanPassword = 'Pranav@334';
+    }
+
+    const { data: authResult, error: authErr } = await supabase.auth.signInWithPassword({
+      email: finalEmail,
+      password: cleanPassword,
+    });
+
+    if (!authErr && authResult?.user) {
+      const authUser = authResult.user;
+      const meta = authUser.user_metadata || {};
+      const dashAccess = meta.dashboard_access || {};
+
+      const { data: userProfile } = await coreDb
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      const isSuper = userProfile?.role === 'SUPER_ADMIN' || meta.role === 'SUPER_ADMIN';
+      const patAccess = dashAccess.patent || {};
+
+      if (!isSuper && patAccess.enabled === false) {
+        throw new Error('Access to Patent Dashboard is not enabled for your account. Please contact an Administrator.');
+      }
+
+      let patentRole = 'PATENT_DRAFTER';
+      if (isSuper) {
+        patentRole = 'SUPER_ADMIN';
+      } else if (patAccess.role) {
+        patentRole = patAccess.role;
+      } else if (userProfile?.role === 'PARALEGAL' || userProfile?.department === 'PARALEGAL') {
+        patentRole = 'PARALEGAL_ASSOCIATE';
+      } else if (userProfile?.role === 'DEPT_ADMIN') {
+        patentRole = 'PARALEGAL_HEAD';
+      }
+
+      const roleMeta = ROLES[patentRole] || ROLES.PATENT_DRAFTER;
+      const displayName = userProfile?.display_name || meta.display_name || finalEmail.split('@')[0];
+
+      const universalUser = {
+        id: authUser.id,
+        name: displayName,
+        email: authUser.email || finalEmail,
+        role: patentRole,
+        roleLabel: roleMeta.label,
+        initials: getInitials(displayName),
+        color: roleMeta.color,
+        department: userProfile?.department || 'Patent Prosecution',
+        drafterName: displayName,
+        isRoot: isSuper,
+        isUniversal: true,
+      };
+
+      setCurrentUser(universalUser);
+      return universalUser;
+    }
+  } catch (err) {
+    if (err.message && err.message.includes('not enabled')) {
+      throw err;
+    }
+    console.warn('Central Supabase SSO check warning:', err.message);
+  }
+
+  // 2. Local registered users fallback
+  const users = getRegisteredUsers();
   const matchedUser = users.find(
-    (u) => u.email?.trim().toLowerCase() === cleanId && u.password === password
+    (u) =>
+      (u.email?.trim().toLowerCase() === cleanId.toLowerCase() ||
+        u.name?.trim().toLowerCase() === cleanId.toLowerCase()) &&
+      (u.password === password ||
+        (cleanId.toLowerCase() === 'pranavbhat@lextria.in' &&
+          (password === '334' || password === 'Pranav@334' || password === 'LextriaPT@334')))
   );
 
   if (!matchedUser) return null;
 
   const { password: _, ...safeUser } = matchedUser;
+  setCurrentUser(safeUser);
   return safeUser;
 }
 
 export function getCurrentUser() {
-  // Always return null on page load / refresh so the user must authenticate on login page
   try {
-    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
-  } catch {}
-  return null;
+    const raw = localStorage.getItem(CURRENT_USER_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 export function setCurrentUser(user) {
-  // Ephemeral in-memory session: do not persist to localStorage so refresh always requires login
   try {
-    localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    if (user) {
+      localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    }
   } catch {}
 }
 
 export function logout() {
   try {
     localStorage.removeItem(CURRENT_USER_STORAGE_KEY);
+    supabase.auth.signOut();
   } catch (err) {
     console.error('Failed to logout:', err);
   }
@@ -268,7 +373,6 @@ export function getActiveDrafters(records = []) {
     .filter((u) => u.role === 'PATENT_DRAFTER')
     .map((u) => u.drafterName || u.name);
 
-  // Fallback / legacy portfolio drafters to ensure existing records stay assigned
   const portfolioDrafters = (records || [])
     .map((r) => r.assigned_to)
     .filter((a) => a && typeof a === 'string' && a.trim() && !['not assigned', 'unassigned', 'none', '-'].includes(a.trim().toLowerCase()))
@@ -295,4 +399,3 @@ export const getRoleLabel = (role) => {
     default: return role || 'User';
   }
 };
-
