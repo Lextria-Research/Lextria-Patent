@@ -49,6 +49,7 @@ export default function EditApplicationModal({
   onUpdate,
   clients: clientsProp = [],
   tags = [],
+  records = [],
   onClientCreated
 }) {
   if (!isOpen || !record) return null;
@@ -66,6 +67,14 @@ export default function EditApplicationModal({
   }, [clientsProp]);
 
   // Guaranteed non-empty client list fallback to DEFAULT_CLIENTS (211 clients)
+  const availableDrafters = useMemo(() => {
+    const list = getActiveDrafters(records);
+    if (record?.assigned_to && !list.some(d => d.toLowerCase() === record.assigned_to.trim().toLowerCase())) {
+      return [record.assigned_to.trim(), ...list].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+    }
+    return list;
+  }, [records, record?.assigned_to]);
+
   const effectiveClients = useMemo(() => {
     return (internalClients && internalClients.length > 0) ? internalClients : DEFAULT_CLIENTS;
   }, [internalClients]);
@@ -1537,7 +1546,7 @@ export default function EditApplicationModal({
                       color: 'var(--ink)',
                     }}
                   >
-                    {getActiveDrafters().map((d) => (
+                    {availableDrafters.map((d) => (
                       <option key={d} value={d}>
                         👤 {d}
                       </option>

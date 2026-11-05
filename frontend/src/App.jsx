@@ -244,6 +244,31 @@ export default function App() {
     fetchClients();
   }, []);
 
+  // Fetch active firm staff members from core.profiles for drafter resolution & team assignment
+  useEffect(() => {
+    async function fetchStaffMembers() {
+      try {
+        const { data, error } = await coreDb
+          .from('profiles')
+          .select('id, display_name, email, role, department')
+          .eq('active', true)
+          .order('display_name');
+
+        if (!error && Array.isArray(data) && data.length > 0) {
+          const staffMembers = data.filter((p) => {
+            const email = (p.email || '').toLowerCase();
+            const role = (p.role || '').toUpperCase();
+            return role !== 'CLIENT' && !email.includes('@client.');
+          });
+          localStorage.setItem('patent_cached_team_members', JSON.stringify(staffMembers));
+        }
+      } catch (e) {
+        console.warn('Could not sync staff profiles in Patent Dashboard:', e);
+      }
+    }
+    fetchStaffMembers();
+  }, []);
+
   // Synchronize newly created client across local state & cache (Requirement 3)
   const handleClientCreated = (newClient) => {
     if (!newClient) return;
@@ -1596,6 +1621,7 @@ export default function App() {
         existingCodes={existingCodes}
         clients={clients}
         tags={tags}
+        records={records}
         onClientCreated={handleClientCreated}
       />
 
@@ -1607,6 +1633,7 @@ export default function App() {
         onUpdate={handleUpdateApplication}
         clients={clients}
         tags={tags}
+        records={records}
         onClientCreated={handleClientCreated}
       />
 

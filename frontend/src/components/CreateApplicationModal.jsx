@@ -55,6 +55,7 @@ export default function CreateApplicationModal({
   existingCodes = [],
   clients: clientsProp = [],
   tags = [],
+  records = [],
   onClientCreated
 }) {
   if (!isOpen) return null;
@@ -72,6 +73,8 @@ export default function CreateApplicationModal({
   }, [clientsProp]);
 
   // Guaranteed non-empty client list fallback to DEFAULT_CLIENTS (211 clients)
+  const availableDrafters = useMemo(() => getActiveDrafters(records), [records]);
+
   const effectiveClients = useMemo(() => {
     return (internalClients && internalClients.length > 0) ? internalClients : DEFAULT_CLIENTS;
   }, [internalClients]);
@@ -1471,7 +1474,7 @@ export default function CreateApplicationModal({
                     color: 'var(--ink)',
                   }}
                 >
-                  {getActiveDrafters().map((d) => (
+                  {availableDrafters.map((d) => (
                     <option key={d} value={d}>
                       👤 {d}
                     </option>

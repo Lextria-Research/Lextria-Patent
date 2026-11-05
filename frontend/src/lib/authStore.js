@@ -419,19 +419,80 @@ export function deleteUser(id) {
   return true;
 }
 
+export const DEFAULT_OFFICIAL_DRAFTERS = [
+  'Thanush',
+  'Ayush',
+  'Amith',
+  'Pratham',
+  'Abhishek',
+  'Thilak',
+  'Anusha',
+  'Pramith',
+  'Fiona',
+  'Kaushal',
+  'Chaitra',
+  'Vinyas Pai',
+  'Sharan',
+  'Mounisha',
+  'Pranav Bhat',
+];
+
 export function getActiveDrafters(records = []) {
-  const users = getRegisteredUsers();
-  const registeredDrafters = users
-    .filter((u) => u.role === 'PATENT_DRAFTER')
-    .map((u) => u.drafterName || u.name);
+  const draftersMap = new Map();
 
-  const portfolioDrafters = (records || [])
-    .map((r) => r.assigned_to)
-    .filter((a) => a && typeof a === 'string' && a.trim() && !['not assigned', 'unassigned', 'none', '-'].includes(a.trim().toLowerCase()))
-    .map((a) => a.trim());
+  const add = (name) => {
+    if (!name || typeof name !== 'string') return;
+    const clean = name.trim();
+    if (!clean) return;
+    const lower = clean.toLowerCase();
+    if (['not assigned', 'unassigned', 'none', '-', 'null', 'undefined'].includes(lower)) return;
+    if (!draftersMap.has(lower)) {
+      draftersMap.set(lower, clean);
+    }
+  };
 
-  const combined = Array.from(new Set([...registeredDrafters, ...portfolioDrafters]));
-  return combined.sort();
+  // 1. Seed with firm's canonical official drafters (guarantees non-empty dropdown)
+  DEFAULT_OFFICIAL_DRAFTERS.forEach(add);
+
+  // 2. Add cached team members from core.profiles if stored locally
+  try {
+    const cached = localStorage.getItem('patent_cached_team_members');
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      if (Array.isArray(parsed)) {
+        parsed.forEach((m) => {
+          if (m?.display_name) add(m.display_name);
+          else if (m?.name) add(m.name);
+        });
+      }
+    }
+  } catch (e) {
+    console.warn('Error reading patent_cached_team_members:', e);
+  }
+
+  // 3. Add registered users who are patent drafters, attorneys, or superadmins
+  try {
+    const users = getRegisteredUsers();
+    (users || []).forEach((u) => {
+      const role = (u.role || '').toUpperCase();
+      if (['PATENT_DRAFTER', 'DRAFTER', 'SUPER_ADMIN'].includes(role)) {
+        add(u.drafterName || u.name);
+      }
+    });
+  } catch (e) {
+    console.warn('Error reading registered users in getActiveDrafters:', e);
+  }
+
+  // 4. Add assignees from portfolio records
+  if (Array.isArray(records)) {
+    records.forEach((r) => {
+      if (r?.assigned_to) add(r.assigned_to);
+    });
+  }
+
+  return Array.from(draftersMap.values()).sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: 'base' })
+  );
 }
 
 export const isSuperAdmin = (u) => u?.role === 'SUPER_ADMIN';
