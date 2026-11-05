@@ -867,9 +867,27 @@ export default function App() {
     showToast(`${item.project_code}: ${item.typeLabel} marked as ${isDone ? 'Completed' : 'Pending'}`);
   };
 
-  // Handle smart importer success
-  const handleImportSuccess = (importedCount, stagedRecords) => {
+  // Handle smart importer success (Supports bulk import with persistence)
+  const handleImportSuccess = (arg1, arg2) => {
+    const stagedRecords = Array.isArray(arg1) ? arg1 : (Array.isArray(arg2) ? arg2 : []);
+    const importedCount = typeof arg1 === 'number' ? arg1 : stagedRecords.length;
+    if (stagedRecords.length === 0) return;
+
     setRecords((prev) => [...stagedRecords, ...prev]);
+
+    // Persist imported records into local storage overrides so they survive reload
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      stagedRecords.forEach((rec) => {
+        if (rec.project_code) {
+          overrides[rec.project_code] = rec;
+        }
+      });
+      localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+    } catch (e) {
+      console.warn('Failed to save imported records to overrides:', e);
+    }
+
     recordAuditLog(
       'BULK_IMPORT',
       'PORTFOLIO',

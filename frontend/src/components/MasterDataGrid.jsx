@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { getStatusColor, PROSECUTION_PHASES, STATUTORY_STATUSES, getStatusPhase } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
+import { getNearestStatutoryDeadline } from '../utils/statutoryDeadlines';
 
 export default function MasterDataGrid({
   records = [],
@@ -454,8 +455,16 @@ export default function MasterDataGrid({
         accessorKey: 'client_commitment_date',
         header: 'Client delivery',
         size: 160,
+        sortingFn: (rowA, rowB) => {
+          const dateA = rowA.original.client_commitment_date || '9999-99-99';
+          const dateB = rowB.original.client_commitment_date || '9999-99-99';
+          return dateA.localeCompare(dateB);
+        },
         cell: ({ row }) => {
           const cd = row.original.client_commitment_date;
+          const nearest = getNearestStatutoryDeadline(row.original);
+          const isBreached = cd && nearest && new Date(cd).getTime() > new Date(nearest.date).getTime();
+
           if (!cd) {
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -469,14 +478,93 @@ export default function MasterDataGrid({
           const d = new Date(cd);
           const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+          let statusEl = null;
+          if (diff < 0) {
+            statusEl = (
+              <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
+                Overdue ${Math.abs(diff)} days
+              </span>
+            );
+          } else if (diff <= 2) {
+            statusEl = (
+              <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
+                Due in ${diff === 0 ? 'today' : `${diff} days`}
+              </span>
+            );
+          } else if (diff <= 7) {
+            statusEl = (
+              <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
+                In ${diff} days
+              </span>
+            );
+          } else {
+            statusEl = (
+              <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
+                In ${diff} days
+              </span>
+            );
+          }
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              {statusEl}
+              <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                Due {formattedDate}
+              </span>
+              {isBreached && (
+                <span
+                  title={'Client delivery date (' + cd + ') is after statutory deadline (' + nearest.shortLabel + ': ' + nearest.date + ')'}
+                  style={{
+                    color: '#DC2626',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    marginTop: '2px',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '2px',
+                  }}
+                >
+                  ⚠️ Exceeds {nearest.shortLabel}
+                </span>
+              )}
+            </div>
+          );
+        },
+      },
+
+      // 4b. Nearest Statutory Deadline (Dedicated Column beside Client Delivery)
+      {
+        id: 'nearest_statutory_deadline',
+        header: 'Statutory deadline',
+        size: 175,
+        sortingFn: (rowA, rowB) => {
+          const dateA = getNearestStatutoryDeadline(rowA.original)?.date || '9999-99-99';
+          const dateB = getNearestStatutoryDeadline(rowB.original)?.date || '9999-99-99';
+          return dateA.localeCompare(dateB);
+        },
+        cell: ({ row }) => {
+          const nearest = getNearestStatutoryDeadline(row.original);
+          if (!nearest) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>None pending</span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Compliant</span>
+              </div>
+            );
+          }
+
+          const diff = nearest.diffDays;
+          const d = new Date(nearest.date);
+          const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
           if (diff < 0) {
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
-                  Overdue {Math.abs(diff)} days
+                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  Overdue ${Math.abs(diff)}d · ${nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due {formattedDate}
+                  Due ${formattedDate} (${nearest.statutoryRef})
                 </span>
               </div>
             );
@@ -485,10 +573,10 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                  Due in {diff === 0 ? 'today' : `${diff} days`}
+                  Due ${diff === 0 ? 'today' : 'in ' + diff + 'd'} · ${nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due {formattedDate}
+                  Due ${formattedDate} (${nearest.statutoryRef})
                 </span>
               </div>
             );
@@ -497,10 +585,10 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                  In {diff} days
+                  In {diff}d · {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due {formattedDate}
+                  Due {formattedDate} ({nearest.statutoryRef})
                 </span>
               </div>
             );
@@ -508,10 +596,10 @@ export default function MasterDataGrid({
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In {diff} days
+                In {diff}d · {nearest.shortLabel}
               </span>
               <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                Due {formattedDate}
+                Due {formattedDate} ({nearest.statutoryRef})
               </span>
             </div>
           );

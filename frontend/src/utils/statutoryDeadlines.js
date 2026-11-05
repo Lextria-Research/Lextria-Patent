@@ -472,3 +472,168 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     form_27_is_open: form27Info?.isWindowOpen,
   };
 }
+
+
+/**
+ * Returns all active, pending statutory deadlines for a given matter.
+ */
+export function getActiveStatutoryDeadlines(record) {
+  if (!record || record.is_abandoned) return [];
+  const stat = calculateAllStatutoryDeadlines(record);
+  const now = new Date();
+  const deadlines = [];
+
+  // 1. Complete Specification (CS) Deadline - Section 9(1) (12 months from PS)
+  const isDirectCS = (record.specification_type || '').toUpperCase() === 'CS';
+  const csDate = record.cs_deadline || stat.cs_deadline;
+  if (csDate && !isDirectCS && !record.cs_filing_date) {
+    deadlines.push({
+      type: 'CS',
+      label: 'Complete Specification Due',
+      shortLabel: 'CS Due',
+      date: csDate,
+      statutoryRef: 'Section 9(1)',
+    });
+  }
+
+  // 2. FER Reply Deadline - Section 21(1)
+  const ferDate = record.fer_reply_deadline || stat.fer_reply_deadline;
+  if (ferDate && !record.fer_reply_filing_date && record.fer_notice_date) {
+    deadlines.push({
+      type: 'FER',
+      label: 'FER Reply Due',
+      shortLabel: 'FER Reply',
+      date: ferDate,
+      statutoryRef: 'Section 21(1)',
+    });
+  }
+
+  // 3. Hearing Written Submissions - Rule 28(7)
+  const wsDate = record.ws_deadline || stat.ws_deadline;
+  if (wsDate && !record.ws_filing_date && record.hearing_date) {
+    deadlines.push({
+      type: 'WS',
+      label: 'Hearing Written Submissions Due',
+      shortLabel: 'Hearing WS',
+      date: wsDate,
+      statutoryRef: 'Rule 28(7)',
+    });
+  }
+
+  // 4. Form 1 (Proof of Right) - Rule 10
+  const f1Date = record.form_1_deadline || stat.form_1_deadline;
+  if (f1Date && !record.form_1_filing_date && record.f1_status !== 'Within Deadline') {
+    deadlines.push({
+      type: 'F1',
+      label: 'Form 1 (Proof of Right) Due',
+      shortLabel: 'Form 1',
+      date: f1Date,
+      statutoryRef: 'Rule 10',
+    });
+  }
+
+  // 5. Form 26 (Power of Attorney) - Rule 135(1)
+  const f26Date = record.form_26_deadline || stat.form_26_deadline;
+  if (f26Date && !record.form_26_filing_date && record.f26_status !== 'Within Deadline') {
+    deadlines.push({
+      type: 'F26',
+      label: 'Form 26 (POA) Due',
+      shortLabel: 'Form 26',
+      date: f26Date,
+      statutoryRef: 'Rule 135',
+    });
+  }
+
+  // 6. Request for Examination (Form 18 / 18A) - Rule 24B
+  const rfeDate = record.rfe_deadline || stat.rfe_deadline;
+  if (rfeDate && !record.rfe_filing_date && !record.rfe_filed && !record.grant_date) {
+    deadlines.push({
+      type: 'RFE',
+      label: 'Request for Examination (RFE) Due',
+      shortLabel: 'RFE Due',
+      date: rfeDate,
+      statutoryRef: 'Rule 24B',
+    });
+  }
+
+  // 7. Form 3 (Statement under Section 8) - Rule 12
+  const f3Date = record.form_3_deadline || stat.form_3_deadline;
+  if (f3Date && !record.form_3_filing_date && !record.grant_date) {
+    deadlines.push({
+      type: 'F3',
+      label: 'Form 3 (Foreign Filing Statement) Due',
+      shortLabel: 'Form 3',
+      date: f3Date,
+      statutoryRef: 'Section 8',
+    });
+  }
+
+  // 8. Renewal Annuity - Section 142
+  const renDate = record.next_renewal_date || stat.next_renewal_date;
+  if (renDate && record.grant_date) {
+    deadlines.push({
+      type: 'ANNUITY',
+      label: 'Patent Renewal Annuity Due',
+      shortLabel: 'Renewal Due',
+      date: renDate,
+      statutoryRef: 'Section 142',
+    });
+  }
+
+  // 9. Form 27 (Working Statement) - Section 146(2) & Rule 131
+  const f27Date = record.form_27_due_date || record.form27_due_date || stat.form_27_due_date;
+  if (f27Date && record.grant_date) {
+    deadlines.push({
+      type: 'F27',
+      label: 'Form 27 Working Statement Due',
+      shortLabel: 'Form 27',
+      date: f27Date,
+      statutoryRef: 'Section 146(2)',
+    });
+  }
+
+  deadlines.forEach((d) => {
+    d.diffDays = Math.round((new Date(d.date) - now) / 86400000);
+    d.isOverdue = d.diffDays < 0;
+  });
+
+  deadlines.sort((a, b) => new Date(a.date) - new Date(b.date));
+  return deadlines;
+}
+
+/**
+ * Returns the single nearest pending statutory deadline for a matter.
+ */
+export function getNearestStatutoryDeadline(record) {
+  const list = getActiveStatutoryDeadlines(record);
+  return list.length > 0 ? list[0] : null;
+}
+
+/**
+ * Validates whether a proposed client delivery date falls beyond any active statutory deadline.
+ */
+export function checkDeliveryVsStatutory(deliveryDate, record) {
+  if (!deliveryDate) return { isBreached: false, breachedDeadline: null, allDeadlines: [] };
+  const deadlines = getActiveStatutoryDeadlines(record);
+  if (deadlines.length === 0) return { isBreached: false, breachedDeadline: null, allDeadlines: [] };
+
+  const delivTime = new Date(deliveryDate).getTime();
+  if (isNaN(delivTime)) return { isBreached: false, breachedDeadline: null, allDeadlines: deadlines };
+
+  // Find any active deadline where delivery date is strictly greater than deadline date
+  const breached = deadlines.filter((d) => delivTime > new Date(d.date).getTime());
+  if (breached.length === 0) {
+    return { isBreached: false, breachedDeadline: null, allDeadlines: deadlines };
+  }
+
+  const earliestBreached = breached[0];
+  const daysLate = Math.round((delivTime - new Date(earliestBreached.date).getTime()) / 86400000);
+
+  return {
+    isBreached: true,
+    breachedDeadline: earliestBreached,
+    allBreached: breached,
+    daysLate: Math.max(1, daysLate),
+    allDeadlines: deadlines,
+  };
+}

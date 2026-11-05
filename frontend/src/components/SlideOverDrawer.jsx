@@ -9,7 +9,7 @@ import {
 import { getStatusColor, STATUTORY_STATUSES } from '../constants/patentStatuses';
 import { getFormFee, formatINR, isReducedFeeEntity } from '../utils/feeSchedule';
 import { recordOfficialGovtFee } from '../lib/ecosystemSync.js';
-import { validateSection17PostDating, addDays, addMonths, calculateForm27Deadlines } from '../utils/statutoryDeadlines';
+import { validateSection17PostDating, addDays, addMonths, calculateForm27Deadlines, checkDeliveryVsStatutory, getNearestStatutoryDeadline } from '../utils/statutoryDeadlines';
 import { getMiscFormStatusInfo, getMainFormTypeInfo } from '../constants/miscFormsConstants';
 import DEFAULT_CLIENTS from '../data/clients.json';
 
@@ -75,6 +75,9 @@ export default function SlideOverDrawer({
   // Client Delivery Commitment state
   const [commitmentDate, setCommitmentDate] = useState(record.client_commitment_date || '');
   const [isUpdatingCommitment, setIsUpdatingCommitment] = useState(false);
+  const statutoryDeliveryCheck = useMemo(() => {
+    return checkDeliveryVsStatutory(commitmentDate, record);
+  }, [commitmentDate, record]);
 
   // Docs Vault (Zoho WorkDrive) uploaded files state
   const [documents, setDocuments] = useState(() => {
@@ -1379,6 +1382,12 @@ export default function SlideOverDrawer({
                       type="button"
                       disabled={isUpdatingCommitment}
                       onClick={async () => {
+                        if (statutoryDeliveryCheck.isBreached) {
+                          const confirmed = window.confirm(
+                            '⚠️ STATUTORY DEADLINE WARNING:\n\nThe selected client delivery date (' + commitmentDate + ') is ' + statutoryDeliveryCheck.daysLate + ' day(s) AFTER the statutory deadline (' + statutoryDeliveryCheck.breachedDeadline.label + ' on ' + statutoryDeliveryCheck.breachedDeadline.date + ' under ' + statutoryDeliveryCheck.breachedDeadline.statutoryRef + ').\n\nDeliverables must be filed before the statutory deadline to avoid loss of patent rights.\n\nAre you sure you want to commit this date?'
+                          );
+                          if (!confirmed) return;
+                        }
                         setIsUpdatingCommitment(true);
                         try {
                           if (onUpdate) {
@@ -1394,18 +1403,47 @@ export default function SlideOverDrawer({
                         padding: '8px 14px',
                         borderRadius: '6px',
                         border: 'none',
-                        background: '#EA580C',
+                        background: statutoryDeliveryCheck.isBreached ? '#DC2626' : '#EA580C',
                         color: '#fff',
                         fontSize: '12px',
                         fontWeight: 800,
                         cursor: 'pointer',
-                        boxShadow: '0 2px 4px rgba(234, 88, 12, 0.3)',
+                        boxShadow: statutoryDeliveryCheck.isBreached ? '0 2px 4px rgba(220, 38, 38, 0.3)' : '0 2px 4px rgba(234, 88, 12, 0.3)',
                         marginLeft: 'auto',
                       }}
                     >
-                      {isUpdatingCommitment ? 'Saving & Alerting...' : 'Save Commitment & Alert SPOC'}
+                      {isUpdatingCommitment ? 'Saving & Alerting...' : (statutoryDeliveryCheck.isBreached ? '⚠️ Save Beyond Deadline' : 'Save Commitment & Alert SPOC')}
                     </button>
                   </div>
+
+                  {/* Statutory Deadline Warning if delivery date is beyond statutory deadline */}
+                  {statutoryDeliveryCheck.isBreached && (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '12px 14px',
+                      borderRadius: '8px',
+                      background: '#FEF2F2',
+                      border: '1.5px solid #EF4444',
+                      color: '#991B1B',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'flex-start',
+                      gap: '10px',
+                    }}>
+                      <AlertTriangle size={20} style={{ color: '#DC2626', shrink: 0, marginTop: '2px' }} />
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#B91C1C', fontSize: '13px', marginBottom: '3px' }}>
+                          ⚠️ Statutory Deadline Warning: Delivery Date Exceeds Deadline!
+                        </div>
+                        <div style={{ lineHeight: 1.45 }}>
+                          The client delivery date (<strong>{new Date(commitmentDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>) is set <strong>{statutoryDeliveryCheck.daysLate} day(s) AFTER</strong> the statutory deadline (<strong>{statutoryDeliveryCheck.breachedDeadline.label}: {new Date(statutoryDeliveryCheck.breachedDeadline.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> under {statutoryDeliveryCheck.breachedDeadline.statutoryRef}).
+                        </div>
+                        <div style={{ fontSize: '11px', marginTop: '6px', color: '#7F1D1D', lineHeight: 1.4 }}>
+                          Under the Indian Patents Act, missing statutory deadlines causes irrevocable abandonment of rights. Deliverables must be provided to the client early enough to permit review and filing before statutory expiry.
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 3. Master Statutory Prosecution Timeline & Interleaved Miscellaneous Forms Stream */}

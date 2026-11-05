@@ -5,7 +5,7 @@ import {
   X, Save, Edit3, Calendar, User, Tag as TagIcon,
   ExternalLink, CheckCircle2, AlertTriangle, Layers, Clock, Building, Plus, Trash2
 } from 'lucide-react';
-import { calculateAllStatutoryDeadlines, validateSection17PostDating } from '../utils/statutoryDeadlines';
+import { calculateAllStatutoryDeadlines, validateSection17PostDating, checkDeliveryVsStatutory } from '../utils/statutoryDeadlines';
 import { getFormFee, isReducedFeeEntity, formatINR } from '../utils/feeSchedule';
 import { getStatusColor } from '../constants/patentStatuses';
 import PhasedStatusSelector from './PhasedStatusSelector';
@@ -1738,6 +1738,34 @@ export default function EditApplicationModal({
                     )}
                   </div>
                 </div>
+
+                {statutoryDeliveryCheck.isBreached && (
+                  <div style={{
+                    marginTop: '8px',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
+                    background: '#FEF2F2',
+                    border: '1.5px solid #EF4444',
+                    color: '#991B1B',
+                    fontSize: '11.5px',
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '8px',
+                  }}>
+                    <AlertTriangle size={18} style={{ color: '#DC2626', shrink: 0, marginTop: '1px' }} />
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#B91C1C', marginBottom: '2px' }}>
+                        ⚠️ Statutory Deadline Warning: Delivery Date Exceeds Deadline!
+                      </div>
+                      <div style={{ lineHeight: 1.4 }}>
+                        The client delivery date (<strong>{new Date(formData.client_commitment_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong>) is <strong>{statutoryDeliveryCheck.daysLate} day(s) AFTER</strong> the statutory deadline (<strong>{statutoryDeliveryCheck.breachedDeadline.label}: {new Date(statutoryDeliveryCheck.breachedDeadline.date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</strong> under {statutoryDeliveryCheck.breachedDeadline.statutoryRef}).
+                      </div>
+                      <div style={{ fontSize: '10.5px', marginTop: '4px', color: '#7F1D1D' }}>
+                        Missing statutory deadlines risks irreversible abandonment under the Patents Act, 1970.
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
