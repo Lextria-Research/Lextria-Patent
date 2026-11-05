@@ -114,7 +114,7 @@ export default function CreateApplicationModal({
     assigned_to: 'Anusha',
     current_status: 'Idf sent, awaiting data',
     color_code_status: 'PURPLE',
-    ps_filing_date: new Date().toISOString().split('T')[0],
+    ps_filing_date: '',
     post_dated_date: '',
     cs_filing_date: '',
     client_commitment_date: '',
@@ -486,9 +486,13 @@ export default function CreateApplicationModal({
 
     const isMahe = Boolean(finalClientId === MAHE_CLIENT_ID || /manipal|mahe/i.test(chosenName));
     const validEntity = normalizeEntityCategory(formData.entity_category || primaryApp.type, isMahe);
+    const isCS = (formData.specification_type || '').toUpperCase() === 'CS';
 
     const payload = {
       ...formData,
+      ps_filing_date: isCS ? null : (formData.ps_filing_date || null),
+      post_dated_date: isCS ? null : (formData.post_dated_date || null),
+      cs_filing_date: formData.cs_filing_date || null,
       client_id: finalClientId,
       is_mahe: isMahe,
       entity_category: validEntity,

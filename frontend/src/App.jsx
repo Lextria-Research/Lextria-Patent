@@ -330,10 +330,28 @@ export default function App() {
             const rawOverrides = localStorage.getItem('patent_local_overrides');
             if (rawOverrides) {
               const overrides = JSON.parse(rawOverrides);
+              let overridesChanged = false;
+              // Clean up stale or erroneous ps_filing_date on Direct CS matters (e.g. RT01)
+              Object.keys(overrides).forEach((code) => {
+                const ov = overrides[code];
+                if (ov && (ov.specification_type || '').toUpperCase() === 'CS' && ov.ps_filing_date) {
+                  ov.ps_filing_date = null;
+                  overridesChanged = true;
+                }
+              });
+              if (overridesChanged) {
+                try {
+                  localStorage.setItem('patent_local_overrides', JSON.stringify(overrides));
+                } catch {}
+              }
+
               const merged = data.map((rec) => {
                 const ov = overrides[rec.project_code];
                 if (ov) {
                   const updated = { ...rec, ...ov };
+                  if ((updated.specification_type || '').toUpperCase() === 'CS') {
+                    updated.ps_filing_date = null;
+                  }
                   updated.current_status = normalizeStatus(updated.current_status, updated.specification_type);
                   return updated;
                 }
@@ -480,18 +498,23 @@ export default function App() {
             f26_status: newRecord.f26_status,
           });
 
-          // Ecosystem Interlinking: Publish filing matter event
-          const isCS = newRecord.specification_type === 'CS';
-          await publishPatentMatterEvent({
-            projectCode: newRecord.project_code,
-            projectCodeId: pcId,
-            eventCode: isCS ? 'CS_FILED' : 'PS_FILED',
-            title: isCS ? `Complete Patent Application Lodged: ${newRecord.title || newRecord.project_code}` : `Provisional Patent Application Lodged: ${newRecord.title || newRecord.project_code}`,
-            detail: `Filed with Indian Patent Office. Applicant: ${newRecord.applicant_name || 'MAHE'}`,
-            occurredAt: newRecord.ps_filing_date || newRecord.cs_filing_date || new Date().toISOString(),
-            clientVisible: true,
-            clientLabel: isCS ? 'Complete specification filed' : 'Provisional application filed',
-          });
+          // Ecosystem Interlinking: Publish filing matter event ONLY IF actually filed at Patent Office
+          const statusLower = (newRecord.current_status || '').toLowerCase().trim();
+          const isFiled = ['patent filed', 'ps filed', 'cs filed', 'published', 'fer', 'examination', 'hearing', 'granted'].some(s => statusLower.includes(s)) || Boolean(newRecord.application_number && !newRecord.application_number.toLowerCase().includes('not filed'));
+
+          if (isFiled) {
+            const isCS = (newRecord.specification_type || '').toUpperCase() === 'CS';
+            await publishPatentMatterEvent({
+              projectCode: newRecord.project_code,
+              projectCodeId: pcId,
+              eventCode: isCS ? 'CS_FILED' : 'PS_FILED',
+              title: isCS ? `Complete Patent Application Lodged: ${newRecord.title || newRecord.project_code}` : `Provisional Patent Application Lodged: ${newRecord.title || newRecord.project_code}`,
+              detail: `Filed with Indian Patent Office. Applicant: ${newRecord.applicant_name || 'Client'}`,
+              occurredAt: (isCS ? newRecord.cs_filing_date : newRecord.ps_filing_date) || new Date().toISOString(),
+              clientVisible: true,
+              clientLabel: isCS ? 'Complete specification filed' : 'Provisional application filed',
+            });
+          }
         };
 
         await Promise.race([syncTask(), timeoutPromise]);

@@ -291,8 +291,10 @@ export function calculateAllStatutoryDeadlines(params = {}) {
   const now = new Date();
 
   // 1. Complete Specification (CS) Deadline - Section 9(1)
-  // 12 months from original PS filing date, OR 12 months from post-dated date (Section 17)
-  const csRefDate = postDatedDate || psFilingDate;
+  // Only applies to Provisional filings (12 months from original PS or post-dated date).
+  // Direct CS filings have NO CS deadline.
+  const isDirectCS = (params.specification_type || params.specificationType || '').toUpperCase() === 'CS';
+  const csRefDate = isDirectCS ? null : (postDatedDate || psFilingDate);
   const csDeadline = csRefDate ? addMonths(csRefDate, 12) : null;
 
   // 2. Form 1 (Proof of Right) Deadline - Rule 10

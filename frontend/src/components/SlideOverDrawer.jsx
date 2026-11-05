@@ -1185,6 +1185,8 @@ export default function SlideOverDrawer({
 
                 {/* 1. Section 17 Post-Dating Leeway Status Card (Moved from Overview) */}
                 {(() => {
+                  const isDirectCS = (record.specification_type || '').toUpperCase() === 'CS';
+                  if (isDirectCS) return null; // Section 17 post-dating does not apply to Direct Complete Specifications
                   const leeway = record.ps_filing_date && record.post_dated_date
                     ? validateSection17PostDating(record.ps_filing_date, record.post_dated_date)
                     : null;
@@ -1422,6 +1424,11 @@ export default function SlideOverDrawer({
 
                   {/* Interleaved Timeline Items */}
                   {(() => {
+                    const specType = (record.specification_type || 'PS').toUpperCase();
+                    const isDirectCS = specType === 'CS';
+                    const statusLower = (record.current_status || '').toLowerCase().trim();
+                    const isUnfiled = ['idf sent, awaiting data', 'ps not yet filed', 'cs not yet filed', 'drafting in-progress', 'draft ready', 'awaiting client data'].includes(statusLower) || !record.application_number || record.application_number.toLowerCase().includes('not filed');
+
                     // Generate full unified chronological milestones array
                     const timelineItems = [
                       {
@@ -1433,17 +1440,23 @@ export default function SlideOverDrawer({
                         isCompleted: true,
                         badgeColor: '#2563EB',
                       },
-                      {
+                    ];
+
+                    if (!isDirectCS) {
+                      // Provisional Specification Flow
+                      const isPsFiled = Boolean(record.ps_filing_date) && !isUnfiled;
+                      timelineItems.push({
                         key: 'ps_filing',
                         type: 'MILESTONE',
                         label: 'Provisional Specification (PS) Filing',
                         rule: 'Section 9(1) - The Patents Act',
-                        date: record.ps_filing_date,
-                        isCompleted: Boolean(record.ps_filing_date),
-                        isCurrent: (record.current_status || '').toLowerCase().includes('ps'),
+                        date: isPsFiled ? record.ps_filing_date : (record.ps_filing_date || 'Awaiting Filing'),
+                        isCompleted: isPsFiled,
+                        isCurrent: !isPsFiled || statusLower.includes('ps'),
                         badgeColor: '#10B981',
-                      },
-                      {
+                      });
+
+                      timelineItems.push({
                         key: 'f1_por',
                         type: 'FORM_STATUTORY',
                         label: 'Form 1 — Proof of Right (POR)',
@@ -1452,8 +1465,9 @@ export default function SlideOverDrawer({
                         isCompleted: record.f1_status === 'Within Deadline' || Boolean(record.form_1_filing_date),
                         statusTag: record.f1_status || (record.form_1_filing_date ? 'Filed' : 'Pending'),
                         badgeColor: '#0284C7',
-                      },
-                      {
+                      });
+
+                      timelineItems.push({
                         key: 'f26_poa',
                         type: 'FORM_STATUTORY',
                         label: 'Form 26 — Power of Authority (POA)',
@@ -1462,17 +1476,58 @@ export default function SlideOverDrawer({
                         isCompleted: record.f26_status === 'Within Deadline' || Boolean(record.form_26_filing_date),
                         statusTag: record.f26_status || (record.form_26_filing_date ? 'Filed' : 'Pending'),
                         badgeColor: '#4F46E5',
-                      },
-                      {
+                      });
+
+                      const isCsFiled = Boolean(record.cs_filing_date) && !isUnfiled;
+                      timelineItems.push({
                         key: 'cs_filing',
                         type: 'MILESTONE',
                         label: 'Complete Specification (CS) Filing',
                         rule: 'Section 9(1) (Strict 12 Months Deadline from PS)',
-                        date: record.cs_filing_date || record.cs_deadline,
-                        isCompleted: Boolean(record.cs_filing_date),
-                        isCurrent: (record.current_status || '').toLowerCase().includes('cs'),
+                        date: isCsFiled ? record.cs_filing_date : (record.cs_filing_date || record.cs_deadline || 'Pending Drafting'),
+                        isCompleted: isCsFiled,
+                        isCurrent: isPsFiled && !isCsFiled,
                         badgeColor: '#10B981',
-                      },
+                      });
+                    } else {
+                      // Direct Complete Specification (CS) Flow - NO PROVISIONAL
+                      const isCsFiled = Boolean(record.cs_filing_date) && !isUnfiled;
+                      timelineItems.push({
+                        key: 'cs_filing',
+                        type: 'MILESTONE',
+                        label: 'Complete Specification (CS) Filing (Direct)',
+                        rule: 'Section 9(1) - The Patents Act (Direct Complete Filing)',
+                        date: isCsFiled ? record.cs_filing_date : (record.cs_filing_date || 'Awaiting Filing'),
+                        isCompleted: isCsFiled,
+                        isCurrent: !isCsFiled,
+                        badgeColor: '#10B981',
+                      });
+
+                      timelineItems.push({
+                        key: 'f1_por',
+                        type: 'FORM_STATUTORY',
+                        label: 'Form 1 — Proof of Right (POR)',
+                        rule: 'Section 7(2) & Rule 10 (Within 6 Months of Filing)',
+                        date: record.form_1_filing_date || (record.cs_filing_date ? addMonths(record.cs_filing_date, 6) : null),
+                        isCompleted: record.f1_status === 'Within Deadline' || Boolean(record.form_1_filing_date),
+                        statusTag: record.f1_status || (record.form_1_filing_date ? 'Filed' : 'Pending'),
+                        badgeColor: '#0284C7',
+                      });
+
+                      timelineItems.push({
+                        key: 'f26_poa',
+                        type: 'FORM_STATUTORY',
+                        label: 'Form 26 — Power of Authority (POA)',
+                        rule: 'Section 127, 132 & Rule 135 (Within 3 Months of Filing)',
+                        date: record.form_26_filing_date || (record.cs_filing_date ? addMonths(record.cs_filing_date, 3) : null),
+                        isCompleted: record.f26_status === 'Within Deadline' || Boolean(record.form_26_filing_date),
+                        statusTag: record.f26_status || (record.form_26_filing_date ? 'Filed' : 'Pending'),
+                        badgeColor: '#4F46E5',
+                      });
+                    }
+
+                    // Downstream Statutory Prosecution Milestones
+                    timelineItems.push(
                       {
                         key: 'f9_pub',
                         type: 'MILESTONE',
@@ -1520,7 +1575,7 @@ export default function SlideOverDrawer({
                         isCompleted: Boolean(record.grant_date),
                         badgeColor: '#059669',
                       }
-                    ];
+                    );
 
                     return (
                       <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: '14px', paddingLeft: '28px', marginTop: '6px' }}>
