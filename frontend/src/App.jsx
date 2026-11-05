@@ -411,8 +411,15 @@ export default function App() {
         );
 
         const syncTask = async () => {
-          const pcId = await ensurePatentProjectCode(newRecord);
-          const resolvedClientId = newRecord.client_id || resolveClientId(newRecord.applicant_name, newRecord.is_mahe);
+          const resolvedClientId = newRecord.client_id || (await resolveClientIdAsync(newRecord.applicant_name, newRecord.is_mahe, newRecord.project_code, clients));
+          const isMahe = Boolean(resolvedClientId === MAHE_CLIENT_ID || (newRecord.applicant_name && /manipal|mahe/i.test(newRecord.applicant_name)));
+          const validEntityCategory = normalizeEntityCategory(newRecord.entity_category, isMahe);
+          const pcId = await ensurePatentProjectCode({
+            ...newRecord,
+            client_id: resolvedClientId,
+            is_mahe: isMahe,
+            entity_category: validEntityCategory,
+          }, clients);
 
           await patentDb.from('applications').insert({
             project_code: newRecord.project_code,
@@ -579,8 +586,15 @@ export default function App() {
         );
 
         const syncTask = async () => {
-          const pcId = await ensurePatentProjectCode(finalizedRecord);
-          const resolvedClientId = finalizedRecord.client_id || resolveClientId(finalizedRecord.applicant_name, finalizedRecord.is_mahe);
+          const resolvedClientId = finalizedRecord.client_id || (await resolveClientIdAsync(finalizedRecord.applicant_name, finalizedRecord.is_mahe, finalizedRecord.project_code, clients));
+          const isMahe = Boolean(resolvedClientId === MAHE_CLIENT_ID || (finalizedRecord.applicant_name && /manipal|mahe/i.test(finalizedRecord.applicant_name)));
+          const validEntityCategory = normalizeEntityCategory(finalizedRecord.entity_category, isMahe);
+          const pcId = await ensurePatentProjectCode({
+            ...finalizedRecord,
+            client_id: resolvedClientId,
+            is_mahe: isMahe,
+            entity_category: validEntityCategory,
+          }, clients);
 
           // 1. Applications table
           await patentDb
@@ -596,6 +610,8 @@ export default function App() {
                 ? finalizedRecord.tags.join(', ')
                 : (finalizedRecord.classification || null),
               applicant_name: finalizedRecord.applicant_name || null,
+              is_mahe: isMahe,
+              entity_category: validEntityCategory,
               assigned_to: finalizedRecord.assigned_to || null,
               current_status: finalizedRecord.current_status,
               color_code_status: finalizedRecord.color_code_status,

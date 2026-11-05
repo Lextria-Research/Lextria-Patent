@@ -11,6 +11,7 @@ import { getStatusColor } from '../constants/patentStatuses';
 import PhasedStatusSelector from './PhasedStatusSelector';
 import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
+import { normalizeEntityCategory, findClientInList, resolveClientId, MAHE_CLIENT_ID } from '../lib/ecosystemSync';
 
 const DRAFTERS = getActiveDrafters();
 
@@ -208,6 +209,31 @@ export default function CreateApplicationModal({
       return;
     }
 
+    const trimmedName = applicantFormData.name.trim();
+    const matchedClient = findClientInList(trimmedName, formData.project_code, effectiveClients);
+    const isMahe =
+      matchedClient
+        ? ((matchedClient.client_code || '').toUpperCase() === 'MAHE' || /manipal|mahe/i.test(matchedClient.client_name))
+        : /manipal|mahe/i.test(trimmedName);
+
+    const validCat = normalizeEntityCategory(applicantFormData.type, isMahe);
+
+    if (matchedClient) {
+      setSelectedClientId(matchedClient.id);
+      setFormData((prev) => ({
+        ...prev,
+        client_id: matchedClient.id,
+        is_mahe: isMahe,
+        entity_category: validCat,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        is_mahe: isMahe,
+        entity_category: validCat,
+      }));
+    }
+
     if (editingApplicantId) {
       setApplicantsList((prev) => {
         return prev.map((a) => {
@@ -215,7 +241,9 @@ export default function CreateApplicationModal({
             return {
               ...a,
               ...applicantFormData,
-              name: applicantFormData.name.trim(),
+              name: trimmedName,
+              client_id: matchedClient?.id || a.client_id,
+              type: validCat,
             };
           }
           return applicantFormData.is_primary ? { ...a, is_primary: false } : a;
@@ -225,7 +253,9 @@ export default function CreateApplicationModal({
       const newApp = {
         id: `app_${Date.now()}`,
         ...applicantFormData,
-        name: applicantFormData.name.trim(),
+        name: trimmedName,
+        client_id: matchedClient?.id,
+        type: validCat,
         is_primary: applicantsList.length === 0 || applicantFormData.is_primary,
       };
       setApplicantsList((prev) => {
@@ -321,27 +351,41 @@ export default function CreateApplicationModal({
         found.client_name.toLowerCase().includes('manipal') ||
         found.client_name.toLowerCase().includes('mahe');
 
-      let suggestedEntity = 'OTHER';
-      if (isMahe) suggestedEntity = 'EDUCATIONAL_INSTITUTION';
-      else if (found.entity_type === 'STARTUP') suggestedEntity = 'STARTUP_DPIIT';
-      else if (found.entity_type === 'SMALL_ENTITY') suggestedEntity = 'SMALL_ENTITY_UDYAM';
-      else if (found.entity_type === 'NATURAL_PERSON') suggestedEntity = 'INDIVIDUAL';
-      else if (found.entity_type === 'EDUCATIONAL') suggestedEntity = 'EDUCATIONAL_INSTITUTION';
-      else if (found.entity_type === 'LARGE') suggestedEntity = 'LARGE_ENTITY';
+      const suggestedEntity = normalizeEntityCategory(found.entity_type, isMahe);
 
       setFormData((prev) => {
         let newProjectCode = prev.project_code;
-        if ((!newProjectCode || newProjectCode === 'AR' || newProjectCode.startsWith('PAT-')) && found.client_code) {
+        if ((!newProjectCode || newProjectCode === 'AR' || newProjectCode.startsWith('PAT-') || newProjectCode.startsWith('AR')) && found.client_code) {
           newProjectCode = `${found.client_code}-01`;
         }
         return {
           ...prev,
+          client_id: found.id,
           applicant_name: found.client_name,
+          applicant_address: found.billing_address || found.address || '',
+          applicant_email: found.email || '',
+          applicant_phone: found.phone || '',
           is_mahe: isMahe,
           entity_category: suggestedEntity,
           project_code: newProjectCode,
         };
       });
+
+      setApplicantsList([
+        {
+          id: 'app_1',
+          name: found.client_name,
+          client_id: found.id,
+          type: suggestedEntity,
+          gender: '',
+          nationality: 'Indian',
+          country_of_residence: 'India',
+          address: found.billing_address || found.address || '',
+          email: found.email || '',
+          phone: found.phone || '',
+          is_primary: true,
+        }
+      ]);
     }
   };
 
@@ -350,18 +394,36 @@ export default function CreateApplicationModal({
     setInternalClients((prev) => [newClient, ...prev]);
     setSelectedClientId(newClient.id);
     
-    let suggestedEntity = 'OTHER';
-    if (newClient.entity_type === 'STARTUP') suggestedEntity = 'STARTUP_DPIIT';
-    else if (newClient.entity_type === 'SMALL_ENTITY') suggestedEntity = 'SMALL_ENTITY_UDYAM';
-    else if (newClient.entity_type === 'NATURAL_PERSON') suggestedEntity = 'INDIVIDUAL';
-    else if (newClient.entity_type === 'EDUCATIONAL') suggestedEntity = 'EDUCATIONAL_INSTITUTION';
+    const isMahe = (newClient.client_code || '').toUpperCase() === 'MAHE' || /manipal|mahe/i.test(newClient.client_name);
+    const suggestedEntity = normalizeEntityCategory(newClient.entity_type, isMahe);
 
     setFormData((prev) => ({
       ...prev,
+      client_id: newClient.id,
       applicant_name: newClient.client_name,
+      applicant_address: newClient.billing_address || newClient.address || '',
+      applicant_email: newClient.email || '',
+      applicant_phone: newClient.phone || '',
+      is_mahe: isMahe,
       entity_category: suggestedEntity,
       project_code: newClient.client_code ? `${newClient.client_code}-01` : prev.project_code,
     }));
+
+    setApplicantsList([
+      {
+        id: 'app_1',
+        name: newClient.client_name,
+        client_id: newClient.id,
+        type: suggestedEntity,
+        gender: '',
+        nationality: 'Indian',
+        country_of_residence: 'India',
+        address: newClient.billing_address || newClient.address || '',
+        email: newClient.email || '',
+        phone: newClient.phone || '',
+        is_primary: true,
+      }
+    ]);
 
     if (onClientCreated) {
       onClientCreated(newClient);
@@ -411,12 +473,25 @@ export default function CreateApplicationModal({
     const summary = inventorsList.map((i) => i.name).join(', ');
     const primaryApp = applicantsList.find((a) => a.is_primary) || applicantsList[0] || {};
     const allApplicantNames = applicantsList.map((a) => a.name).filter(Boolean).join('; ');
+    const chosenName = allApplicantNames || primaryApp.name || formData.applicant_name;
+
+    const finalClientId =
+      selectedClientId ||
+      formData.client_id ||
+      primaryApp.client_id ||
+      resolveClientId(chosenName, formData.is_mahe, effectiveClients, formData.project_code);
+
+    const isMahe = Boolean(finalClientId === MAHE_CLIENT_ID || /manipal|mahe/i.test(chosenName));
+    const validEntity = normalizeEntityCategory(formData.entity_category || primaryApp.type, isMahe);
+
     const payload = {
       ...formData,
+      client_id: finalClientId,
+      is_mahe: isMahe,
+      entity_category: validEntity,
       applicants: applicantsList,
-      applicant_name: allApplicantNames || primaryApp.name || formData.applicant_name,
-      applicant_type: primaryApp.type || formData.applicant_type,
-      entity_category: primaryApp.type || formData.entity_category,
+      applicant_name: chosenName,
+      applicant_type: validEntity,
       applicant_address: primaryApp.address || formData.applicant_address,
       applicant_email: primaryApp.email || formData.applicant_email,
       applicant_phone: primaryApp.phone || formData.applicant_phone,
@@ -656,6 +731,51 @@ export default function CreateApplicationModal({
                 marginBottom: '16px',
               }}
             >
+              <div style={{ marginBottom: '14px', padding: '10px 12px', background: 'var(--surface)', borderRadius: '6px', border: '1px solid var(--line)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', color: 'var(--accent)', letterSpacing: '0.4px' }}>
+                    Select Firm Client (Auto-fills applicant &amp; links matter to Client Portal) *
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddClientOpen(true)}
+                    style={{
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--accent)',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '3px',
+                    }}
+                  >
+                    <Plus size={11} /> + New Client
+                  </button>
+                </div>
+                <select
+                  value={selectedClientId || formData.client_id || ''}
+                  onChange={handleClientSelect}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1.5px solid var(--accent, #2563EB)',
+                    background: 'var(--page)',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    color: 'var(--ink)'
+                  }}
+                >
+                  <option value="">-- Choose client to automatically assign portal visibility &amp; details --</option>
+                  {effectiveClients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.client_code ? `[${c.client_code}] ` : ''}{c.client_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Building size={16} color="var(--accent)" />
