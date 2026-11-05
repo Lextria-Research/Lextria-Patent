@@ -535,9 +535,14 @@ export default function App() {
 
     const newCode = (updatedFields.project_code && updatedFields.project_code.trim()) || projectCode;
 
+    const isShiftOrAbandon = (updatedFields.current_status || '').toLowerCase().includes('ip shift') ||
+      (updatedFields.current_status || '').toLowerCase().includes('abandon') ||
+      (updatedFields.color_code_status || '').toUpperCase() === 'RED';
+
     const finalizedRecord = {
       ...merged,
       project_code: newCode,
+      ...(isShiftOrAbandon ? { is_abandoned: true, color_code_status: 'RED' } : {}),
       cs_deadline: statutory.cs_deadline,
       form_1_deadline: statutory.form_1_deadline,
       form_26_deadline: statutory.form_26_deadline,

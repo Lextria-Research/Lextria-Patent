@@ -33,13 +33,13 @@ const SPEC_TYPES = [
 ];
 
 const COLOR_CODES = [
-  { value: 'PURPLE', label: 'Purple (Internal Drafting / Triage)' },
-  { value: 'YELLOW', label: 'Yellow (Pending Inventor / External Query)' },
-  { value: 'ORANGE', label: 'Orange (Draft Ready, Pending Final Signoff)' },
+  { value: 'PURPLE', label: 'Purple (Waiting Information / Data)' },
+  { value: 'YELLOW', label: 'Yellow (Under Drafting)' },
+  { value: 'GREY', label: 'Grey (Under Review / QA)' },
+  { value: 'ORANGE', label: 'Orange (Waiting Client Confirmation)' },
   { value: 'GREEN', label: 'Green (Approved / Filed at IPO)' },
-  { value: 'RED', label: 'Red (Critical Due Soon / Overdue)' },
-  { value: 'BLUE', label: 'Blue (Standard In-Progress)' },
-  { value: 'GREY', label: 'Grey (Abandoned / Closed)' },
+  { value: 'BLUE', label: 'Blue (Published / Office Action)' },
+  { value: 'RED', label: 'Red (Abandoned / Shift from patent to other IP)' },
 ];
 
 export default function EditApplicationModal({

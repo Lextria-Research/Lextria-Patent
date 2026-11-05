@@ -40,12 +40,13 @@ const ENTITY_CATEGORIES = [
 ];
 
 const COLOR_CODES = [
-  { value: 'PURPLE', label: 'Purple (Internal Drafting / Triage)', bg: '#8B5CF6' },
-  { value: 'YELLOW', label: 'Yellow (Pending Inventor / External Query)', bg: '#EAB308' },
-  { value: 'ORANGE', label: 'Orange (Draft Ready, Pending Final Signoff)', bg: '#F97316' },
+  { value: 'PURPLE', label: 'Purple (Waiting Information / Data)', bg: '#8B5CF6' },
+  { value: 'YELLOW', label: 'Yellow (Under Drafting)', bg: '#EAB308' },
+  { value: 'GREY', label: 'Grey (Under Review / QA)', bg: '#94A3B8' },
+  { value: 'ORANGE', label: 'Orange (Waiting Client Confirmation)', bg: '#F97316' },
   { value: 'GREEN', label: 'Green (Approved / Filed at IPO)', bg: '#10B981' },
-  { value: 'RED', label: 'Red (Critical Due Soon / Overdue)', bg: '#EF4444' },
-  { value: 'BLUE', label: 'Blue (Standard In-Progress)', bg: '#3B82F6' },
+  { value: 'BLUE', label: 'Blue (Published / Office Action)', bg: '#3B82F6' },
+  { value: 'RED', label: 'Red (Abandoned / Shift from patent to other IP)', bg: '#EF4444' },
 ];
 
 export default function CreateApplicationModal({

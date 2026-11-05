@@ -11,7 +11,7 @@ import {
   FileText, ExternalLink, Plus, Edit3, Tag as TagIcon,
   CheckSquare, Square, User, Building, X, UserCheck
 } from 'lucide-react';
-import { getStatusColor, PROSECUTION_PHASES, STATUTORY_STATUSES, getStatusPhase } from '../constants/patentStatuses';
+import { getStatusColor, STATUS_COLORS, PROSECUTION_PHASES, STATUTORY_STATUSES, getStatusPhase } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
 import { getNearestStatutoryDeadline } from '../utils/statutoryDeadlines';
 
@@ -39,6 +39,7 @@ export default function MasterDataGrid({
   const [tagFilter, setTagFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [patentTypeFilter, setPatentTypeFilter] = useState('ALL');
+  const [colorFilter, setColorFilter] = useState('ALL');
   const [deliveryUrgencyFilter, setDeliveryUrgencyFilter] = useState('ALL'); // ALL, OVERDUE, DUE_2, DUE_7, ON_TRACK, NO_DATE
   const [sorting, setSorting] = useState([{ id: 'project_code', desc: false }]);
   const [rowSelection, setRowSelection] = useState({});
@@ -207,6 +208,27 @@ export default function MasterDataGrid({
       data = data.filter((r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.trim().toLowerCase());
     }
 
+    // Color-wise filter (Green, Yellow, Grey, Orange, Purple, Blue, Red)
+    if (colorFilter && colorFilter !== 'ALL') {
+      data = data.filter((r) => {
+        const isRed = r.is_abandoned === true ||
+          (r.current_status || '').toLowerCase().includes('ip shift') ||
+          (r.current_status || '').toLowerCase().includes('abandon') ||
+          (r.color_code_status || '').toUpperCase() === 'RED';
+
+        if (colorFilter === 'RED') {
+          return isRed;
+        }
+        if (isRed) {
+          return false;
+        }
+
+        const stCol = getStatusColor(r.current_status);
+        const rColorKey = (r.color_code_status || '').toUpperCase();
+        return rColorKey === colorFilter || stCol?.key === colorFilter;
+      });
+    }
+
     // Global Search filter
     if (globalFilter.trim()) {
       const q = globalFilter.toLowerCase();
@@ -221,7 +243,30 @@ export default function MasterDataGrid({
     }
 
     return data;
-  }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, patentTypeFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
+  }, [records, activeKpiFilter, clientFilter, tagFilter, statusFilter, patentTypeFilter, colorFilter, deliveryUrgencyFilter, globalFilter, userRole, selectedDrafter]);
+
+  // Color counts for color-wise filter dropdown
+  const colorCountsMap = useMemo(() => {
+    const counts = { GREEN: 0, YELLOW: 0, GREY: 0, ORANGE: 0, PURPLE: 0, BLUE: 0, RED: 0 };
+    records.forEach((r) => {
+      const isRed = r.is_abandoned === true ||
+        (r.current_status || '').toLowerCase().includes('ip shift') ||
+        (r.current_status || '').toLowerCase().includes('abandon') ||
+        (r.color_code_status || '').toUpperCase() === 'RED';
+
+      if (isRed) {
+        counts.RED++;
+      } else {
+        const stCol = getStatusColor(r.current_status);
+        const k = (r.color_code_status && counts[r.color_code_status.toUpperCase()] !== undefined)
+          ? r.color_code_status.toUpperCase()
+          : (stCol?.key || 'GREY');
+        if (counts[k] !== undefined) counts[k]++;
+        else counts.GREY++;
+      }
+    });
+    return counts;
+  }, [records]);
 
   // Grouped statutory statuses for filter dropdown with counts
   const { phaseGroupedStatuses } = useMemo(() => {
@@ -644,7 +689,8 @@ export default function MasterDataGrid({
         size: 160,
         cell: ({ row }) => {
           const st = row.original.current_status || 'Idf sent, awaiting data';
-          const col = getStatusColor(st);
+          const isRed = row.original.is_abandoned || st.toLowerCase().includes('ip shift') || st.toLowerCase().includes('abandon') || (row.original.color_code_status || '').toUpperCase() === 'RED';
+          const col = isRed ? STATUS_COLORS.RED : getStatusColor(st);
 
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
@@ -883,6 +929,34 @@ export default function MasterDataGrid({
             <option value="PS">PS (Provisional)</option>
             <option value="PS-CS">PS-CS (Prov to Complete)</option>
             <option value="CS">CS (Direct Complete)</option>
+          </select>
+
+          {/* Color-wise Filter Dropdown (Green, Yellow, Grey, Orange, Purple, Blue, Red) */}
+          <select
+            value={colorFilter}
+            onChange={(e) => setColorFilter(e.target.value)}
+            style={{
+              padding: '7px 10px',
+              borderRadius: '6px',
+              border: colorFilter !== 'ALL' ? '1.5px solid var(--accent, #3A86FF)' : '1px solid var(--line)',
+              background: 'var(--page)',
+              color: 'var(--ink)',
+              fontSize: '12px',
+              fontWeight: 600,
+              maxWidth: '150px',
+              outline: 'none',
+              cursor: 'pointer'
+            }}
+            title="Filter by Color Code Status (Green, Yellow, Grey, Orange, Purple, Blue, Red)"
+          >
+            <option value="ALL">All Colors ({records.length})</option>
+            <option value="GREEN">🟢 Green ({colorCountsMap.GREEN})</option>
+            <option value="YELLOW">🟡 Yellow ({colorCountsMap.YELLOW})</option>
+            <option value="GREY">⚪ Grey ({colorCountsMap.GREY})</option>
+            <option value="ORANGE">🟠 Orange ({colorCountsMap.ORANGE})</option>
+            <option value="PURPLE">🟣 Purple ({colorCountsMap.PURPLE})</option>
+            <option value="BLUE">🔵 Blue ({colorCountsMap.BLUE})</option>
+            <option value="RED">🔴 Red · Abandoned/Shift ({colorCountsMap.RED})</option>
           </select>
 
           {/* Status Dropdown Filter (Phase Grouped & Statutory) */}

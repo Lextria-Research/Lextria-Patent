@@ -8,7 +8,17 @@
 // Blue: Official Office Action / Published / Milestones
 
 export const STATUS_COLORS = {
+  RED: {
+    key: 'RED',
+    bg: 'var(--badge-red-bg, rgba(239, 68, 68, 0.15))',
+    text: 'var(--badge-red-text, #EF4444)',
+    border: 'var(--badge-red-border, rgba(239, 68, 68, 0.35))',
+    dot: '#EF4444',
+    badgeClass: 'bg-red-50 text-red-800 border-red-300 dark:bg-red-950/60 dark:text-red-300 dark:border-red-700',
+    meaning: 'Abandoned / Shift from patent to other IP'
+  },
   GREEN: {
+    key: 'GREEN',
     bg: 'var(--badge-green-bg, rgba(16, 185, 129, 0.15))',
     text: 'var(--badge-green-text, #10B981)',
     border: 'var(--badge-green-border, rgba(16, 185, 129, 0.35))',
@@ -17,6 +27,7 @@ export const STATUS_COLORS = {
     meaning: 'Filed (Official Registry Action Complete)'
   },
   YELLOW: {
+    key: 'YELLOW',
     bg: 'var(--badge-yellow-bg, rgba(245, 158, 11, 0.15))',
     text: 'var(--badge-yellow-text, #F59E0B)',
     border: 'var(--badge-yellow-border, rgba(245, 158, 11, 0.35))',
@@ -25,6 +36,7 @@ export const STATUS_COLORS = {
     meaning: 'Under drafting (by internal legal/tech team)'
   },
   GREY: {
+    key: 'GREY',
     bg: 'var(--badge-grey-bg, rgba(148, 163, 184, 0.15))',
     text: 'var(--badge-grey-text, #94A3B8)',
     border: 'var(--badge-grey-border, rgba(148, 163, 184, 0.35))',
@@ -33,6 +45,7 @@ export const STATUS_COLORS = {
     meaning: 'Under review (by senior attorney / QA team)'
   },
   ORANGE: {
+    key: 'ORANGE',
     bg: 'var(--badge-orange-bg, rgba(249, 115, 22, 0.15))',
     text: 'var(--badge-orange-text, #F97316)',
     border: 'var(--badge-orange-border, rgba(249, 115, 22, 0.35))',
@@ -41,6 +54,7 @@ export const STATUS_COLORS = {
     meaning: 'Waiting confirmation (by client)'
   },
   PURPLE: {
+    key: 'PURPLE',
     bg: 'var(--badge-purple-bg, rgba(139, 92, 246, 0.15))',
     text: 'var(--badge-purple-text, #A78BFA)',
     border: 'var(--badge-purple-border, rgba(139, 92, 246, 0.35))',
@@ -49,6 +63,7 @@ export const STATUS_COLORS = {
     meaning: 'Waiting information / data (from client)'
   },
   BLUE: {
+    key: 'BLUE',
     bg: 'var(--badge-blue-bg, rgba(59, 130, 246, 0.15))',
     text: 'var(--badge-blue-text, #60A5FA)',
     border: 'var(--badge-blue-border, rgba(59, 130, 246, 0.35))',
@@ -456,6 +471,15 @@ export const STATUTORY_STATUSES = [
     colorKey: 'BLUE',
     colorName: 'blue',
     tip: 'High Court arguments concluded. Reserved for final judgment / remand order.'
+  },
+  // --- Phase 8: IP Shift & Abandoned ---
+  {
+    id: 'STATUS_34_IP_SHIFT',
+    name: 'IP Shift',
+    phase: 'PHASE_8_IP_SHIFT',
+    colorKey: 'RED',
+    colorName: 'red',
+    tip: 'Application shifted from patent prosecution to other Intellectual Property (Design, Trademark, Copyright, Trade Secret) or abandoned.'
   }
 ];
 
@@ -465,6 +489,16 @@ export const STATUTORY_STATUSES = [
 export function getStatusColor(statusName) {
   if (!statusName) return STATUS_COLORS.GREY;
   const norm = String(statusName).trim().toLowerCase();
+
+  // IP Shift / Abandoned explicitly RED
+  if (
+    norm.includes('ip shift') ||
+    norm.includes('shift') ||
+    norm.includes('abandoned') ||
+    norm.includes('abandon')
+  ) {
+    return STATUS_COLORS.RED;
+  }
 
   // Find exact or partial match in statutory list
   const found = STATUTORY_STATUSES.find((s) => s.name.toLowerCase() === norm);
@@ -561,6 +595,7 @@ export function getStatusPhase(statusName, specType = null) {
   if (norm.includes('fer') || norm.includes('form-3')) return 'PHASE_4_FER';
   if (norm.includes('hearing') || norm.includes('ws ') || norm.includes('form-30')) return 'PHASE_5_HEARING';
   if (norm.includes('grant') || norm.includes('renew')) return 'PHASE_6_GRANT_RENEWAL';
+  if (norm.includes('ip shift') || norm.includes('shift') || norm.includes('abandon')) return 'PHASE_8_IP_SHIFT';
   if (norm.includes('appeal') || norm.includes('court') || norm.includes('refused')) return 'PHASE_7_APPEAL';
 
   return 'PHASE_1_PS';
@@ -579,6 +614,7 @@ export function normalizeStatus(status, specType = 'PROVISIONAL') {
   const exact = STATUTORY_STATUSES.find((st) => st.name.toLowerCase() === lower);
   if (exact) return exact.name;
 
+  if (lower.includes('ip shift') || lower.includes('abandon')) return 'IP Shift';
   if (lower.includes('renewed')) return s;
 
   // Legacy string mappings
