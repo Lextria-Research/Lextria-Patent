@@ -1,10 +1,10 @@
 // frontend/src/components/CreateApplicationModal.jsx
 import { getActiveDrafters } from '../lib/authStore';
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   X, Plus, Trash2, Edit3, FileText, Calendar, User, Building, Tag as TagIcon,
   ExternalLink, CheckCircle2, Shield, AlertTriangle, Clock, IndianRupee,
-  Layers, AlertCircle
+  Layers, AlertCircle, Upload, Sparkles, RefreshCw, FileCheck
 } from 'lucide-react';
 import { calculateAllStatutoryDeadlines, validateSection17PostDating, checkDeliveryVsStatutory } from '../utils/statutoryDeadlines';
 import { getStatusColor } from '../constants/patentStatuses';
@@ -12,6 +12,7 @@ import PhasedStatusSelector from './PhasedStatusSelector';
 import AddClientModal from './AddClientModal';
 import DEFAULT_CLIENTS from '../data/clients.json';
 import { normalizeEntityCategory, findClientInList, resolveClientId, MAHE_CLIENT_ID } from '../lib/ecosystemSync';
+import { parseIdfDocx } from '../utils/docxIdfParser';
 
 const DRAFTERS = getActiveDrafters();
 
@@ -81,6 +82,14 @@ export default function CreateApplicationModal({
   }, [internalClients]);
 
   const [isAddClientOpen, setIsAddClientOpen] = useState(false);
+
+  // Word Doc (.docx) IDF Intake State
+  const fileInputRef = useRef(null);
+  const [idfParsing, setIdfParsing] = useState(false);
+  const [idfResult, setIdfResult] = useState(null);
+  const [idfFileName, setIdfFileName] = useState('');
+  const [idfError, setIdfError] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
 
   // Auto-generate next candidate project code e.g. AR432
   const defaultCode = () => {
@@ -454,6 +463,80 @@ export default function CreateApplicationModal({
     });
   };
 
+  // Handle Inventor IDF Word Document (.docx) parsing and auto-fill
+  const handleIdfFileSelected = async (file) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.docx')) {
+      setIdfError('Please upload a valid Microsoft Word document (.docx format).');
+      return;
+    }
+    setIdfError('');
+    setIdfParsing(true);
+    setIdfFileName(file.name);
+    try {
+      const parsed = await parseIdfDocx(file);
+      if (!parsed.success) {
+        setIdfError(parsed.error || 'Failed to parse IDF Word document.');
+        setIdfParsing(false);
+        return;
+      }
+
+      setIdfResult(parsed);
+
+      // Auto-fill form fields
+      setFormData((prev) => ({
+        ...prev,
+        title: parsed.title || prev.title,
+        applicant_name: parsed.applicant_name || prev.applicant_name,
+        applicant_address: parsed.applicant_address || prev.applicant_address,
+        applicant_email: parsed.applicant_email || prev.applicant_email,
+        applicant_phone: parsed.applicant_phone || prev.applicant_phone,
+        applicant_country: parsed.applicant_country || prev.applicant_country,
+        applicant_gender: parsed.applicant_gender || prev.applicant_gender,
+        applicant_nationality: parsed.applicant_nationality || prev.applicant_nationality,
+        is_mahe: parsed.is_mahe ?? prev.is_mahe,
+        entity_category: parsed.entity_category || prev.entity_category,
+        applicant_type: parsed.applicant_type || prev.applicant_type,
+        abstract: parsed.abstract || prev.abstract,
+        inventors_summary: parsed.inventors_summary || prev.inventors_summary,
+      }));
+
+      // Update inventors list if inventors were extracted
+      if (parsed.inventorsList && parsed.inventorsList.length > 0) {
+        setInventorsList(parsed.inventorsList);
+      }
+
+      // Update applicants list if extracted
+      if (parsed.applicantsList && parsed.applicantsList.length > 0) {
+        setApplicantsList(parsed.applicantsList);
+      }
+
+      // Auto-match client in effectiveClients
+      if (parsed.applicant_name) {
+        const match = effectiveClients.find((c) =>
+          c.client_name.toLowerCase().includes(parsed.applicant_name.toLowerCase()) ||
+          parsed.applicant_name.toLowerCase().includes(c.client_name.toLowerCase()) ||
+          (parsed.is_mahe && ((c.client_code || '').toUpperCase() === 'MAHE' || /manipal/i.test(c.client_name)))
+        );
+        if (match) {
+          setSelectedClientId(match.id);
+        }
+      }
+    } catch (err) {
+      console.error('Error handling IDF upload:', err);
+      setIdfError('Error reading Word file: ' + err.message);
+    } finally {
+      setIdfParsing(false);
+    }
+  };
+
+  const handleClearIdf = () => {
+    setIdfResult(null);
+    setIdfFileName('');
+    setIdfError('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.project_code.trim()) {
@@ -629,6 +712,271 @@ export default function CreateApplicationModal({
               <span>{error}</span>
             </div>
           )}
+
+          {/* WORD DOC (.DOCX) IDF INTAKE & AUTO-FILL ZONE */}
+          <div
+            style={{
+              marginBottom: '20px',
+              padding: '16px',
+              background: idfResult
+                ? 'linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(5, 150, 105, 0.04))'
+                : isDragOver
+                ? 'rgba(37, 99, 235, 0.1)'
+                : 'linear-gradient(135deg, rgba(37, 99, 235, 0.05), rgba(79, 70, 229, 0.03))',
+              border: idfResult
+                ? '1.5px solid #10B981'
+                : isDragOver
+                ? '2px dashed #2563EB'
+                : '1.5px dashed var(--accent)',
+              borderRadius: '10px',
+              position: 'relative',
+              transition: 'all 0.2s ease',
+            }}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDragOver(false);
+              if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                handleIdfFileSelected(e.dataTransfer.files[0]);
+              }
+            }}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              style={{ display: 'none' }}
+              onChange={(e) => {
+                if (e.target.files && e.target.files[0]) {
+                  handleIdfFileSelected(e.target.files[0]);
+                }
+              }}
+            />
+
+            {!idfResult && !idfParsing && (
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '14px',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '8px',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    <Upload size={20} />
+                  </div>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '2px', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                        Auto-Fill from Inventor IDF Word Document (.docx)
+                      </span>
+                      <span
+                        style={{
+                          fontSize: '10px',
+                          fontWeight: 800,
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: '#E0E7FF',
+                          color: '#3730A3',
+                          letterSpacing: '0.3px',
+                        }}
+                      >
+                        MAHE & GENERAL IDFs SUPPORTED
+                      </span>
+                    </div>
+                    <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0, lineHeight: 1.4 }}>
+                      Drop the filled Word doc here or click to browse. Automatically extracts Title, Inventors (with Affiliation/MAHE & contact), Applicant, SDG goals, and Invention summary.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  style={{
+                    padding: '7px 14px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--accent)',
+                    background: 'var(--surface)',
+                    color: 'var(--accent)',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                  }}
+                >
+                  <Sparkles size={14} />
+                  Select .docx File
+                </button>
+              </div>
+            )}
+
+            {idfParsing && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '6px 0' }}>
+                <RefreshCw size={20} className="animate-spin" color="var(--accent)" />
+                <div>
+                  <div style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                    Extracting data from {idfFileName}...
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                    Reading tables, inventors, applicant information, and technical sections...
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {idfResult && (
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                    <CheckCircle2 size={18} color="#10B981" />
+                    <span style={{ fontSize: '13px', fontWeight: 800, color: '#065F46' }}>
+                      IDF Extracted & Pre-Filled: {idfFileName}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: idfResult.is_mahe ? '#DBEAFE' : '#E0E7FF',
+                        color: idfResult.is_mahe ? '#1E40AF' : '#3730A3',
+                      }}
+                    >
+                      {idfResult.is_mahe ? 'MAHE TEMPLATE' : 'GENERAL TEMPLATE'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
+                        color: 'var(--ink)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Replace .docx
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleClearIdf}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        border: 'none',
+                        background: 'transparent',
+                        color: 'var(--muted)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+                {idfResult.isTemplateOnly && (
+                  <div
+                    style={{
+                      marginBottom: '10px',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      background: '#FEF3C7',
+                      border: '1px solid #FCD34D',
+                      color: '#92400E',
+                      fontSize: '12px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                    }}
+                  >
+                    <AlertTriangle size={15} />
+                    <span>
+                      <strong>Note:</strong> The uploaded file appears to be a blank template. Form was pre-populated with default structure; please enter inventor details or upload an inventor-filled copy.
+                    </span>
+                  </div>
+                )}
+
+                {/* Extraction Badges Grid */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                  {idfResult.title && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>Title:</strong> {idfResult.title.length > 50 ? idfResult.title.slice(0, 50) + '...' : idfResult.title}
+                    </div>
+                  )}
+                  {idfResult.applicant_name && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>Applicant:</strong> {idfResult.applicant_name}
+                    </div>
+                  )}
+                  {idfResult.inventorsList && idfResult.inventorsList.length > 0 && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>Inventors ({idfResult.inventorsList.length}):</strong> {idfResult.inventors_summary}
+                    </div>
+                  )}
+                  {(idfResult.applicant_phone || idfResult.applicant_email) && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>Contact:</strong> {[idfResult.applicant_phone, idfResult.applicant_email].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
+                  {idfResult.sdg_goals && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>SDG:</strong> {idfResult.sdg_goals}
+                    </div>
+                  )}
+                  {idfResult.abstract && (
+                    <div style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '4px', background: '#ECFDF5', border: '1px solid #A7F3D0', color: '#065F46' }}>
+                      <strong>Technical Summary:</strong> Extracted
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {idfError && (
+              <div
+                style={{
+                  marginTop: '10px',
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  background: '#FEF2F2',
+                  border: '1px solid #FCA5A5',
+                  color: '#991B1B',
+                  fontSize: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircle size={15} />
+                <span>{idfError}</span>
+              </div>
+            )}
+          </div>
 
           {/* Section 1: Core Identifiers */}
           <div style={{ marginBottom: '20px' }}>

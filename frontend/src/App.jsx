@@ -25,6 +25,7 @@ import AdminTeamOverview from './components/AdminTeamOverview';
 import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
+import CliqAssignmentModal from './components/CliqAssignmentModal';
 import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
 import { normalizeStatus } from './constants/patentStatuses';
@@ -39,7 +40,7 @@ import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings, LogOut,
   Plus, Download, UserCheck, Shield, Briefcase, Scale,
-  Sparkles, CheckCircle2, AlertTriangle, Layers, Users
+  Sparkles, CheckCircle2, AlertTriangle, Layers, Users, Zap
 } from 'lucide-react';
 
 const DEFAULT_TAGS = [
@@ -82,6 +83,7 @@ export default function App() {
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [isTvMode, setIsTvMode] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isCliqModalOpen, setIsCliqModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   // timelineRecord replaced by SlideOverDrawer Master Timeline tab
   const [isReassignOpen, setIsReassignOpen] = useState(false);
@@ -1127,6 +1129,28 @@ export default function App() {
               </button>
             )}
 
+            {/* Quick Zoho Cliq Assignment Intake Button */}
+            <button
+              onClick={() => setIsCliqModalOpen(true)}
+              className="action-btn-interactive"
+              style={{
+                padding: '6px 12px',
+                borderRadius: '6px',
+                border: '1px solid #0284C7',
+                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(14, 165, 233, 0.05))',
+                color: '#0284C7',
+                fontSize: '12px',
+                fontWeight: 800,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+              }}
+              title="Parse assignment message from Zoho Cliq channel to auto-generate patent entry"
+            >
+              <Zap size={14} color="#0284C7" /> Cliq Assignment
+            </button>
+
             {/* New Application Button */}
             <button
               onClick={() => setIsCreateOpen(true)}
@@ -1646,6 +1670,17 @@ export default function App() {
           setFirmSettings(updatedSettings);
           showToast('Firm settings and Zoho integrations saved!');
         }}
+        onCliqAssignmentCreate={handleCreateApplication}
+        records={records}
+      />
+
+      {/* Zoho Cliq Assignment Quick Intake Modal */}
+      <CliqAssignmentModal
+        isOpen={isCliqModalOpen}
+        onClose={() => setIsCliqModalOpen(false)}
+        onCreate={handleCreateApplication}
+        records={records}
+        showToast={showToast}
       />
 
       {/* Export Report Modal (Requirement 9) */}

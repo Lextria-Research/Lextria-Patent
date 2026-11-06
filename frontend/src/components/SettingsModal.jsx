@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, Settings, Tag, Calendar, MessageSquare, History, Plus,
   Trash2, Save, Send, CheckCircle2, AlertTriangle, ExternalLink,
-  HardDrive, Key, Lock, RefreshCw, Check, Users, UserPlus, Edit3, UserCheck, Eye, EyeOff
+  HardDrive, Key, Lock, RefreshCw, Check, Users, UserPlus, Edit3, UserCheck, Eye, EyeOff,
+  Zap, Copy, Sparkles
 } from 'lucide-react';
 import {
   getRegisteredUsers,
@@ -14,6 +15,7 @@ import {
   ROOT_SUPER_ADMIN,
   getRoleLabel
 } from '../lib/authStore';
+import { parseCliqAssignmentMessage } from '../utils/cliqAssignmentParser.js';
 
 export default function SettingsModal({
   isOpen,
@@ -25,6 +27,8 @@ export default function SettingsModal({
   onSaveSettings,
   currentUser = {},
   onUsersUpdated,
+  onCliqAssignmentCreate,
+  records = [],
 }) {
   if (!isOpen) return null;
 
@@ -172,6 +176,41 @@ export default function SettingsModal({
   );
   const [cliqChannel, setCliqChannel] = useState(settings.cliqChannel || 'patent-deadlines');
   const [testSent, setTestSent] = useState(false);
+
+  // Zoho Cliq Inbound Assignment State
+  const inboundWebhookUrl = typeof window !== 'undefined' ? `${window.location.origin}/api/webhooks/cliq-assignment` : '/api/webhooks/cliq-assignment';
+  const [copiedInboundWebhook, setCopiedInboundWebhook] = useState(false);
+  const [cliqSimMessage, setCliqSimMessage] = useState(
+    'Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE'
+  );
+  const [cliqSimResult, setCliqSimResult] = useState(null);
+  const [cliqSimSuccess, setCliqSimSuccess] = useState('');
+  const [isSimCreating, setIsSimCreating] = useState(false);
+
+  useEffect(() => {
+    if (cliqSimMessage.trim()) {
+      const res = parseCliqAssignmentMessage(cliqSimMessage, records);
+      setCliqSimResult(res);
+    } else {
+      setCliqSimResult(null);
+    }
+  }, [cliqSimMessage, records]);
+
+  const handleCreateFromCliqSim = () => {
+    if (!cliqSimResult?.success || !cliqSimResult.record) return;
+    setIsSimCreating(true);
+    try {
+      if (onCliqAssignmentCreate) {
+        onCliqAssignmentCreate(cliqSimResult.record);
+        setCliqSimSuccess(`✓ Successfully docketed ${cliqSimResult.record.project_code} assigned to ${cliqSimResult.record.assigned_to}!`);
+        setTimeout(() => setCliqSimSuccess(''), 5000);
+      }
+    } catch (e) {
+      console.error('Error creating from Cliq simulator:', e);
+    } finally {
+      setIsSimCreating(false);
+    }
+  };
 
   // Zoho Calendar state
   const [firmCalendarUrl, setFirmCalendarUrl] = useState(
@@ -1359,12 +1398,211 @@ export default function SettingsModal({
             </div>
           )}
 
-          {/* TAB 2: ZOHO CLIQ INTEGRATION (Requirement 15) */}
+          {/* TAB 2: ZOHO CLIQ INTEGRATION (Inbound Assignment & Outbound Alerts) */}
           {activeTab === 'CLIQ' && (
             <div>
+              {/* SECTION A: INBOUND CLIQ ASSIGNMENT CHANNEL */}
+              <div
+                style={{
+                  marginBottom: '24px',
+                  padding: '18px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(14, 165, 233, 0.02))',
+                  border: '1.5px solid #0284C7',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Zap size={18} color="#0284C7" />
+                    <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                      Inbound Cliq Assignment Channel (Auto-Create Patents)
+                    </h3>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      padding: '2px 8px',
+                      borderRadius: '4px',
+                      background: '#E0F2FE',
+                      color: '#0369A1',
+                      letterSpacing: '0.4px',
+                    }}
+                  >
+                    REAL-TIME SYNC
+                  </span>
+                </div>
+                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.4 }}>
+                  When a patent admin posts an assignment message in Zoho Cliq (e.g. in <code>#patent-assignments</code>), the dashboard automatically ingests the message, extracts code, drafter, title, client, and generates the docket entry with all statutory deadlines scheduled.
+                </p>
+
+                {/* Webhook Endpoint Display */}
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink)' }}>
+                      Inbound Webhook Endpoint URL (Configure in Zoho Cliq)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(inboundWebhookUrl);
+                        setCopiedInboundWebhook(true);
+                        setTimeout(() => setCopiedInboundWebhook(false), 2500);
+                      }}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '3px 8px',
+                        borderRadius: '4px',
+                        border: '1px solid var(--line)',
+                        background: copiedInboundWebhook ? '#10B981' : 'var(--surface)',
+                        color: copiedInboundWebhook ? '#fff' : 'var(--ink)',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {copiedInboundWebhook ? <Check size={12} /> : <Copy size={12} />}
+                      {copiedInboundWebhook ? 'Copied!' : 'Copy Endpoint'}
+                    </button>
+                  </div>
+                  <code
+                    style={{
+                      display: 'block',
+                      padding: '8px 12px',
+                      borderRadius: '6px',
+                      background: 'var(--surface)',
+                      border: '1px solid var(--line)',
+                      fontSize: '11px',
+                      color: 'var(--ink)',
+                      fontFamily: 'monospace',
+                    }}
+                  >
+                    {inboundWebhookUrl}
+                  </code>
+                </div>
+
+                {/* Interactive Cliq Message Tester & Simulator */}
+                <div
+                  style={{
+                    padding: '14px',
+                    borderRadius: '8px',
+                    background: 'var(--surface)',
+                    border: '1px solid var(--line)',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
+                      Test & Ingest Cliq Message Directly
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                      Type or paste any Cliq message to test parsing
+                    </span>
+                  </div>
+
+                  <textarea
+                    rows={2}
+                    value={cliqSimMessage}
+                    onChange={(e) => setCliqSimMessage(e.target.value)}
+                    placeholder="e.g. Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE"
+                    style={{
+                      width: '100%',
+                      padding: '8px 10px',
+                      borderRadius: '6px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--page)',
+                      fontSize: '12px',
+                      fontFamily: 'monospace',
+                      marginBottom: '10px',
+                      resize: 'vertical',
+                    }}
+                  />
+
+                  {cliqSimResult?.success && cliqSimResult.record && (
+                    <div
+                      style={{
+                        padding: '10px 12px',
+                        borderRadius: '6px',
+                        background: 'var(--page)',
+                        border: '1px solid var(--line)',
+                        marginBottom: '10px',
+                        fontSize: '12px',
+                      }}
+                    >
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                        <div>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Matter Code: </span>
+                          <strong>{cliqSimResult.record.project_code}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Drafter: </span>
+                          <strong style={{ color: '#2563EB' }}>{cliqSimResult.record.assigned_to}</strong>
+                        </div>
+                        <div style={{ gridColumn: 'span 2' }}>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Title: </span>
+                          <strong>{cliqSimResult.record.title}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Client: </span>
+                          <strong>{cliqSimResult.record.applicant_name}</strong>
+                        </div>
+                        <div>
+                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>CS Statutory Due: </span>
+                          <strong style={{ color: '#059669' }}>{cliqSimResult.record.cs_deadline || '12m from filing'}</strong>
+                        </div>
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={handleCreateFromCliqSim}
+                        disabled={isSimCreating}
+                        style={{
+                          padding: '6px 14px',
+                          borderRadius: '6px',
+                          border: 'none',
+                          background: 'linear-gradient(135deg, #0284C7, #0369A1)',
+                          color: '#fff',
+                          fontSize: '12px',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <Sparkles size={13} />
+                        {isSimCreating ? 'Creating Patent...' : `Create Patent Entry ${cliqSimResult.record.project_code} in Dashboard`}
+                      </button>
+                    </div>
+                  )}
+
+                  {cliqSimSuccess && (
+                    <div
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        background: '#ECFDF5',
+                        border: '1px solid #A7F3D0',
+                        color: '#065F46',
+                        fontSize: '12px',
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                      }}
+                    >
+                      <CheckCircle2 size={15} />
+                      {cliqSimSuccess}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* SECTION B: OUTBOUND STATUTORY DEADLINE ALERTS */}
               <div style={{ marginBottom: '16px' }}>
                 <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                  Zoho Cliq Automated Deadline Alerts
+                  Outbound Zoho Cliq Statutory Deadline Alerts
                 </h3>
                 <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
                   Automatically dispatches interactive cards to drafters and paralegals on Zoho Cliq as statutory deadlines approach.
@@ -1374,7 +1612,7 @@ export default function SettingsModal({
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Zoho Cliq Incoming Webhook URL *
+                    Zoho Cliq Outgoing Channel Webhook URL *
                   </label>
                   <input
                     type="url"

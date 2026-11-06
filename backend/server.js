@@ -42,12 +42,147 @@ app.post('/api/login', (req, res) => {
 });
 
 app.use((req, res, next) => {
-  if (req.path === '/api/login' || req.path === '/api/health') return next();
+  if (req.path === '/api/login' || req.path === '/api/health' || req.path.startsWith('/api/webhooks/')) return next();
   const token = req.headers['x-auth-token'];
   if (!token || !validTokens.has(token)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
+});
+
+// Inbound Zoho Cliq Assignment Channel Webhook
+// Automatically triggered when an admin posts an assignment message in Zoho Cliq (e.g. #patent-assignments)
+app.post('/api/webhooks/cliq-assignment', async (req, res) => {
+  try {
+    const rawPayload = req.body;
+    let text = '';
+    if (typeof rawPayload === 'string') {
+      text = rawPayload;
+    } else if (rawPayload && typeof rawPayload === 'object') {
+      text = rawPayload.text || rawPayload.message || rawPayload.content || JSON.stringify(rawPayload);
+    }
+
+    if (!text || text.trim() === '') {
+      return res.status(400).json({ error: 'No message text provided in Cliq payload' });
+    }
+
+    // 1. Extract matter code (e.g. AR45, AR-50, etc.)
+    let code = '';
+    const codeMatch = text.match(/\b(AR\s*\d+|LR\s*\d+|[A-Z]{2,3}-\d+)\b/i);
+    if (codeMatch) {
+      code = codeMatch[1].replace(/\s+/g, '').toUpperCase();
+    } else {
+      code = `AR${Date.now().toString().slice(-3)}`;
+    }
+
+    // 2. Extract drafter (matched against registered drafters)
+    const DRAFTERS = ['Abhishek', 'Amith', 'Anusha', 'Ayush', 'Fiona', 'Pranav Bhat', 'Pramith', 'Pratham', 'Thanush', 'Thilak'];
+    let assignedDrafter = 'Anusha';
+    for (const d of DRAFTERS) {
+      if (new RegExp(`\\b${d}\\b`, 'i').test(text)) {
+        assignedDrafter = d;
+        break;
+      }
+    }
+
+    // 3. Extract Title
+    let title = `Patent Matter ${code}`;
+    const titleRegex = /(?:title|invention|for\s+invention)\s*[:=-]\s*([^\n\r]+?)(?=(?:\s*[-|;,]\s*(?:client|applicant|drafter|assigned|type|delivery)\b)|$)/i;
+    const titleMatch = text.match(titleRegex);
+    if (titleMatch) {
+      title = titleMatch[1].trim();
+    } else {
+      const quoteMatch = text.match(/"([^"]+)"|'([^']+)'/);
+      if (quoteMatch) title = quoteMatch[1] || quoteMatch[2];
+    }
+
+    // 4. Extract Client
+    let clientName = 'Manipal Academy of Higher Education (MAHE)';
+    let isMahe = true;
+    const clientMatch = text.match(/(?:client|applicant)\s*[:=-]\s*([^-\n]+)/i);
+    if (clientMatch) {
+      clientName = clientMatch[1].trim();
+      isMahe = /manipal|mahe/i.test(clientName);
+    } else if (!/\bMAHE\b|\bManipal\b/i.test(text)) {
+      isMahe = false;
+      clientName = 'External Client';
+    }
+
+    // 5. Specification Type
+    const isCs = /\b(?:Complete Specification|CS)\b/i.test(text);
+    const specType = isCs ? 'CS' : 'PS';
+
+    // 6. Calculate CS Due Date (12 months from PS filing)
+    const today = new Date();
+    const csDeadline = new Date(today);
+    csDeadline.setMonth(csDeadline.getMonth() + 12);
+    const csDeadlineStr = csDeadline.toISOString().split('T')[0];
+
+    // Form 1 due date (6 months)
+    const form1Deadline = new Date(today);
+    form1Deadline.setMonth(form1Deadline.getMonth() + 6);
+    const form1DeadlineStr = form1Deadline.toISOString().split('T')[0];
+
+    // Form 26 due date (3 months)
+    const form26Deadline = new Date(today);
+    form26Deadline.setMonth(form26Deadline.getMonth() + 3);
+    const form26DeadlineStr = form26Deadline.toISOString().split('T')[0];
+
+    const newRecord = {
+      project_code: code,
+      title: title,
+      assigned_to: assignedDrafter,
+      applicant_name: clientName,
+      is_mahe: isMahe,
+      specification_type: specType,
+      current_status: 'Idf sent, awaiting data',
+      color_code_status: 'PURPLE',
+      ps_filing_date: specType === 'PS' ? today.toISOString().split('T')[0] : '',
+      cs_deadline: csDeadlineStr,
+      form_1_deadline: form1DeadlineStr,
+      form_26_deadline: form26DeadlineStr,
+      f1_status: 'Pending',
+      f26_status: 'Pending',
+      status_notes: `Auto-generated via Zoho Cliq assignment channel on ${today.toLocaleDateString('en-IN')}`,
+      created_from: 'ZOHO_CLIQ',
+      created_at: today.toISOString()
+    };
+
+    console.log(`[ZOHO CLIQ WEBHOOK] Received assignment: ${code} assigned to ${assignedDrafter} (${title})`);
+
+    // Return rich Zoho Cliq interactive response card
+    res.json({
+      text: `✅ Patent Matter **${code}** successfully generated and assigned to **${assignedDrafter}**!`,
+      card: {
+        title: `Patent Matter Assigned: ${code} → ${assignedDrafter}`,
+        theme: 'modern-inline'
+      },
+      slides: [
+        {
+          type: 'table',
+          title: 'Docket & Statutory Deadlines',
+          data: {
+            headers: ['Attribute', 'Value'],
+            rows: [
+              ['Matter Code', code],
+              ['Title of Invention', title],
+              ['Assigned Drafter', assignedDrafter],
+              ['Client / Applicant', clientName],
+              ['Specification Type', specType === 'PS' ? 'Provisional Specification (PS)' : 'Complete Specification (CS)'],
+              ['Initial Status', 'Idf sent, awaiting data (Purple)'],
+              ['CS Statutory Deadline', csDeadlineStr],
+              ['Form 1 Deadline', form1DeadlineStr],
+              ['Form 26 Deadline', form26DeadlineStr]
+            ]
+          }
+        }
+      ],
+      record: newRecord
+    });
+  } catch (err) {
+    console.error('Error handling Cliq assignment webhook:', err);
+    res.status(500).json({ error: 'Internal server error processing Cliq webhook', detail: err.message });
+  }
 });
 
 app.get('/api/health', (req, res) => {
