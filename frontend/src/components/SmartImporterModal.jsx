@@ -27,7 +27,7 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
         { header: 'CODE', key: 'code', width: 16 },
         { header: 'TITLE OF THE INVENTIONS', key: 'title', width: 45 },
         { header: 'INVENTOR NAME', key: 'inventor_name', width: 32 },
-        { header: 'Affiliation', key: 'affiliation', width: 35 },
+        { header: 'Institution', key: 'institution', width: 35 },
         { header: ' CONTACT NUMBER', key: 'contact_number', width: 22 },
         { header: 'Email ID', key: 'email_id', width: 28 },
         { header: 'Assigned to (Drafter)', key: 'drafter', width: 24 },
@@ -39,6 +39,7 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
         code: 'MAHE_2026_01',
         title: 'Smart Non-Invasive Glucose Sensor Using Near-Infrared Spectroscopy',
         inventor_name: 'Dr. Rajesh Sharma, Priya Nair',
+        institution: 'Manipal Institute of Technology (MIT)',
         affiliation: 'Manipal Institute of Technology (MIT)',
         contact_number: '+91 98765 43210',
         email_id: 'rajesh.sharma@manipal.edu',
@@ -49,6 +50,7 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
         code: 'MAHE_2026_02',
         title: 'Automated Multi-Axis Robotic Arm for Orthopedic Surgeries',
         inventor_name: 'Dr. Ananya Rao',
+        institution: 'Kasturba Medical College (KMC)',
         affiliation: 'Kasturba Medical College (KMC)',
         contact_number: '+91 98765 43211',
         email_id: 'ananya.rao@manipal.edu',
@@ -59,6 +61,7 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
         code: 'MAHE_2026_03',
         title: 'Biocompatible Polymer Composite for High-Load Dental Implants',
         inventor_name: 'Dr. Vikram Patel',
+        institution: 'Manipal College of Dental Sciences (MCODS)',
         affiliation: 'Manipal College of Dental Sciences (MCODS)',
         contact_number: '+91 98765 43212',
         email_id: 'vikram.patel@manipal.edu',
@@ -157,11 +160,15 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
           ''
         ).trim();
 
-        const affiliation = String(
+        const institution = String(
+          rowObj['institution'] ||
+          rowObj['institution / organization'] ||
+          rowObj['institution name'] ||
           rowObj['affiliation'] ||
+          rowObj['inventor affiliation'] ||
+          rowObj['applicant affiliation'] ||
           rowObj['applicant name'] ||
           rowObj['applicant'] ||
-          rowObj['institution'] ||
           'Manipal Academy of Higher Education'
         ).trim();
 
@@ -240,10 +247,35 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
           project_code: code || `IMP_${String(idx + 1).padStart(4, '0')}`,
           application_number: appNo || null,
           title: title || 'Imported Patent Record',
-          applicant_name: affiliation,
-          affiliation: affiliation,
+          institution: institution,
+          affiliation: institution,
+          applicant_name: institution,
+          applicants: [
+            {
+              id: `app_imp_${idx}_1`,
+              name: institution,
+              type: 'EDUCATIONAL_INSTITUTION',
+              nationality: 'Indian',
+              country_of_residence: 'India',
+              address: 'Madhav Nagar, Manipal, Karnataka 576104',
+              is_primary: true
+            }
+          ],
           inventors_summary: inventor || '—',
           inventor_name: inventor || '—',
+          inventors: [
+            {
+              id: `inv_imp_${idx}_1`,
+              name: inventor || '—',
+              institution: institution,
+              affiliation: institution,
+              email: email || '',
+              phone: contact || '',
+              nationality: 'Indian',
+              country_of_residence: 'India',
+              is_applicant: false
+            }
+          ],
           contact_number: contact || null,
           email_id: email || null,
           assigned_to: drafter,
@@ -361,7 +393,7 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
                 <FileSpreadsheet size={16} /> Standardized Patent Bulk Upload Format
               </div>
               <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px' }}>
-                Columns: <strong>SL NO.</strong> · <strong>CODE</strong> · <strong>TITLE OF THE INVENTIONS</strong> · <strong>INVENTOR NAME</strong> · <strong>Affiliation</strong> · <strong>CONTACT NUMBER</strong> · <strong>Email ID</strong> · <strong>Assigned to (Drafter)</strong>
+                Columns: <strong>SL NO.</strong> · <strong>CODE</strong> · <strong>TITLE OF THE INVENTIONS</strong> · <strong>INVENTOR NAME</strong> · <strong>Institution</strong> · <strong>CONTACT NUMBER</strong> · <strong>Email ID</strong> · <strong>Assigned to (Drafter)</strong>
               </div>
             </div>
             <button
@@ -446,6 +478,56 @@ export default function SmartImporterModal({ isOpen, onClose, onImportSuccess })
                   </div>
                 </div>
               </div>
+
+              {/* Staged Records Preview with Institution mapping */}
+              {parsedRows.length > 0 && (
+                <div style={{ marginBottom: '16px' }}>
+                  <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)', marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <CheckCircle size={14} color="#4E9E56" /> Staged Applications Preview ({parsedRows.length} records ready)
+                    </span>
+                    <span style={{ fontSize: '11px', color: 'var(--accent)', fontWeight: 600 }}>
+                      Mapped to <strong>Institution</strong>
+                    </span>
+                  </div>
+                  <div style={{
+                    maxHeight: '180px',
+                    overflowY: 'auto',
+                    border: '1px solid var(--line)',
+                    borderRadius: '6px'
+                  }}>
+                    <table style={{ width: '100%', fontSize: '11.5px', borderCollapse: 'collapse' }}>
+                      <thead style={{ background: 'var(--page)', position: 'sticky', top: 0 }}>
+                        <tr style={{ borderBottom: '1px solid var(--line)' }}>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Code</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Title</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Inventor</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Institution</th>
+                          <th style={{ padding: '6px 10px', textAlign: 'left' }}>Drafter</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {parsedRows.slice(0, 10).map((r, i) => (
+                          <tr key={i} style={{ borderBottom: '1px solid var(--line)' }}>
+                            <td style={{ padding: '6px 10px', fontWeight: 700, whiteSpace: 'nowrap' }}>{r.project_code}</td>
+                            <td style={{ padding: '6px 10px', maxWidth: '200px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={r.title}>{r.title}</td>
+                            <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>{r.inventors_summary || r.inventor_name}</td>
+                            <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', color: 'var(--accent)', fontWeight: 600 }}>
+                              {r.institution || r.applicant_name}
+                            </td>
+                            <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>{r.assigned_to}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  {parsedRows.length > 10 && (
+                    <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px', textAlign: 'right' }}>
+                      Showing top 10 of {parsedRows.length} applications
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Anomalies List */}
               {anomalies.length > 0 && (

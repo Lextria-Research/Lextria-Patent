@@ -288,7 +288,7 @@ export default function SlideOverDrawer({
       return record.inventors_summary.split(/[,;\n]+/).filter(Boolean).map((inv, idx) => ({
         id: `inv_${idx + 1}`,
         name: inv.trim().replace(/^\d+[\.\)]\s*/, ''),
-        institution: record.applicant_name || 'Organization on file',
+        institution: record.institution || record.applicant_name || 'Organization on file',
         gender: 'Male',
         nationality: 'Indian',
         country_of_residence: 'India',
@@ -301,7 +301,7 @@ export default function SlideOverDrawer({
       {
         id: 'inv_1',
         name: 'Principal Investigator',
-        institution: record.applicant_name || 'Organization on file',
+        institution: record.institution || record.applicant_name || 'Organization on file',
         gender: 'Male',
         nationality: 'Indian',
         country_of_residence: 'India',
@@ -310,7 +310,7 @@ export default function SlideOverDrawer({
         phone: '+91 98450 12345',
       }
     ];
-  }, [record.project_code, record.inventors, record.inventors_summary, record.applicant_name]);
+  }, [record.project_code, record.inventors, record.inventors_summary, record.applicant_name, record.institution]);
 
   // Miscellaneous Statutory Forms list (Form 1, 26, 13, 6, 16, 27, 4, 30)
   const miscForms = useMemo(() => {
@@ -377,7 +377,7 @@ export default function SlideOverDrawer({
     const inventorsText = inventorsList && inventorsList.length > 0
       ? inventorsList.map((inv, idx) => 
           `  ${idx + 1}. ${inv.name}\n` +
-          `     Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}\n` +
+          `     Institution: ${inv.institution || record.institution || applicantName || record.applicant_name || 'N/A'}\n` +
           `     Gender: ${inv.gender || 'N/A'} | Nationality: ${inv.nationality || 'N/A'} | Country of Residence: ${inv.country_of_residence || 'N/A'}\n` +
           `     Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}`
         ).join('\n\n')
@@ -477,7 +477,7 @@ export default function SlideOverDrawer({
       `INVENTORS ROSTER (${inventorsList.length}):`,
       ...inventorsList.map((inv, idx) => 
         `${idx + 1}. ${inv.name}\n` +
-        `   Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}\n` +
+        `   Institution: ${inv.institution || record.institution || applicantName || record.applicant_name || 'N/A'}\n` +
         `   Gender: ${inv.gender || 'N/A'} | Nationality: ${inv.nationality || 'N/A'} | Country of Residence: ${inv.country_of_residence || 'N/A'}\n` +
         `   Email: ${inv.email || 'N/A'} | Phone: ${inv.phone || 'N/A'}\n` +
         `   Address: ${inv.address || 'N/A'}`
@@ -489,7 +489,7 @@ export default function SlideOverDrawer({
   const handleCopySingleInventor = (inv, idx) => {
     const text = [
       `Inventor ${idx + 1}: ${inv.name}`,
-      `Institution: ${inv.institution || applicantName || record.applicant_name || 'N/A'}`,
+      `Institution: ${inv.institution || record.institution || applicantName || record.applicant_name || 'N/A'}`,
       `Gender: ${inv.gender || 'N/A'}`,
       `Nationality: ${inv.nationality || 'N/A'}`,
       `Country of Residence: ${inv.country_of_residence || 'N/A'}`,
@@ -1183,7 +1183,7 @@ export default function SlideOverDrawer({
                           </div>
 
                           <div style={{ fontSize: '11.5px', color: 'var(--accent)', fontWeight: 600 }}>
-                            {inv.institution || record.applicant_name || 'Institution on record'}
+                            {inv.institution || record.institution || record.applicant_name || 'Institution on record'}
                           </div>
 
                           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>

@@ -142,7 +142,7 @@ export default function MasterDataGrid({
     // Client dropdown filter (Interconnected with core.clients / applicant_name)
     if (clientFilter !== 'ALL') {
       data = data.filter((r) => {
-        const clientVal = (r.applicant_name || r.client_name || '').toLowerCase();
+        const clientVal = (r.institution || r.applicant_name || r.client_name || '').toLowerCase();
         return clientVal.includes(clientFilter.toLowerCase());
       });
     }
@@ -238,6 +238,7 @@ export default function MasterDataGrid({
         (r.title && r.title.toLowerCase().includes(q)) ||
         (r.inventors_summary && r.inventors_summary.toLowerCase().includes(q)) ||
         (r.applicant_name && r.applicant_name.toLowerCase().includes(q)) ||
+        (r.institution && r.institution.toLowerCase().includes(q)) ||
         (r.assigned_to && r.assigned_to.toLowerCase().includes(q))
       );
     }
@@ -306,7 +307,8 @@ export default function MasterDataGrid({
       if (c.client_name) set.add(c.client_name);
     });
     records.forEach((r) => {
-      if (r.applicant_name) set.add(r.applicant_name);
+      if (r.institution) set.add(r.institution);
+      else if (r.applicant_name) set.add(r.applicant_name);
     });
     return Array.from(set).filter(Boolean).sort();
   }, [clients, records]);
