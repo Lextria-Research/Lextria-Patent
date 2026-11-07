@@ -488,6 +488,11 @@ export default function EditApplicationModal({
     return calculateAllStatutoryDeadlines(formData);
   }, [formData]);
 
+  // Live Delivery Date vs Statutory Deadline Breach Check
+  const statutoryDeliveryCheck = useMemo(() => {
+    return checkDeliveryVsStatutory(formData.client_commitment_date, formData);
+  }, [formData.client_commitment_date, formData]);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setFormData((prev) => ({

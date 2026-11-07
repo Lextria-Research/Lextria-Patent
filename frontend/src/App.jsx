@@ -26,6 +26,7 @@ import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
 import CliqAssignmentModal from './components/CliqAssignmentModal';
+import ErrorBoundary from './components/ErrorBoundary';
 import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
 import { normalizeStatus } from './constants/patentStatuses';
@@ -1832,28 +1833,32 @@ export default function App() {
       />
 
       {/* Create New Application Modal */}
-      <CreateApplicationModal
-        isOpen={isCreateOpen}
-        onClose={() => setIsCreateOpen(false)}
-        onCreate={handleCreateApplication}
-        existingCodes={existingCodes}
-        clients={clients}
-        tags={tags}
-        records={records}
-        onClientCreated={handleClientCreated}
-      />
+      <ErrorBoundary title="Create Application Modal Encountered an Error">
+        <CreateApplicationModal
+          isOpen={isCreateOpen}
+          onClose={() => setIsCreateOpen(false)}
+          onCreate={handleCreateApplication}
+          existingCodes={existingCodes}
+          clients={clients}
+          tags={tags}
+          records={records}
+          onClientCreated={handleClientCreated}
+        />
+      </ErrorBoundary>
 
       {/* Edit Application Modal */}
-      <EditApplicationModal
-        isOpen={!!editingRecord}
-        record={editingRecord}
-        onClose={() => setEditingRecord(null)}
-        onUpdate={handleUpdateApplication}
-        clients={clients}
-        tags={tags}
-        records={records}
-        onClientCreated={handleClientCreated}
-      />
+      <ErrorBoundary title="Edit Application Modal Encountered an Error">
+        <EditApplicationModal
+          isOpen={!!editingRecord}
+          record={editingRecord}
+          onClose={() => setEditingRecord(null)}
+          onUpdate={handleUpdateApplication}
+          clients={clients}
+          tags={tags}
+          records={records}
+          onClientCreated={handleClientCreated}
+        />
+      </ErrorBoundary>
 
       {/* Master Statutory Prosecution Timeline now integrated directly into SlideOverDrawer */} 
 
