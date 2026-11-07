@@ -162,6 +162,91 @@ export default function EditApplicationModal({
     address: '',
   });
   const [showAddInventor, setShowAddInventor] = useState(false);
+  const [editingInventorId, setEditingInventorId] = useState(null);
+
+  const handleOpenAddInventor = () => {
+    setNewInventor({
+      name: '',
+      institution: record.institution || formData.applicant_name || '',
+      gender: 'Male',
+      nationality: 'Indian',
+      country_of_residence: 'India',
+      email: '',
+      phone: '',
+      address: '',
+    });
+    setEditingInventorId(null);
+    setShowAddInventor(true);
+  };
+
+  const handleOpenEditInventor = (inv, idx) => {
+    const invId = inv.id || `inv_${idx}`;
+    setNewInventor({
+      name: inv.name || '',
+      institution: inv.institution || record.institution || formData.applicant_name || '',
+      gender: inv.gender || 'Male',
+      nationality: inv.nationality || 'Indian',
+      country_of_residence: inv.country_of_residence || 'India',
+      email: inv.email || '',
+      phone: inv.phone || '',
+      address: inv.address || '',
+    });
+    setEditingInventorId(invId);
+    setShowAddInventor(true);
+  };
+
+  const handleSaveInventor = () => {
+    if (!newInventor.name || !newInventor.name.trim()) {
+      alert('Please enter inventor full name.');
+      return;
+    }
+
+    if (editingInventorId) {
+      setInventorsList((prev) =>
+        prev.map((inv, idx) => {
+          const currentId = inv.id || `inv_${idx}`;
+          if (currentId === editingInventorId) {
+            return {
+              ...inv,
+              ...newInventor,
+              id: inv.id || currentId,
+              name: newInventor.name.trim(),
+            };
+          }
+          return inv;
+        })
+      );
+    } else {
+      const created = {
+        id: `inv_${Date.now()}`,
+        ...newInventor,
+        name: newInventor.name.trim(),
+      };
+      setInventorsList((prev) => [...prev, created]);
+    }
+
+    setNewInventor({
+      name: '',
+      institution: record.institution || formData.applicant_name || '',
+      gender: 'Male',
+      nationality: 'Indian',
+      country_of_residence: 'India',
+      email: '',
+      phone: '',
+      address: '',
+    });
+    setEditingInventorId(null);
+    setShowAddInventor(false);
+  };
+
+  const handleDeleteInventor = (idx, inv) => {
+    const invId = inv.id || `inv_${idx}`;
+    if (editingInventorId === invId) {
+      setEditingInventorId(null);
+      setShowAddInventor(false);
+    }
+    setInventorsList((prev) => prev.filter((_, i) => i !== idx));
+  };
 
   // Normalized Multiple Applicants State
   const [applicantsList, setApplicantsList] = useState(() => {
@@ -1276,13 +1361,7 @@ export default function EditApplicationModal({
                   </div>
                   <button
                     type="button"
-                    onClick={() => {
-                      setNewInventor((prev) => ({
-                        ...prev,
-                        institution: prev.institution || formData.applicant_name || ''
-                      }));
-                      setShowAddInventor(!showAddInventor);
-                    }}
+                    onClick={handleOpenAddInventor}
                     style={{
                       padding: '4px 10px',
                       borderRadius: '5px',
@@ -1317,7 +1396,7 @@ export default function EditApplicationModal({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--line)', paddingBottom: '8px' }}>
                       <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
-                        New Inventor Details
+                        {editingInventorId ? 'Edit Inventor Details' : 'New Inventor Details'}
                       </span>
                       <span style={{ fontSize: '10.5px', color: 'var(--muted)' }}>
                         All fields will be docketed on Form 1 & Form 2
@@ -1443,31 +1522,20 @@ export default function EditApplicationModal({
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px', marginTop: '4px' }}>
                       <button
                         type="button"
-                        onClick={() => setShowAddInventor(false)}
+                        onClick={() => {
+                          setShowAddInventor(false);
+                          setEditingInventorId(null);
+                        }}
                         style={{ padding: '5px 12px', borderRadius: '4px', border: '1px solid var(--line)', background: 'transparent', fontSize: '11.5px', cursor: 'pointer', color: 'var(--muted)' }}
                       >
                         Cancel
                       </button>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (!newInventor.name.trim()) return;
-                          setInventorsList((prev) => [...prev, { id: 'inv_' + Date.now(), ...newInventor }]);
-                          setNewInventor({
-                            name: '',
-                            institution: formData.applicant_name || '',
-                            gender: 'Male',
-                            nationality: 'Indian',
-                            country_of_residence: 'India',
-                            email: '',
-                            phone: '',
-                            address: '',
-                          });
-                          setShowAddInventor(false);
-                        }}
-                        style={{ padding: '4px 10px', borderRadius: '4px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11px', fontWeight: 700, cursor: 'pointer' }}
+                        onClick={handleSaveInventor}
+                        style={{ padding: '4px 12px', borderRadius: '4px', border: 'none', background: 'var(--accent)', color: '#fff', fontSize: '11.5px', fontWeight: 700, cursor: 'pointer' }}
                       >
-                        Save Inventor
+                        {editingInventorId ? 'Update Inventor' : 'Save Inventor'}
                       </button>
                     </div>
                   </div>
@@ -1487,7 +1555,7 @@ export default function EditApplicationModal({
                           padding: '8px 10px',
                           borderRadius: '6px',
                           background: 'var(--surface)',
-                          border: '1px solid var(--line)',
+                          border: editingInventorId === (inv.id || `inv_${idx}`) ? '1.5px solid var(--accent)' : '1px solid var(--line)',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
@@ -1514,14 +1582,36 @@ export default function EditApplicationModal({
                             </div>
                           )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setInventorsList((prev) => prev.filter((_, i) => i !== idx))}
-                          style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: '2px' }}
-                          title="Remove"
-                        >
-                          <Trash2 size={13} />
-                        </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditInventor(inv, idx)}
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: '4px',
+                              border: '1px solid var(--line)',
+                              background: editingInventorId === (inv.id || `inv_${idx}`) ? 'rgba(58, 134, 255, 0.15)' : 'var(--page)',
+                              color: 'var(--accent)',
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              fontSize: '11px',
+                              fontWeight: 600
+                            }}
+                            title="Edit Inventor Details"
+                          >
+                            <Edit3 size={12} /> Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteInventor(idx, inv)}
+                            style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', padding: '3px' }}
+                            title="Remove Inventor"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
