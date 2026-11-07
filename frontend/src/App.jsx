@@ -84,6 +84,114 @@ export default function App() {
   const [isTvMode, setIsTvMode] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isCliqModalOpen, setIsCliqModalOpen] = useState(false);
+
+  // Zoho Cliq Assignment Queue with Notification Badge
+  const [cliqQueue, setCliqQueue] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lextria_cliq_queue');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse lextria_cliq_queue', e);
+    }
+    const todayStr = new Date().toISOString().split('T')[0];
+    const d3mStr = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
+    return [
+      {
+        id: 'cliq_pending_1',
+        raw_message: 'Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE',
+        created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        status: 'PENDING_REVIEW',
+        record: {
+          project_code: 'AR45',
+          title: 'Smart Automated Crop Harvesting System',
+          assigned_to: 'Anusha',
+          applicant_name: 'Manipal Academy of Higher Education (MAHE)',
+          is_mahe: true,
+          specification_type: 'PS',
+          current_status: 'Idf sent, awaiting data',
+          color_code_status: 'PURPLE',
+          is_transferred_case: false,
+          former_attorney_transfer: false,
+          transfer_date: '',
+          form_13_required: false,
+          form_13_status: 'Not Applicable',
+          form_13_deadline: '',
+          form_26_deadline: '',
+          ps_filing_date: '',
+          cs_filing_date: '',
+          client_commitment_date: '',
+          status_notes: 'Pre-filing matter assigned via Zoho Cliq to Anusha. Form-13 is not required.',
+          selectedTags: ['Cliq Assigned', 'MAHE']
+        }
+      },
+      {
+        id: 'cliq_pending_2',
+        raw_message: 'Assign AR46 to Fiona - Transfer from former attorney, patent already filed (App No: 202341054321), FER Received on 15/09/2026. File Form 13 & Form 26.',
+        created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+        status: 'PENDING_REVIEW',
+        record: {
+          project_code: 'AR46',
+          title: 'High-Efficiency Multi-Band Antenna for Satellite Communication',
+          application_number: '202341054321',
+          assigned_to: 'Fiona',
+          applicant_name: 'Manipal Academy of Higher Education (MAHE)',
+          is_mahe: true,
+          specification_type: 'PS',
+          current_status: 'FER Received',
+          color_code_status: 'BLUE',
+          is_transferred_case: true,
+          former_attorney_transfer: true,
+          transfer_date: todayStr,
+          form_13_required: true,
+          form_13_status: 'Pending',
+          form_13_deadline: d3mStr,
+          form_26_deadline: d3mStr,
+          ps_filing_date: '2023-09-15',
+          cs_filing_date: '',
+          client_commitment_date: '',
+          status_notes: '⚡ FORMER ATTORNEY TRANSFER (TAKEOVER CASE): Form-13 (Address for Service) and Form-26 transfer POA required within 3 months.',
+          selectedTags: ['Cliq Assigned', 'MAHE', 'Former Attorney Transfer', 'Form 13 Req']
+        }
+      }
+    ];
+  });
+
+  const pendingCliqCount = useMemo(() => {
+    return cliqQueue.filter(q => q.status === 'PENDING_REVIEW').length;
+  }, [cliqQueue]);
+
+  const handleUpdateCliqQueue = (updatedQueue) => {
+    setCliqQueue(updatedQueue);
+    try {
+      localStorage.setItem('lextria_cliq_queue', JSON.stringify(updatedQueue));
+    } catch (e) {
+      console.error('Error saving cliq queue to localStorage', e);
+    }
+  };
+
+  // Poll / sync Cliq queue from backend
+  useEffect(() => {
+    const fetchQueue = async () => {
+      try {
+        const res = await fetch('/api/cliq-queue');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.queue && Array.isArray(data.queue)) {
+            setCliqQueue(data.queue);
+            localStorage.setItem('lextria_cliq_queue', JSON.stringify(data.queue));
+          }
+        }
+      } catch (err) {
+        // Fallback to localStorage
+      }
+    };
+    fetchQueue();
+    const interval = setInterval(fetchQueue, 15000);
+    return () => clearInterval(interval);
+  }, []);
   const [editingRecord, setEditingRecord] = useState(null);
   // timelineRecord replaced by SlideOverDrawer Master Timeline tab
   const [isReassignOpen, setIsReassignOpen] = useState(false);
@@ -1129,11 +1237,12 @@ export default function App() {
               </button>
             )}
 
-            {/* Quick Zoho Cliq Assignment Intake Button */}
+            {/* Quick Zoho Cliq Assignment Intake Button with Red Badge Notification */}
             <button
               onClick={() => setIsCliqModalOpen(true)}
               className="action-btn-interactive"
               style={{
+                position: 'relative',
                 padding: '6px 12px',
                 borderRadius: '6px',
                 border: '1px solid #0284C7',
@@ -1146,9 +1255,31 @@ export default function App() {
                 gap: '6px',
                 cursor: 'pointer',
               }}
-              title="Parse assignment message from Zoho Cliq channel to auto-generate patent entry"
+              title="Review pending assignments from Zoho Cliq channel"
             >
               <Zap size={14} color="#0284C7" /> Cliq Assignment
+              {pendingCliqCount > 0 && (
+                <span
+                  style={{
+                    position: 'absolute',
+                    top: '-6px',
+                    right: '-6px',
+                    background: '#EF4444',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '1px 5px',
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    boxShadow: '0 2px 5px rgba(239, 68, 68, 0.45)',
+                    border: '1.5px solid var(--surface, #fff)',
+                    minWidth: '18px',
+                    textAlign: 'center',
+                    lineHeight: '13px',
+                  }}
+                >
+                  {pendingCliqCount}
+                </span>
+              )}
             </button>
 
             {/* New Application Button */}
@@ -1674,13 +1805,19 @@ export default function App() {
         records={records}
       />
 
-      {/* Zoho Cliq Assignment Quick Intake Modal */}
+      {/* Zoho Cliq Assignment Quick Intake & Queue Review Modal */}
       <CliqAssignmentModal
         isOpen={isCliqModalOpen}
         onClose={() => setIsCliqModalOpen(false)}
         onCreate={handleCreateApplication}
         records={records}
         showToast={showToast}
+        cliqQueue={cliqQueue}
+        onUpdateQueue={handleUpdateCliqQueue}
+        onOpenSettings={() => {
+          setIsCliqModalOpen(false);
+          setIsSettingsOpen(true);
+        }}
       />
 
       {/* Export Report Modal (Requirement 9) */}

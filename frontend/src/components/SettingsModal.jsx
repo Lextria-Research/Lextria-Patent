@@ -1415,7 +1415,7 @@ export default function SettingsModal({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Zap size={18} color="#0284C7" />
                       <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                        Inbound Cliq Assignment Channel (Auto-Create Patents)
+                        Automated Cliq Inbound Webhook Endpoint
                       </h3>
                     </div>
                     <span
@@ -1433,7 +1433,7 @@ export default function SettingsModal({
                     </span>
                   </div>
                   <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.4 }}>
-                    When a patent admin posts an assignment message in Zoho Cliq (e.g. in <code>#patent-assignments</code>), the dashboard automatically ingests the message, extracts code, drafter, title, client, and generates the docket entry with all statutory deadlines scheduled.
+                    When a patent admin posts an assignment message in Zoho Cliq (e.g. in <code>#patent-assignments</code>), the dashboard automatically ingests the message into the <strong>Cliq Assignment Queue</strong> with all statutory deadlines & former attorney transfer actions prepared for review.
                   </p>
 
                   {/* Webhook Endpoint Display */}
@@ -1464,7 +1464,7 @@ export default function SettingsModal({
                         }}
                       >
                         {copiedInboundWebhook ? <Check size={12} /> : <Copy size={12} />}
-                        {copiedInboundWebhook ? 'Copied!' : 'Copy Endpoint'}
+                        {copiedInboundWebhook ? 'Copied URL!' : 'Copy Webhook URL'}
                       </button>
                     </div>
                     <code
@@ -1481,6 +1481,9 @@ export default function SettingsModal({
                     >
                       {inboundWebhookUrl}
                     </code>
+                    <p style={{ fontSize: '11px', color: 'var(--muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
+                      Tip: Configure this URL in your Zoho Cliq channel bot/outgoing webhook so any message in <code>#patent-assignments</code> automatically queues docket entries for admin review 100% automatically!
+                    </p>
                   </div>
 
                   {/* Interactive Cliq Message Tester & Simulator */}

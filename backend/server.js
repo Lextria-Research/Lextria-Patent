@@ -4,6 +4,8 @@ require('dotenv').config();
 // date, not the host's (UTC on most servers). Set TZ in the environment to override.
 process.env.TZ = process.env.TZ || 'Asia/Kolkata';
 
+const fs = require('fs');
+const path = require('path');
 const crypto = require('crypto');
 const express = require('express');
 const cors = require('cors');
@@ -42,13 +44,105 @@ app.post('/api/login', (req, res) => {
 });
 
 app.use((req, res, next) => {
-  if (req.path === '/api/login' || req.path === '/api/health' || req.path.startsWith('/api/webhooks/')) return next();
+  if (req.path === '/api/login' || req.path === '/api/health' || req.path.startsWith('/api/webhooks/') || req.path.startsWith('/api/cliq-queue')) return next();
   const token = req.headers['x-auth-token'];
   if (!token || !validTokens.has(token)) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   next();
 });
+
+const CLIQ_QUEUE_FILE = path.join(__dirname, 'data', 'cliq_queue.json');
+
+function getDefaultCliqQueue() {
+  const now = new Date();
+  const d3m = new Date();
+  d3m.setMonth(d3m.getMonth() + 3);
+  return [
+    {
+      id: 'cliq_pending_1',
+      raw_message: 'Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE',
+      created_at: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+      status: 'PENDING_REVIEW',
+      record: {
+        project_code: 'AR45',
+        title: 'Smart Automated Crop Harvesting System',
+        assigned_to: 'Anusha',
+        applicant_name: 'Manipal Academy of Higher Education (MAHE)',
+        is_mahe: true,
+        specification_type: 'PS',
+        current_status: 'Idf sent, awaiting data',
+        color_code_status: 'PURPLE',
+        is_transferred_case: false,
+        former_attorney_transfer: false,
+        transfer_date: '',
+        form_13_required: false,
+        form_13_status: 'Not Applicable',
+        form_13_deadline: '',
+        form_26_deadline: '',
+        ps_filing_date: '',
+        cs_filing_date: '',
+        client_commitment_date: '',
+        status_notes: 'Pre-filing matter assigned via Zoho Cliq to Anusha. Form-13 is not required.',
+        selectedTags: ['Cliq Assigned', 'MAHE']
+      }
+    },
+    {
+      id: 'cliq_pending_2',
+      raw_message: 'Assign AR46 to Fiona - Transfer from former attorney, patent already filed (App No: 202341054321), FER Received on 15/09/2026. File Form 13 & Form 26.',
+      created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
+      status: 'PENDING_REVIEW',
+      record: {
+        project_code: 'AR46',
+        title: 'High-Efficiency Multi-Band Antenna for Satellite Communication',
+        application_number: '202341054321',
+        assigned_to: 'Fiona',
+        applicant_name: 'Manipal Academy of Higher Education (MAHE)',
+        is_mahe: true,
+        specification_type: 'PS',
+        current_status: 'FER Received',
+        color_code_status: 'BLUE',
+        is_transferred_case: true,
+        former_attorney_transfer: true,
+        transfer_date: now.toISOString().split('T')[0],
+        form_13_required: true,
+        form_13_status: 'Pending',
+        form_13_deadline: d3m.toISOString().split('T')[0],
+        form_26_deadline: d3m.toISOString().split('T')[0],
+        ps_filing_date: '2023-09-15',
+        cs_filing_date: '',
+        client_commitment_date: '',
+        status_notes: '⚡ FORMER ATTORNEY TRANSFER (TAKEOVER CASE): Form-13 (Address for Service) and Form-26 transfer POA required within 3 months.',
+        selectedTags: ['Cliq Assigned', 'MAHE', 'Former Attorney Transfer', 'Form 13 Req']
+      }
+    }
+  ];
+}
+
+function loadCliqQueue() {
+  try {
+    if (fs.existsSync(CLIQ_QUEUE_FILE)) {
+      const raw = fs.readFileSync(CLIQ_QUEUE_FILE, 'utf8');
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (err) {
+    console.error('Error reading cliq_queue.json:', err);
+  }
+  const defaults = getDefaultCliqQueue();
+  saveCliqQueue(defaults);
+  return defaults;
+}
+
+function saveCliqQueue(queue) {
+  try {
+    const dir = path.dirname(CLIQ_QUEUE_FILE);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(CLIQ_QUEUE_FILE, JSON.stringify(queue, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error saving cliq_queue.json:', err);
+  }
+}
 
 // Inbound Zoho Cliq Assignment Channel Webhook
 // Automatically triggered when an admin posts an assignment message in Zoho Cliq (e.g. #patent-assignments)
@@ -244,21 +338,34 @@ Status: ${currentStatus}. Form-13 not required (Lextria will file directly at IP
       created_at: today.toISOString()
     };
 
-    console.log(`[ZOHO CLIQ WEBHOOK] Received assignment: ${code} assigned to ${assignedDrafter} [Status: ${currentStatus}, Transferred: ${isTransferredCase}]`);
+    // Push to the Zoho Cliq review queue for Patent Admin to inspect & approve
+    const queuedItem = {
+      id: `cliq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      raw_message: text,
+      created_at: today.toISOString(),
+      status: 'PENDING_REVIEW',
+      record: newRecord
+    };
+
+    const currentQueue = loadCliqQueue();
+    currentQueue.unshift(queuedItem);
+    saveCliqQueue(currentQueue);
+
+    console.log(`[ZOHO CLIQ WEBHOOK] Queued assignment: ${code} assigned to ${assignedDrafter} [Status: ${currentStatus}, Transferred: ${isTransferredCase}]. Queue size: ${currentQueue.filter(q => q.status === 'PENDING_REVIEW').length}`);
 
     // Return rich Zoho Cliq interactive response card
     res.json({
       text: isTransferredCase
-        ? `⚡ Former Attorney Transfer Patent **${code}** successfully created and assigned to **${assignedDrafter}** at stage: **${currentStatus}**!\n📌 Form-13 (Address for Service) and Form-26 (Fresh POA) are required within 3 months.`
-        : `✅ Patent Matter **${code}** successfully generated and assigned to **${assignedDrafter}** at stage: **${currentStatus}**!`,
+        ? `⚡ Former Attorney Transfer Patent **${code}** queued for Admin review & docketing at stage: **${currentStatus}**!\n📌 Form-13 (Address for Service) and Form-26 (Fresh POA) are flagged for filing within 3 months.`
+        : `✅ Patent Matter **${code}** successfully queued for Admin review and assigned to **${assignedDrafter}** at stage: **${currentStatus}**!`,
       card: {
-        title: `Patent Matter Assigned: ${code} → ${assignedDrafter} [${currentStatus}]`,
+        title: `Patent Matter Queued: ${code} → ${assignedDrafter} [${currentStatus}]`,
         theme: 'modern-inline'
       },
       slides: [
         {
           type: 'table',
-          title: 'Docket Information',
+          title: 'Docket Information (Queued for Admin Review)',
           data: {
             headers: ['Attribute', 'Value'],
             rows: [
@@ -276,12 +383,47 @@ Status: ${currentStatus}. Form-13 not required (Lextria will file directly at IP
           }
         }
       ],
-      record: newRecord
+      record: newRecord,
+      queuedItem
     });
   } catch (err) {
     console.error('Error handling Cliq assignment webhook:', err);
     res.status(500).json({ error: 'Internal server error processing Cliq webhook', detail: err.message });
   }
+});
+
+// =========================================================================
+// ZOHO CLIQ ASSIGNMENT QUEUE MANAGEMENT ENDPOINTS
+// =========================================================================
+app.get('/api/cliq-queue', (req, res) => {
+  const queue = loadCliqQueue();
+  const pending = queue.filter(q => q.status === 'PENDING_REVIEW');
+  res.json({ success: true, queue, count: pending.length });
+});
+
+app.post('/api/cliq-queue/add', (req, res) => {
+  const { item } = req.body || {};
+  if (!item) return res.status(400).json({ error: 'No item provided' });
+  const queue = loadCliqQueue();
+  queue.unshift(item);
+  saveCliqQueue(queue);
+  res.json({ success: true, queue, count: queue.filter(q => q.status === 'PENDING_REVIEW').length });
+});
+
+app.post('/api/cliq-queue/:id/resolve', (req, res) => {
+  const { id } = req.params;
+  let queue = loadCliqQueue();
+  queue = queue.map(q => q.id === id ? { ...q, status: 'RESOLVED', resolved_at: new Date().toISOString() } : q);
+  saveCliqQueue(queue);
+  res.json({ success: true, queue, count: queue.filter(q => q.status === 'PENDING_REVIEW').length });
+});
+
+app.delete('/api/cliq-queue/:id', (req, res) => {
+  const { id } = req.params;
+  let queue = loadCliqQueue();
+  queue = queue.filter(q => q.id !== id);
+  saveCliqQueue(queue);
+  res.json({ success: true, queue, count: queue.filter(q => q.status === 'PENDING_REVIEW').length });
 });
 
 app.get('/api/health', (req, res) => {
