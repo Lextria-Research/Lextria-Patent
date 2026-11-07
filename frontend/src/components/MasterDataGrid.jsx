@@ -495,7 +495,81 @@ export default function MasterDataGrid({
         ),
       },
 
-      // 4. Client Delivery (Dedicated Prominent Column matching Reference UI Design)
+      // 4. Nearest Statutory Deadline (Shifted to the left of Client Delivery)
+      {
+        id: 'nearest_statutory_deadline',
+        header: 'Statutory deadline',
+        size: 175,
+        sortingFn: (rowA, rowB) => {
+          const dateA = getNearestStatutoryDeadline(rowA.original)?.date || '9999-99-99';
+          const dateB = getNearestStatutoryDeadline(rowB.original)?.date || '9999-99-99';
+          return dateA.localeCompare(dateB);
+        },
+        cell: ({ row }) => {
+          const nearest = getNearestStatutoryDeadline(row.original);
+          if (!nearest) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>None pending</span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Compliant</span>
+              </div>
+            );
+          }
+
+          const diff = nearest.diffDays;
+          const d = new Date(nearest.date);
+          const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+          if (diff < 0) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                  Overdue {Math.abs(diff)}d · {nearest.shortLabel}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate} ({nearest.statutoryRef})
+                </span>
+              </div>
+            );
+          }
+          if (diff <= 2) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
+                  Due {diff === 0 ? 'today' : `in ${diff}d`} · {nearest.shortLabel}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate} ({nearest.statutoryRef})
+                </span>
+              </div>
+            );
+          }
+          if (diff <= 7) {
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
+                  In {diff}d · {nearest.shortLabel}
+                </span>
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate} ({nearest.statutoryRef})
+                </span>
+              </div>
+            );
+          }
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
+                In {diff}d · {nearest.shortLabel}
+              </span>
+              <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                Due {formattedDate} ({nearest.statutoryRef})
+              </span>
+            </div>
+          );
+        },
+      },
+
+      // 5. Client Delivery (Dedicated Prominent Column beside Statutory Deadline)
       {
         accessorKey: 'client_commitment_date',
         header: 'Client delivery',
@@ -527,25 +601,25 @@ export default function MasterDataGrid({
           if (diff < 0) {
             statusEl = (
               <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
-                Overdue ${Math.abs(diff)} days
+                Overdue {Math.abs(diff)} days
               </span>
             );
           } else if (diff <= 2) {
             statusEl = (
               <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                Due in ${diff === 0 ? 'today' : `${diff} days`}
+                Due {diff === 0 ? 'today' : `in ${diff} days`}
               </span>
             );
           } else if (diff <= 7) {
             statusEl = (
               <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                In ${diff} days
+                In {diff} days
               </span>
             );
           } else {
             statusEl = (
               <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In ${diff} days
+                In {diff} days
               </span>
             );
           }
@@ -572,80 +646,6 @@ export default function MasterDataGrid({
                   ⚠️ Exceeds {nearest.shortLabel}
                 </span>
               )}
-            </div>
-          );
-        },
-      },
-
-      // 4b. Nearest Statutory Deadline (Dedicated Column beside Client Delivery)
-      {
-        id: 'nearest_statutory_deadline',
-        header: 'Statutory deadline',
-        size: 175,
-        sortingFn: (rowA, rowB) => {
-          const dateA = getNearestStatutoryDeadline(rowA.original)?.date || '9999-99-99';
-          const dateB = getNearestStatutoryDeadline(rowB.original)?.date || '9999-99-99';
-          return dateA.localeCompare(dateB);
-        },
-        cell: ({ row }) => {
-          const nearest = getNearestStatutoryDeadline(row.original);
-          if (!nearest) {
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>None pending</span>
-                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Compliant</span>
-              </div>
-            );
-          }
-
-          const diff = nearest.diffDays;
-          const d = new Date(nearest.date);
-          const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-          if (diff < 0) {
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  Overdue ${Math.abs(diff)}d · ${nearest.shortLabel}
-                </span>
-                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due ${formattedDate} (${nearest.statutoryRef})
-                </span>
-              </div>
-            );
-          }
-          if (diff <= 2) {
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                  Due ${diff === 0 ? 'today' : 'in ' + diff + 'd'} · ${nearest.shortLabel}
-                </span>
-                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due ${formattedDate} (${nearest.statutoryRef})
-                </span>
-              </div>
-            );
-          }
-          if (diff <= 7) {
-            return (
-              <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                  In {diff}d · {nearest.shortLabel}
-                </span>
-                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                  Due {formattedDate} ({nearest.statutoryRef})
-                </span>
-              </div>
-            );
-          }
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In {diff}d · {nearest.shortLabel}
-              </span>
-              <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                Due {formattedDate} ({nearest.statutoryRef})
-              </span>
             </div>
           );
         },
