@@ -95,6 +95,8 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
       const quoteMatch = text.match(/"([^"]+)"|'([^']+)'/);
       if (quoteMatch) title = quoteMatch[1] || quoteMatch[2];
     }
+    title = title.replace(/\s*[-|;,]\s*(?:client|applicant|drafter|assigned|type|delivery)\s*:.*$/i, '').trim();
+    title = title.replace(/^[“”"'\s]+|[“”"'\s]+$/g, '').trim();
 
     // 4. Extract Client
     let clientName = 'Manipal Academy of Higher Education (MAHE)';
@@ -112,21 +114,11 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
     const isCs = /\b(?:Complete Specification|CS)\b/i.test(text);
     const specType = isCs ? 'CS' : 'PS';
 
-    // 6. Calculate CS Due Date (12 months from PS filing)
+    // 6. Filing dates & Statutory Deadlines:
+    // IMPORTANT: When an assignment message is posted in Cliq, the patent is ASSIGNED, not filed!
+    // ps_filing_date and statutory deadlines (Sec 9 CS Due, Sec 7 Form 1, Rule 135 Form 26)
+    // only start once the patent is filed at the Indian Patent Office (IPO).
     const today = new Date();
-    const csDeadline = new Date(today);
-    csDeadline.setMonth(csDeadline.getMonth() + 12);
-    const csDeadlineStr = csDeadline.toISOString().split('T')[0];
-
-    // Form 1 due date (6 months)
-    const form1Deadline = new Date(today);
-    form1Deadline.setMonth(form1Deadline.getMonth() + 6);
-    const form1DeadlineStr = form1Deadline.toISOString().split('T')[0];
-
-    // Form 26 due date (3 months)
-    const form26Deadline = new Date(today);
-    form26Deadline.setMonth(form26Deadline.getMonth() + 3);
-    const form26DeadlineStr = form26Deadline.toISOString().split('T')[0];
 
     const newRecord = {
       project_code: code,
@@ -137,12 +129,15 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
       specification_type: specType,
       current_status: 'Idf sent, awaiting data',
       color_code_status: 'PURPLE',
-      ps_filing_date: specType === 'PS' ? today.toISOString().split('T')[0] : '',
-      cs_deadline: csDeadlineStr,
-      form_1_deadline: form1DeadlineStr,
-      form_26_deadline: form26DeadlineStr,
-      f1_status: 'Pending',
-      f26_status: 'Pending',
+      ps_filing_date: '',
+      post_dated_date: '',
+      cs_filing_date: '',
+      cs_deadline: '',
+      form_1_deadline: '',
+      form_26_deadline: '',
+      rfe_deadline: '',
+      f1_status: 'Pending Filing at IPO',
+      f26_status: 'Pending Filing at IPO',
       status_notes: `Auto-generated via Zoho Cliq assignment channel on ${today.toLocaleDateString('en-IN')}`,
       created_from: 'ZOHO_CLIQ',
       created_at: today.toISOString()
@@ -160,7 +155,7 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
       slides: [
         {
           type: 'table',
-          title: 'Docket & Statutory Deadlines',
+          title: 'Docket Information',
           data: {
             headers: ['Attribute', 'Value'],
             rows: [
@@ -169,10 +164,9 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
               ['Assigned Drafter', assignedDrafter],
               ['Client / Applicant', clientName],
               ['Specification Type', specType === 'PS' ? 'Provisional Specification (PS)' : 'Complete Specification (CS)'],
-              ['Initial Status', 'Idf sent, awaiting data (Purple)'],
-              ['CS Statutory Deadline', csDeadlineStr],
-              ['Form 1 Deadline', form1DeadlineStr],
-              ['Form 26 Deadline', form26DeadlineStr]
+              ['Filing Stage', 'Pre-Filing (Drafting / Awaiting Data)'],
+              ['Initial Docket Status', 'Idf sent, awaiting data (Purple)'],
+              ['Statutory Deadlines', 'Will be calculated upon filing at IPO (e.g. 12m for CS under Sec 9)']
             ]
           }
         }

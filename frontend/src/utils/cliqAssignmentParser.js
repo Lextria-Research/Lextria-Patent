@@ -20,7 +20,7 @@ const REGISTERED_DRAFTERS = [
 export function matchDrafter(rawName) {
   if (!rawName) return 'Anusha';
   const clean = rawName.trim().toLowerCase();
-  
+
   // Direct match
   const found = REGISTERED_DRAFTERS.find(d => d.toLowerCase() === clean);
   if (found) return found;
@@ -61,10 +61,10 @@ export function normalizeClient(rawClient) {
 export function parseDateString(raw) {
   if (!raw) return '';
   const clean = raw.trim();
-  
+
   // YYYY-MM-DD
   if (/^\d{4}-\d{2}-\d{2}$/.test(clean)) return clean;
-  
+
   // DD-MM-YYYY or DD/MM/YYYY
   const dmyMatch = clean.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
   if (dmyMatch) {
@@ -226,16 +226,20 @@ export function parseCliqAssignmentMessage(payload, existingRecords = []) {
     // Normalize values
     const finalDrafter = matchDrafter(drafter || 'Anusha');
     const clientInfo = normalizeClient(clientRaw);
-    const finalTitle = title ? title.replace(/^[“”"'\s]+|[“”"'\s]+$/g, '').trim() : `Patent Application ${code}`;
+    let finalTitle = title ? title.trim() : `Patent Application ${code}`;
+    finalTitle = finalTitle.replace(/\s*[-|;,]\s*(?:client|applicant|drafter|assigned|type|delivery)\s*:.*$/i, '').trim();
+    finalTitle = finalTitle.replace(/^[“”"'\s]+|[“”"'\s]+$/g, '').trim();
 
-    // Calculate statutory deadlines
+    // IMPORTANT: When a matter is newly assigned in Cliq, it has NOT been filed at IPO yet!
+    // ps_filing_date and cs_filing_date are empty.
+    // Statutory deadlines (Sec 9 CS Due, Sec 7 Form 1 Due, Rule 135 Form 26 Due) start only from actual IPO filing date.
     const formValues = {
       project_code: code,
       title: finalTitle,
       specification_type: specType,
-      ps_filing_date: specType === 'PS' ? new Date().toISOString().split('T')[0] : '',
+      ps_filing_date: '', // Not filed yet! Pre-filing assignment.
       post_dated_date: '',
-      cs_filing_date: specType === 'CS' ? new Date().toISOString().split('T')[0] : '',
+      cs_filing_date: '',
       client_commitment_date: commitmentDate || '',
       is_mahe: clientInfo.isMahe,
     };
@@ -261,23 +265,23 @@ export function parseCliqAssignmentMessage(payload, existingRecords = []) {
       assigned_to: finalDrafter,
       current_status: 'Idf sent, awaiting data',
       color_code_status: 'PURPLE',
-      ps_filing_date: formValues.ps_filing_date,
+      ps_filing_date: '',
       post_dated_date: '',
-      cs_filing_date: formValues.cs_filing_date,
+      cs_filing_date: '',
       client_commitment_date: commitmentDate || '',
-      cs_deadline: statutory.cs_deadline,
-      form_1_deadline: statutory.form_1_deadline,
-      form_26_deadline: statutory.form_26_deadline,
-      rfe_deadline: statutory.rfe_deadline,
-      f1_status: 'Pending',
-      f26_status: 'Pending',
+      cs_deadline: '',
+      form_1_deadline: '',
+      form_26_deadline: '',
+      rfe_deadline: '',
+      f1_status: 'Pending Filing at IPO',
+      f26_status: 'Pending Filing at IPO',
       form_1_filing_date: '',
       form_26_filing_date: '',
       workdrive_folder_url: '',
       inventors_summary: '',
       abstract: '',
       claims: '',
-      status_notes: `Assigned via Zoho Cliq channel message to ${finalDrafter} on ${new Date().toLocaleDateString('en-IN')}`,
+      status_notes: `Assigned via Zoho Cliq to ${finalDrafter} on ${new Date().toLocaleDateString('en-IN')}. Awaiting IDF data from inventor.`,
       selectedTags: ['Cliq Assigned', clientInfo.isMahe ? 'MAHE' : 'External Client'],
       created_at: new Date().toISOString(),
       created_from: 'ZOHO_CLIQ',
@@ -302,10 +306,10 @@ export function parseCliqAssignmentMessage(payload, existingRecords = []) {
               ['Assigned Drafter', finalDrafter],
               ['Client / Applicant', clientInfo.name],
               ['Specification Type', specType === 'PS' ? 'Provisional Specification (PS)' : 'Complete Specification (CS)'],
-              ['Initial Status', 'Idf sent, awaiting data (Purple)'],
-              ['CS Statutory Deadline', statutory.cs_deadline ? statutory.cs_deadline : '12 Months from PS Filing'],
-              ['Form 1 Deadline', statutory.form_1_deadline || '6 Months from Filing'],
-              ['Form 26 Deadline', statutory.form_26_deadline || '3 Months from Filing']
+              ['Filing Status', 'Pre-Filing (Not filed at IPO yet)'],
+              ['Initial Docket Status', 'Idf sent, awaiting data (Purple)'],
+              ['Client Delivery Target', commitmentDate ? `${commitmentDate}` : 'To be set by drafter'],
+              ['Statutory Deadlines', 'Calculated automatically upon filing at IPO (e.g. 12m for CS under Sec 9)']
             ]
           }
         }

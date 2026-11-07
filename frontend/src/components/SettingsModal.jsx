@@ -422,438 +422,356 @@ export default function SettingsModal({
         {/* Tab Content Body */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
           <div key={activeTab} className="animate-tab-pane">
-          {/* TAB: FIRM USER & ROLE MANAGEMENT (Super Admin Only) */}
-          {activeTab === 'USERS' && isSuperAdmin && (
-            <div>
-              {/* Header with Title and Add Button */}
-              <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-                <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                    Firm User & Role Management
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                    Superadmin exclusive cockpit: Provision and configure accounts for Patent Drafters, Paralegals, and firm attorneys.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleOpenAddUser}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 16px',
-                    borderRadius: '8px',
-                    background: 'var(--accent)',
-                    color: '#fff',
-                    border: 'none',
-                    fontWeight: 800,
-                    fontSize: '12.5px',
-                    cursor: 'pointer',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
-                  }}
-                >
-                  <UserPlus size={15} />
-                  Provision New User
-                </button>
-              </div>
-
-              {/* 4 Role Summary Cards */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '20px' }}>
-                {ROLE_OPTIONS.map((opt) => {
-                  const roleMeta = ROLES[opt.value] || {};
-                  const count = registeredUsers.filter((u) => u.role === opt.value).length;
-                  return (
-                    <div
-                      key={opt.value}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '10px',
-                        background: 'var(--page)',
-                        border: '1px solid var(--line)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                        <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
-                          {opt.label}
-                        </span>
-                        <span
-                          style={{
-                            width: '8px',
-                            height: '8px',
-                            borderRadius: '50%',
-                            background: roleMeta.color || '#3B82F6',
-                          }}
-                        />
-                      </div>
-                      <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--ink)' }}>
-                        {count}
-                      </div>
-                      <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
-                        Active accounts
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Users Table */}
-              <div
-                style={{
-                  borderRadius: '10px',
-                  border: '1px solid var(--line)',
-                  background: 'var(--page)',
-                  overflow: 'hidden',
-                }}
-              >
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
-                    padding: '10px 16px',
-                    borderBottom: '1px solid var(--line)',
-                    background: 'var(--surface)',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.5px',
-                    color: 'var(--muted)',
-                  }}
-                >
-                  <div>User & Email ID</div>
-                  <div>Role / Privilege</div>
-                  <div>Department / Drafter</div>
-                  <div style={{ textAlign: 'right' }}>Actions</div>
+            {/* TAB: FIRM USER & ROLE MANAGEMENT (Super Admin Only) */}
+            {activeTab === 'USERS' && isSuperAdmin && (
+              <div>
+                {/* Header with Title and Add Button */}
+                <div style={{ marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                      Firm User & Role Management
+                    </h3>
+                    <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                      Superadmin exclusive cockpit: Provision and configure accounts for Patent Drafters, Paralegals, and firm attorneys.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddUser}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 16px',
+                      borderRadius: '8px',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      border: 'none',
+                      fontWeight: 800,
+                      fontSize: '12.5px',
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.15)',
+                    }}
+                  >
+                    <UserPlus size={15} />
+                    Provision New User
+                  </button>
                 </div>
 
-                <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
-                  {registeredUsers.map((user) => {
-                    const roleMeta = ROLES[user.role] || ROLES.PATENT_DRAFTER;
-                    const isMaster = user.isRoot || user.email?.toLowerCase() === ROOT_SUPER_ADMIN.email.toLowerCase();
-
+                {/* 4 Role Summary Cards */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginBottom: '20px' }}>
+                  {ROLE_OPTIONS.map((opt) => {
+                    const roleMeta = ROLES[opt.value] || {};
+                    const count = registeredUsers.filter((u) => u.role === opt.value).length;
                     return (
                       <div
-                        key={user.id}
+                        key={opt.value}
                         style={{
-                          display: 'grid',
-                          gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
-                          padding: '12px 16px',
-                          borderBottom: '1px solid var(--line)',
-                          alignItems: 'center',
-                          gap: '8px',
+                          padding: '12px',
+                          borderRadius: '10px',
+                          background: 'var(--page)',
+                          border: '1px solid var(--line)',
                         }}
                       >
-                        {/* User identity */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                          <div
-                            style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              background: roleMeta.color || '#3B82F6',
-                              color: '#fff',
-                              fontSize: '12px',
-                              fontWeight: 800,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              flexShrink: 0,
-                            }}
-                          >
-                            {user.initials || 'US'}
-                          </div>
-                          <div style={{ minWidth: 0, overflow: 'hidden' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                              <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
-                                {user.name}
-                              </span>
-                              {isMaster && (
-                                <span
-                                  style={{
-                                    fontSize: '9px',
-                                    fontWeight: 900,
-                                    padding: '1px 5px',
-                                    borderRadius: '4px',
-                                    background: '#FEF3C7',
-                                    color: '#B45309',
-                                    border: '1px solid #FCD34D',
-                                  }}
-                                >
-                                  ROOT
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: '11px', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                              {user.email}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Role */}
-                        <div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                          <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--muted)' }}>
+                            {opt.label}
+                          </span>
                           <span
                             style={{
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '5px',
-                              padding: '3px 8px',
-                              borderRadius: '6px',
-                              fontSize: '11px',
-                              fontWeight: 800,
-                              background: `${roleMeta.color || '#3B82F6'}15`,
-                              color: roleMeta.color || '#3B82F6',
-                              border: `1px solid ${roleMeta.color || '#3B82F6'}30`,
+                              width: '8px',
+                              height: '8px',
+                              borderRadius: '50%',
+                              background: roleMeta.color || '#3B82F6',
                             }}
-                          >
-                            <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: roleMeta.color || '#3B82F6' }} />
-                            {roleMeta.label || user.roleLabel || user.role}
-                          </span>
+                          />
                         </div>
-
-                        {/* Department / Drafter */}
-                        <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 600 }}>
-                          {user.role === 'PATENT_DRAFTER' && user.drafterName ? (
-                            <div>
-                              <span>{user.drafterName}</span>
-                              <div style={{ fontSize: '10px', color: 'var(--muted)' }}>Assigned Drafter</div>
-                            </div>
-                          ) : (
-                            <span>{user.department || 'Legal Operations'}</span>
-                          )}
+                        <div style={{ fontSize: '20px', fontWeight: 900, color: 'var(--ink)' }}>
+                          {count}
                         </div>
-
-                        {/* Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
-                          <button
-                            type="button"
-                            onClick={() => handleOpenEditUser(user)}
-                            style={{
-                              padding: '5px 8px',
-                              background: 'var(--surface)',
-                              border: '1px solid var(--line)',
-                              borderRadius: '6px',
-                              cursor: 'pointer',
-                              color: 'var(--ink)',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '4px',
-                              fontSize: '11px',
-                              fontWeight: 700,
-                            }}
-                            title="Edit user details or reset password"
-                          >
-                            <Edit3 size={13} />
-                            Edit
-                          </button>
-                          {!isMaster && (
-                            <button
-                              type="button"
-                              onClick={() => handleDeleteUser(user)}
-                              style={{
-                                padding: '5px 8px',
-                                background: 'rgba(239, 68, 68, 0.1)',
-                                border: '1px solid rgba(239, 68, 68, 0.25)',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                color: '#EF4444',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                              title="Delete user account"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
+                        <div style={{ fontSize: '10px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Active accounts
                         </div>
                       </div>
                     );
                   })}
                 </div>
-              </div>
 
-              {/* Sub-form Modal for Add / Edit User */}
-              {isUserFormOpen && (
+                {/* Users Table */}
                 <div
                   style={{
-                    position: 'fixed',
-                    inset: 0,
-                    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-                    backdropFilter: 'blur(4px)',
-                    zIndex: 2600,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    padding: '20px',
+                    borderRadius: '10px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--page)',
+                    overflow: 'hidden',
                   }}
-                  onClick={() => setIsUserFormOpen(false)}
                 >
                   <div
                     style={{
+                      display: 'grid',
+                      gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
+                      padding: '10px 16px',
+                      borderBottom: '1px solid var(--line)',
                       background: 'var(--surface)',
-                      borderRadius: '14px',
-                      width: '100%',
-                      maxWidth: '480px',
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                      border: '1px solid var(--line)',
-                      overflow: 'hidden',
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      color: 'var(--muted)',
                     }}
-                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div>User & Email ID</div>
+                    <div>Role / Privilege</div>
+                    <div>Department / Drafter</div>
+                    <div style={{ textAlign: 'right' }}>Actions</div>
+                  </div>
+
+                  <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
+                    {registeredUsers.map((user) => {
+                      const roleMeta = ROLES[user.role] || ROLES.PATENT_DRAFTER;
+                      const isMaster = user.isRoot || user.email?.toLowerCase() === ROOT_SUPER_ADMIN.email.toLowerCase();
+
+                      return (
+                        <div
+                          key={user.id}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: '2fr 1.5fr 1.5fr 1fr',
+                            padding: '12px 16px',
+                            borderBottom: '1px solid var(--line)',
+                            alignItems: 'center',
+                            gap: '8px',
+                          }}
+                        >
+                          {/* User identity */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                            <div
+                              style={{
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '50%',
+                                background: roleMeta.color || '#3B82F6',
+                                color: '#fff',
+                                fontSize: '12px',
+                                fontWeight: 800,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                flexShrink: 0,
+                              }}
+                            >
+                              {user.initials || 'US'}
+                            </div>
+                            <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--ink)' }}>
+                                  {user.name}
+                                </span>
+                                {isMaster && (
+                                  <span
+                                    style={{
+                                      fontSize: '9px',
+                                      fontWeight: 900,
+                                      padding: '1px 5px',
+                                      borderRadius: '4px',
+                                      background: '#FEF3C7',
+                                      color: '#B45309',
+                                      border: '1px solid #FCD34D',
+                                    }}
+                                  >
+                                    ROOT
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: '11px', color: 'var(--muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                {user.email}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Role */}
+                          <div>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '5px',
+                                padding: '3px 8px',
+                                borderRadius: '6px',
+                                fontSize: '11px',
+                                fontWeight: 800,
+                                background: `${roleMeta.color || '#3B82F6'}15`,
+                                color: roleMeta.color || '#3B82F6',
+                                border: `1px solid ${roleMeta.color || '#3B82F6'}30`,
+                              }}
+                            >
+                              <span style={{ width: '5px', height: '5px', borderRadius: '50%', background: roleMeta.color || '#3B82F6' }} />
+                              {roleMeta.label || user.roleLabel || user.role}
+                            </span>
+                          </div>
+
+                          {/* Department / Drafter */}
+                          <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 600 }}>
+                            {user.role === 'PATENT_DRAFTER' && user.drafterName ? (
+                              <div>
+                                <span>{user.drafterName}</span>
+                                <div style={{ fontSize: '10px', color: 'var(--muted)' }}>Assigned Drafter</div>
+                              </div>
+                            ) : (
+                              <span>{user.department || 'Legal Operations'}</span>
+                            )}
+                          </div>
+
+                          {/* Actions */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditUser(user)}
+                              style={{
+                                padding: '5px 8px',
+                                background: 'var(--surface)',
+                                border: '1px solid var(--line)',
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                color: 'var(--ink)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px',
+                                fontSize: '11px',
+                                fontWeight: 700,
+                              }}
+                              title="Edit user details or reset password"
+                            >
+                              <Edit3 size={13} />
+                              Edit
+                            </button>
+                            {!isMaster && (
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteUser(user)}
+                                style={{
+                                  padding: '5px 8px',
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  borderRadius: '6px',
+                                  cursor: 'pointer',
+                                  color: '#EF4444',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                                title="Delete user account"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Sub-form Modal for Add / Edit User */}
+                {isUserFormOpen && (
+                  <div
+                    style={{
+                      position: 'fixed',
+                      inset: 0,
+                      backgroundColor: 'rgba(15, 23, 42, 0.6)',
+                      backdropFilter: 'blur(4px)',
+                      zIndex: 2600,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px',
+                    }}
+                    onClick={() => setIsUserFormOpen(false)}
                   >
                     <div
                       style={{
-                        padding: '16px 20px',
-                        borderBottom: '1px solid var(--line)',
-                        background: 'var(--page)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
+                        background: 'var(--surface)',
+                        borderRadius: '14px',
+                        width: '100%',
+                        maxWidth: '480px',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        border: '1px solid var(--line)',
+                        overflow: 'hidden',
                       }}
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <UserCheck size={18} color="var(--accent)" />
-                        <h4 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                          {editingUserId ? 'Edit User Credentials & Role' : 'Provision New Firm User'}
-                        </h4>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setIsUserFormOpen(false)}
+                      <div
                         style={{
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          color: 'var(--muted)',
-                          padding: '4px',
+                          padding: '16px 20px',
+                          borderBottom: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
                         }}
                       >
-                        <X size={16} />
-                      </button>
-                    </div>
-
-                    <form onSubmit={handleSaveUser} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                      {userFormError && (
-                        <div
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            background: 'rgba(239, 68, 68, 0.1)',
-                            border: '1px solid rgba(239, 68, 68, 0.3)',
-                            color: '#EF4444',
-                            fontSize: '12px',
-                          }}
-                        >
-                          {userFormError}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <UserCheck size={18} color="var(--accent)" />
+                          <h4 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                            {editingUserId ? 'Edit User Credentials & Role' : 'Provision New Firm User'}
+                          </h4>
                         </div>
-                      )}
-                      {userFormSuccess && (
-                        <div
+                        <button
+                          type="button"
+                          onClick={() => setIsUserFormOpen(false)}
                           style={{
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            background: 'rgba(16, 185, 129, 0.1)',
-                            border: '1px solid rgba(16, 185, 129, 0.3)',
-                            color: '#10B981',
-                            fontSize: '12px',
-                          }}
-                        >
-                          {userFormSuccess}
-                        </div>
-                      )}
-
-                      {/* Full Name */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
-                          Full Name *
-                        </label>
-                        <input
-                          type="text"
-                          value={formName}
-                          onChange={(e) => setFormName(e.target.value)}
-                          placeholder="e.g. Aditi Rao"
-                          required
-                          style={{
-                            width: '100%',
-                            height: '38px',
-                            background: 'var(--page)',
-                            border: '1px solid var(--line)',
-                            borderRadius: '8px',
-                            padding: '0 12px',
-                            fontSize: '13px',
-                            color: 'var(--ink)',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                      </div>
-
-                      {/* Login Email */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
-                          Login ID / Email Address *
-                        </label>
-                        <input
-                          type="email"
-                          value={formEmail}
-                          onChange={(e) => setFormEmail(e.target.value)}
-                          placeholder="e.g. aditi@lextria.in"
-                          required
-                          style={{
-                            width: '100%',
-                            height: '38px',
-                            background: 'var(--page)',
-                            border: '1px solid var(--line)',
-                            borderRadius: '8px',
-                            padding: '0 12px',
-                            fontSize: '13px',
-                            color: 'var(--ink)',
-                            outline: 'none',
-                            boxSizing: 'border-box',
-                          }}
-                        />
-                      </div>
-
-                      {/* Role Dropdown */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
-                          Firm Role & Permissions *
-                        </label>
-                        <select
-                          value={formRole}
-                          onChange={(e) => setFormRole(e.target.value)}
-                          style={{
-                            width: '100%',
-                            height: '38px',
-                            background: 'var(--page)',
-                            border: '1px solid var(--line)',
-                            borderRadius: '8px',
-                            padding: '0 12px',
-                            fontSize: '13px',
-                            color: 'var(--ink)',
-                            outline: 'none',
-                            boxSizing: 'border-box',
+                            background: 'transparent',
+                            border: 'none',
                             cursor: 'pointer',
+                            color: 'var(--muted)',
+                            padding: '4px',
                           }}
                         >
-                          {ROLE_OPTIONS.map((opt) => (
-                            <option key={opt.value} value={opt.value}>
-                              {opt.label} — {opt.description}
-                            </option>
-                          ))}
-                        </select>
+                          <X size={16} />
+                        </button>
                       </div>
 
-                      {/* Drafter Name if Patent Drafters */}
-                      {formRole === 'PATENT_DRAFTER' && (
+                      <form onSubmit={handleSaveUser} style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {userFormError && (
+                          <div
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.3)',
+                              color: '#EF4444',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {userFormError}
+                          </div>
+                        )}
+                        {userFormSuccess && (
+                          <div
+                            style={{
+                              padding: '10px 12px',
+                              borderRadius: '8px',
+                              background: 'rgba(16, 185, 129, 0.1)',
+                              border: '1px solid rgba(16, 185, 129, 0.3)',
+                              color: '#10B981',
+                              fontSize: '12px',
+                            }}
+                          >
+                            {userFormSuccess}
+                          </div>
+                        )}
+
+                        {/* Full Name */}
                         <div>
                           <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
-                            Assigned Drafter Identifier (For Matter Docketing)
+                            Full Name *
                           </label>
                           <input
                             type="text"
-                            value={formDrafterName}
-                            onChange={(e) => setFormDrafterName(e.target.value)}
-                            placeholder={formName || "e.g. Aditi"}
+                            value={formName}
+                            onChange={(e) => setFormName(e.target.value)}
+                            placeholder="e.g. Aditi Rao"
+                            required
                             style={{
                               width: '100%',
                               height: '38px',
@@ -867,207 +785,377 @@ export default function SettingsModal({
                               boxSizing: 'border-box',
                             }}
                           />
-                          <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px', display: 'block' }}>
-                            Matches the "Assigned Drafter" value in portfolio matters for automatic filtering.
-                          </span>
                         </div>
-                      )}
 
-                      {/* Password */}
-                      <div>
-                        <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
-                          {editingUserId ? 'New Password (Leave blank to keep current)' : 'Security Password *'}
-                        </label>
-                        <div style={{ position: 'relative' }}>
+                        {/* Login Email */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                            Login ID / Email Address *
+                          </label>
                           <input
-                            type={showFormPassword ? 'text' : 'password'}
-                            value={formPassword}
-                            onChange={(e) => setFormPassword(e.target.value)}
-                            placeholder={editingUserId ? '••••••••' : 'Enter account password'}
-                            required={!editingUserId}
+                            type="email"
+                            value={formEmail}
+                            onChange={(e) => setFormEmail(e.target.value)}
+                            placeholder="e.g. aditi@lextria.in"
+                            required
                             style={{
                               width: '100%',
                               height: '38px',
                               background: 'var(--page)',
                               border: '1px solid var(--line)',
                               borderRadius: '8px',
-                              padding: '0 38px 0 12px',
+                              padding: '0 12px',
                               fontSize: '13px',
                               color: 'var(--ink)',
                               outline: 'none',
                               boxSizing: 'border-box',
                             }}
                           />
-                          <button
-                            type="button"
-                            onClick={() => setShowFormPassword(!showFormPassword)}
+                        </div>
+
+                        {/* Role Dropdown */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                            Firm Role & Permissions *
+                          </label>
+                          <select
+                            value={formRole}
+                            onChange={(e) => setFormRole(e.target.value)}
                             style={{
-                              position: 'absolute',
-                              right: '8px',
-                              top: '50%',
-                              transform: 'translateY(-50%)',
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--muted)',
+                              width: '100%',
+                              height: '38px',
+                              background: 'var(--page)',
+                              border: '1px solid var(--line)',
+                              borderRadius: '8px',
+                              padding: '0 12px',
+                              fontSize: '13px',
+                              color: 'var(--ink)',
+                              outline: 'none',
+                              boxSizing: 'border-box',
                               cursor: 'pointer',
-                              padding: '4px',
-                              display: 'flex',
                             }}
                           >
-                            {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {ROLE_OPTIONS.map((opt) => (
+                              <option key={opt.value} value={opt.value}>
+                                {opt.label} — {opt.description}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        {/* Drafter Name if Patent Drafters */}
+                        {formRole === 'PATENT_DRAFTER' && (
+                          <div>
+                            <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                              Assigned Drafter Identifier (For Matter Docketing)
+                            </label>
+                            <input
+                              type="text"
+                              value={formDrafterName}
+                              onChange={(e) => setFormDrafterName(e.target.value)}
+                              placeholder={formName || "e.g. Aditi"}
+                              style={{
+                                width: '100%',
+                                height: '38px',
+                                background: 'var(--page)',
+                                border: '1px solid var(--line)',
+                                borderRadius: '8px',
+                                padding: '0 12px',
+                                fontSize: '13px',
+                                color: 'var(--ink)',
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                              }}
+                            />
+                            <span style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '3px', display: 'block' }}>
+                              Matches the "Assigned Drafter" value in portfolio matters for automatic filtering.
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Password */}
+                        <div>
+                          <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '5px' }}>
+                            {editingUserId ? 'New Password (Leave blank to keep current)' : 'Security Password *'}
+                          </label>
+                          <div style={{ position: 'relative' }}>
+                            <input
+                              type={showFormPassword ? 'text' : 'password'}
+                              value={formPassword}
+                              onChange={(e) => setFormPassword(e.target.value)}
+                              placeholder={editingUserId ? '••••••••' : 'Enter account password'}
+                              required={!editingUserId}
+                              style={{
+                                width: '100%',
+                                height: '38px',
+                                background: 'var(--page)',
+                                border: '1px solid var(--line)',
+                                borderRadius: '8px',
+                                padding: '0 38px 0 12px',
+                                fontSize: '13px',
+                                color: 'var(--ink)',
+                                outline: 'none',
+                                boxSizing: 'border-box',
+                              }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setShowFormPassword(!showFormPassword)}
+                              style={{
+                                position: 'absolute',
+                                right: '8px',
+                                top: '50%',
+                                transform: 'translateY(-50%)',
+                                background: 'transparent',
+                                border: 'none',
+                                color: 'var(--muted)',
+                                cursor: 'pointer',
+                                padding: '4px',
+                                display: 'flex',
+                              }}
+                            >
+                              {showFormPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Buttons */}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
+                          <button
+                            type="button"
+                            onClick={() => setIsUserFormOpen(false)}
+                            style={{
+                              padding: '8px 14px',
+                              background: 'transparent',
+                              border: '1px solid var(--line)',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: 700,
+                              color: 'var(--muted)',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            style={{
+                              padding: '8px 18px',
+                              background: 'var(--accent)',
+                              border: 'none',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              fontWeight: 800,
+                              color: '#fff',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            {editingUserId ? 'Update User' : 'Provision User'}
                           </button>
                         </div>
-                      </div>
-
-                      {/* Buttons */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '10px' }}>
-                        <button
-                          type="button"
-                          onClick={() => setIsUserFormOpen(false)}
-                          style={{
-                            padding: '8px 14px',
-                            background: 'transparent',
-                            border: '1px solid var(--line)',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            fontWeight: 700,
-                            color: 'var(--muted)',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          type="submit"
-                          style={{
-                            padding: '8px 18px',
-                            background: 'var(--accent)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            fontWeight: 800,
-                            color: '#fff',
-                            cursor: 'pointer',
-                          }}
-                        >
-                          {editingUserId ? 'Update User' : 'Provision User'}
-                        </button>
-                      </div>
-                    </form>
+                      </form>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB: ZOHO WORKDRIVE STORAGE INTEGRATION (Super Admin Only) */}
-          {activeTab === 'WORKDRIVE' && isSuperAdmin && (
-            <div>
-              <div style={{ marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                    Zoho WorkDrive Storage & Cloud Docs Vault
-                  </h3>
-                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                    Configure enterprise cloud storage credentials to power direct file uploads, document versioning, and in-dashboard previews across all patent dockets.
-                  </p>
-                </div>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '12px',
-                  background: '#ECFDF5',
-                  color: '#059669',
-                  border: '1px solid #A7F3D0',
-                  fontSize: '11px',
-                  fontWeight: 800
-                }}>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
-                  {workdriveConfig.lastSyncStatus || 'Connected'}
-                </div>
+                )}
               </div>
+            )}
 
-              {/* WorkDrive Credentials Form */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+            {/* TAB: ZOHO WORKDRIVE STORAGE INTEGRATION (Super Admin Only) */}
+            {activeTab === 'WORKDRIVE' && isSuperAdmin && (
+              <div>
+                <div style={{ marginBottom: '18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                      Zoho WorkDrive API Domain *
-                    </label>
-                    <select
-                      value={workdriveConfig.apiDomain}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, apiDomain: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--page)',
-                        fontSize: '13px',
-                        color: 'var(--ink)',
-                      }}
-                    >
-                      <option value="https://workdrive.zoho.com">workdrive.zoho.com (US / Global Data Center)</option>
-                      <option value="https://workdrive.zoho.in">workdrive.zoho.in (India Data Center)</option>
-                      <option value="https://workdrive.zoho.eu">workdrive.zoho.eu (Europe Data Center)</option>
-                    </select>
+                    <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                      Zoho WorkDrive Storage & Cloud Docs Vault
+                    </h3>
+                    <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                      Configure enterprise cloud storage credentials to power direct file uploads, document versioning, and in-dashboard previews across all patent dockets.
+                    </p>
                   </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                      Team / Workspace ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={workdriveConfig.workspaceId}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, workspaceId: e.target.value })}
-                      placeholder="e.g. ws_lextria_patent_vault"
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--page)',
-                        fontSize: '13px',
-                        fontFamily: 'monospace',
-                      }}
-                    />
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: '#ECFDF5',
+                    color: '#059669',
+                    border: '1px solid #A7F3D0',
+                    fontSize: '11px',
+                    fontWeight: 800
+                  }}>
+                    <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10B981' }} />
+                    {workdriveConfig.lastSyncStatus || 'Connected'}
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                      OAuth 2.0 Client ID *
-                    </label>
-                    <input
-                      type="text"
-                      value={workdriveConfig.clientId}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, clientId: e.target.value })}
-                      placeholder="1000.XXXXXXXXXXXXXXXXXXXXXXXX"
-                      style={{
-                        width: '100%',
-                        padding: '9px 12px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--page)',
-                        fontSize: '13px',
-                        fontFamily: 'monospace',
-                      }}
-                    />
+                {/* WorkDrive Credentials Form */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                        Zoho WorkDrive API Domain *
+                      </label>
+                      <select
+                        value={workdriveConfig.apiDomain}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, apiDomain: e.target.value })}
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          fontSize: '13px',
+                          color: 'var(--ink)',
+                        }}
+                      >
+                        <option value="https://workdrive.zoho.com">workdrive.zoho.com (US / Global Data Center)</option>
+                        <option value="https://workdrive.zoho.in">workdrive.zoho.in (India Data Center)</option>
+                        <option value="https://workdrive.zoho.eu">workdrive.zoho.eu (Europe Data Center)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                        Team / Workspace ID *
+                      </label>
+                      <input
+                        type="text"
+                        value={workdriveConfig.workspaceId}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, workspaceId: e.target.value })}
+                        placeholder="e.g. ws_lextria_patent_vault"
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          fontSize: '13px',
+                          fontFamily: 'monospace',
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                        OAuth 2.0 Client ID *
+                      </label>
+                      <input
+                        type="text"
+                        value={workdriveConfig.clientId}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, clientId: e.target.value })}
+                        placeholder="1000.XXXXXXXXXXXXXXXXXXXXXXXX"
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          fontSize: '13px',
+                          fontFamily: 'monospace',
+                        }}
+                      />
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                        OAuth 2.0 Client Secret *
+                      </label>
+                      <input
+                        type="password"
+                        value={workdriveConfig.clientSecret}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, clientSecret: e.target.value })}
+                        placeholder="••••••••••••••••••••••••••••••••"
+                        style={{
+                          width: '100%',
+                          padding: '9px 12px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          fontSize: '13px',
+                        }}
+                      />
+                    </div>
                   </div>
 
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                      OAuth 2.0 Client Secret *
+                      Zoho Refresh Token (WorkDrive API Scope: WorkDrive.workspace.ALL) *
                     </label>
                     <input
                       type="password"
-                      value={workdriveConfig.clientSecret}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, clientSecret: e.target.value })}
-                      placeholder="••••••••••••••••••••••••••••••••"
+                      value={workdriveConfig.refreshToken}
+                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, refreshToken: e.target.value })}
+                      placeholder="1000.••••••••••••••••••••••••••••"
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                      }}
+                    />
+                  </div>
+
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                      Root Patent Repository Folder ID
+                    </label>
+                    <input
+                      type="text"
+                      value={workdriveConfig.parentFolderId}
+                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, parentFolderId: e.target.value })}
+                      placeholder="fldr_lextria_patent_vault"
+                      style={{
+                        width: '100%',
+                        padding: '9px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                      }}
+                    />
+                    <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                      Files uploaded from any patent docket will automatically synchronize to this WorkDrive repository.
+                    </span>
+                  </div>
+
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '12px', fontWeight: 800 }}>
+                        WorkDrive Workspace & Folder URL
+                      </label>
+                      <a
+                        href={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          fontSize: '11.5px',
+                          color: '#2563EB',
+                          fontWeight: 700,
+                          textDecoration: 'none',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          background: '#EFF6FF',
+                          border: '1px solid #BFDBFE'
+                        }}
+                      >
+                        Open WorkDrive Folder <ExternalLink size={12} />
+                      </a>
+                    </div>
+                    <input
+                      type="url"
+                      value={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
+                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, workspaceFolderUrl: e.target.value })}
+                      placeholder="https://workdrive.zoho.com/workspace/patents"
                       style={{
                         width: '100%',
                         padding: '9px 12px',
@@ -1077,759 +1165,674 @@ export default function SettingsModal({
                         fontSize: '13px',
                       }}
                     />
+                    <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
+                      Central enterprise folder URL for storing and synchronizing matter folders.
+                    </span>
                   </div>
-                </div>
 
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Zoho Refresh Token (WorkDrive API Scope: WorkDrive.workspace.ALL) *
-                  </label>
-                  <input
-                    type="password"
-                    value={workdriveConfig.refreshToken}
-                    onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, refreshToken: e.target.value })}
-                    placeholder="1000.••••••••••••••••••••••••••••"
+                  {/* Storage Policies & In-Dashboard Viewer Toggles */}
+                  <div
                     style={{
-                      width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
+                      padding: '16px',
+                      borderRadius: '8px',
                       background: 'var(--page)',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Root Patent Repository Folder ID
-                  </label>
-                  <input
-                    type="text"
-                    value={workdriveConfig.parentFolderId}
-                    onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, parentFolderId: e.target.value })}
-                    placeholder="fldr_lextria_patent_vault"
-                    style={{
-                      width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '6px',
                       border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
                     }}
-                  />
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                    Files uploaded from any patent docket will automatically synchronize to this WorkDrive repository.
-                  </span>
-                </div>
-
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '12px', fontWeight: 800 }}>
-                      WorkDrive Workspace & Folder URL
+                  >
+                    <div style={{ fontSize: '12.5px', fontWeight: 800 }}>
+                      In-Dashboard Vault & Synchronization Rules
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={workdriveConfig.autoFolderCreation}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, autoFolderCreation: e.target.checked })}
+                      />
+                      <span>
+                        <strong>Auto-Create Matter Folder</strong>: Automatically generate a dedicated folder in WorkDrive for every new project code (e.g. <code>AR432/</code>, <code>AAIS77/</code>).
+                      </span>
                     </label>
-                    <a
-                      href={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
-                      target="_blank"
-                      rel="noreferrer"
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={workdriveConfig.directViewerEnabled}
+                        onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, directViewerEnabled: e.target.checked })}
+                      />
+                      <span>
+                        <strong>In-Dashboard Document Viewer</strong>: Enable inline PDF, image drawings, text specification, and CBR receipt viewing without leaving the patent dashboard.
+                      </span>
+                    </label>
+                  </div>
+
+                  {/* Test Connection Button & Status */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={handleTestWorkdrive}
                       style={{
-                        display: 'inline-flex',
+                        padding: '8px 16px',
+                        borderRadius: '6px',
+                        border: '1px solid #059669',
+                        background: '#ECFDF5',
+                        color: '#059669',
+                        fontSize: '12.5px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        fontSize: '11.5px',
-                        color: '#2563EB',
-                        fontWeight: 700,
-                        textDecoration: 'none',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        background: '#EFF6FF',
-                        border: '1px solid #BFDBFE'
+                        gap: '6px',
                       }}
                     >
-                      Open WorkDrive Folder <ExternalLink size={12} />
-                    </a>
+                      <RefreshCw size={13} />
+                      {workdriveTestStatus === 'TESTING' ? 'Testing Connection...' : 'Test WorkDrive Connection'}
+                    </button>
+
+                    {workdriveTestStatus === 'SUCCESS' && (
+                      <span style={{ fontSize: '12px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <CheckCircle2 size={14} /> Connection Successful: Authenticated with Zoho WorkDrive v1 API. Team Workspace verified.
+                      </span>
+                    )}
                   </div>
-                  <input
-                    type="url"
-                    value={workdriveConfig.workspaceFolderUrl || 'https://workdrive.zoho.com/workspace/patents'}
-                    onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, workspaceFolderUrl: e.target.value })}
-                    placeholder="https://workdrive.zoho.com/workspace/patents"
-                    style={{
-                      width: '100%',
-                      padding: '9px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block', marginTop: '4px' }}>
-                    Central enterprise folder URL for storing and synchronizing matter folders.
-                  </span>
+                </div>
+              </div>
+            )}
+            {/* TAB 1: TAG SYSTEM (Requirement 10) */}
+            {activeTab === 'TAGS' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                    Firm Portfolio Tags Registry
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                    Add custom tags to flag applications for executive attention (e.g. Priority, Ticket Raised, Critical, Political).
+                  </p>
                 </div>
 
-                {/* Storage Policies & In-Dashboard Viewer Toggles */}
+                {/* Add New Tag Form */}
                 <div
                   style={{
                     padding: '16px',
-                    borderRadius: '8px',
+                    borderRadius: '10px',
                     background: 'var(--page)',
                     border: '1px solid var(--line)',
+                    marginBottom: '20px',
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '12px',
                   }}
                 >
-                  <div style={{ fontSize: '12.5px', fontWeight: 800 }}>
-                    In-Dashboard Vault & Synchronization Rules
-                  </div>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={workdriveConfig.autoFolderCreation}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, autoFolderCreation: e.target.checked })}
-                    />
-                    <span>
-                      <strong>Auto-Create Matter Folder</strong>: Automatically generate a dedicated folder in WorkDrive for every new project code (e.g. <code>AR432/</code>, <code>AAIS77/</code>).
-                    </span>
-                  </label>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '12.5px', cursor: 'pointer' }}>
-                    <input
-                      type="checkbox"
-                      checked={workdriveConfig.directViewerEnabled}
-                      onChange={(e) => setWorkdriveConfig({ ...workdriveConfig, directViewerEnabled: e.target.checked })}
-                    />
-                    <span>
-                      <strong>In-Dashboard Document Viewer</strong>: Enable inline PDF, image drawings, text specification, and CBR receipt viewing without leaving the patent dashboard.
-                    </span>
-                  </label>
-                </div>
-
-                {/* Test Connection Button & Status */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px' }}>
-                  <button
-                    type="button"
-                    onClick={handleTestWorkdrive}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      border: '1px solid #059669',
-                      background: '#ECFDF5',
-                      color: '#059669',
-                      fontSize: '12.5px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                    }}
-                  >
-                    <RefreshCw size={13} />
-                    {workdriveTestStatus === 'TESTING' ? 'Testing Connection...' : 'Test WorkDrive Connection'}
-                  </button>
-
-                  {workdriveTestStatus === 'SUCCESS' && (
-                    <span style={{ fontSize: '12px', color: '#059669', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                      <CheckCircle2 size={14} /> Connection Successful: Authenticated with Zoho WorkDrive v1 API. Team Workspace verified.
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-          {/* TAB 1: TAG SYSTEM (Requirement 10) */}
-          {activeTab === 'TAGS' && (
-            <div>
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                  Firm Portfolio Tags Registry
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                  Add custom tags to flag applications for executive attention (e.g. Priority, Ticket Raised, Critical, Political).
-                </p>
-              </div>
-
-              {/* Add New Tag Form */}
-              <div
-                style={{
-                  padding: '16px',
-                  borderRadius: '10px',
-                  background: 'var(--page)',
-                  border: '1px solid var(--line)',
-                  marginBottom: '20px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '12px',
-                }}
-              >
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
-                      Tag Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Strategic Filing, VIP Client"
-                      value={newTagName}
-                      onChange={(e) => setNewTagName(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '8px 10px',
-                        borderRadius: '6px',
-                        border: '1px solid var(--line)',
-                        background: 'var(--surface)',
-                        fontSize: '13px',
-                      }}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
-                      Color Accent
-                    </label>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: '12px' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
+                        Tag Name *
+                      </label>
                       <input
-                        type="color"
-                        value={newTagColor}
-                        onChange={(e) => setNewTagColor(e.target.value)}
-                        style={{ width: '36px', height: '34px', border: 'none', background: 'transparent', cursor: 'pointer' }}
-                      />
-                      <span style={{ fontSize: '12px', fontWeight: 700 }}>{newTagColor}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'flex-end' }}>
-                    <button
-                      onClick={handleAddTag}
-                      style={{
-                        width: '100%',
-                        padding: '8px 14px',
-                        borderRadius: '6px',
-                        border: 'none',
-                        background: 'var(--accent)',
-                        color: '#fff',
-                        fontSize: '12px',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '6px',
-                      }}
-                    >
-                      <Plus size={14} /> Add Tag
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
-                    Description
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Short description of when to use this tag..."
-                    value={newTagDesc}
-                    onChange={(e) => setNewTagDesc(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--surface)',
-                      fontSize: '12px',
-                    }}
-                  />
-                </div>
-              </div>
-
-              {/* Tag List */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {tagList.map((tag) => (
-                  <div
-                    key={tag.name}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '10px 14px',
-                      borderRadius: '8px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                    }}
-                  >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span
+                        type="text"
+                        placeholder="e.g. Strategic Filing, VIP Client"
+                        value={newTagName}
+                        onChange={(e) => setNewTagName(e.target.value)}
                         style={{
-                          fontSize: '12px',
-                          fontWeight: 800,
-                          padding: '3px 10px',
+                          width: '100%',
+                          padding: '8px 10px',
                           borderRadius: '6px',
-                          background: `${tag.color}1A`,
-                          color: tag.color,
-                          border: `1px solid ${tag.color}40`,
+                          border: '1px solid var(--line)',
+                          background: 'var(--surface)',
+                          fontSize: '13px',
                         }}
-                      >
-                        {tag.name}
-                      </span>
-                      <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-                        {tag.description}
-                      </span>
+                      />
                     </div>
 
-                    <button
-                      onClick={() => handleRemoveTag(tag.name)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        color: '#EF4444',
-                        padding: '4px',
-                      }}
-                      title="Delete Tag"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* TAB 2: ZOHO CLIQ INTEGRATION (Inbound Assignment & Outbound Alerts) */}
-          {activeTab === 'CLIQ' && (
-            <div>
-              {/* SECTION A: INBOUND CLIQ ASSIGNMENT CHANNEL */}
-              <div
-                style={{
-                  marginBottom: '24px',
-                  padding: '18px',
-                  borderRadius: '10px',
-                  background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(14, 165, 233, 0.02))',
-                  border: '1.5px solid #0284C7',
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={18} color="#0284C7" />
-                    <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                      Inbound Cliq Assignment Channel (Auto-Create Patents)
-                    </h3>
-                  </div>
-                  <span
-                    style={{
-                      fontSize: '10px',
-                      fontWeight: 800,
-                      padding: '2px 8px',
-                      borderRadius: '4px',
-                      background: '#E0F2FE',
-                      color: '#0369A1',
-                      letterSpacing: '0.4px',
-                    }}
-                  >
-                    REAL-TIME SYNC
-                  </span>
-                </div>
-                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.4 }}>
-                  When a patent admin posts an assignment message in Zoho Cliq (e.g. in <code>#patent-assignments</code>), the dashboard automatically ingests the message, extracts code, drafter, title, client, and generates the docket entry with all statutory deadlines scheduled.
-                </p>
-
-                {/* Webhook Endpoint Display */}
-                <div style={{ marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink)' }}>
-                      Inbound Webhook Endpoint URL (Configure in Zoho Cliq)
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(inboundWebhookUrl);
-                        setCopiedInboundWebhook(true);
-                        setTimeout(() => setCopiedInboundWebhook(false), 2500);
-                      }}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        padding: '3px 8px',
-                        borderRadius: '4px',
-                        border: '1px solid var(--line)',
-                        background: copiedInboundWebhook ? '#10B981' : 'var(--surface)',
-                        color: copiedInboundWebhook ? '#fff' : 'var(--ink)',
-                        fontSize: '11px',
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {copiedInboundWebhook ? <Check size={12} /> : <Copy size={12} />}
-                      {copiedInboundWebhook ? 'Copied!' : 'Copy Endpoint'}
-                    </button>
-                  </div>
-                  <code
-                    style={{
-                      display: 'block',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      background: 'var(--surface)',
-                      border: '1px solid var(--line)',
-                      fontSize: '11px',
-                      color: 'var(--ink)',
-                      fontFamily: 'monospace',
-                    }}
-                  >
-                    {inboundWebhookUrl}
-                  </code>
-                </div>
-
-                {/* Interactive Cliq Message Tester & Simulator */}
-                <div
-                  style={{
-                    padding: '14px',
-                    borderRadius: '8px',
-                    background: 'var(--surface)',
-                    border: '1px solid var(--line)',
-                  }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
-                      Test & Ingest Cliq Message Directly
-                    </span>
-                    <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                      Type or paste any Cliq message to test parsing
-                    </span>
-                  </div>
-
-                  <textarea
-                    rows={2}
-                    value={cliqSimMessage}
-                    onChange={(e) => setCliqSimMessage(e.target.value)}
-                    placeholder="e.g. Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE"
-                    style={{
-                      width: '100%',
-                      padding: '8px 10px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '12px',
-                      fontFamily: 'monospace',
-                      marginBottom: '10px',
-                      resize: 'vertical',
-                    }}
-                  />
-
-                  {cliqSimResult?.success && cliqSimResult.record && (
-                    <div
-                      style={{
-                        padding: '10px 12px',
-                        borderRadius: '6px',
-                        background: 'var(--page)',
-                        border: '1px solid var(--line)',
-                        marginBottom: '10px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '8px' }}>
-                        <div>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Matter Code: </span>
-                          <strong>{cliqSimResult.record.project_code}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Drafter: </span>
-                          <strong style={{ color: '#2563EB' }}>{cliqSimResult.record.assigned_to}</strong>
-                        </div>
-                        <div style={{ gridColumn: 'span 2' }}>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Title: </span>
-                          <strong>{cliqSimResult.record.title}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Client: </span>
-                          <strong>{cliqSimResult.record.applicant_name}</strong>
-                        </div>
-                        <div>
-                          <span style={{ color: 'var(--muted)', fontSize: '11px' }}>CS Statutory Due: </span>
-                          <strong style={{ color: '#059669' }}>{cliqSimResult.record.cs_deadline || '12m from filing'}</strong>
-                        </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
+                        Color Accent
+                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <input
+                          type="color"
+                          value={newTagColor}
+                          onChange={(e) => setNewTagColor(e.target.value)}
+                          style={{ width: '36px', height: '34px', border: 'none', background: 'transparent', cursor: 'pointer' }}
+                        />
+                        <span style={{ fontSize: '12px', fontWeight: 700 }}>{newTagColor}</span>
                       </div>
+                    </div>
 
+                    <div style={{ display: 'flex', alignItems: 'flex-end' }}>
                       <button
-                        type="button"
-                        onClick={handleCreateFromCliqSim}
-                        disabled={isSimCreating}
+                        onClick={handleAddTag}
                         style={{
-                          padding: '6px 14px',
+                          width: '100%',
+                          padding: '8px 14px',
                           borderRadius: '6px',
                           border: 'none',
-                          background: 'linear-gradient(135deg, #0284C7, #0369A1)',
+                          background: 'var(--accent)',
                           color: '#fff',
                           fontSize: '12px',
                           fontWeight: 800,
                           cursor: 'pointer',
                           display: 'flex',
                           alignItems: 'center',
+                          justifyContent: 'center',
                           gap: '6px',
                         }}
                       >
-                        <Sparkles size={13} />
-                        {isSimCreating ? 'Creating Patent...' : `Create Patent Entry ${cliqSimResult.record.project_code} in Dashboard`}
+                        <Plus size={14} /> Add Tag
                       </button>
                     </div>
-                  )}
+                  </div>
 
-                  {cliqSimSuccess && (
-                    <div
+                  <div>
+                    <label style={{ display: 'block', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
+                      Description
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Short description of when to use this tag..."
+                      value={newTagDesc}
+                      onChange={(e) => setNewTagDesc(e.target.value)}
                       style={{
-                        padding: '8px 12px',
+                        width: '100%',
+                        padding: '8px 10px',
                         borderRadius: '6px',
-                        background: '#ECFDF5',
-                        border: '1px solid #A7F3D0',
-                        color: '#065F46',
+                        border: '1px solid var(--line)',
+                        background: 'var(--surface)',
                         fontSize: '12px',
-                        fontWeight: 700,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Tag List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {tagList.map((tag) => (
+                    <div
+                      key={tag.name}
+                      style={{
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        justifyContent: 'space-between',
+                        padding: '10px 14px',
+                        borderRadius: '8px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
                       }}
                     >
-                      <CheckCircle2 size={15} />
-                      {cliqSimSuccess}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span
+                          style={{
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            padding: '3px 10px',
+                            borderRadius: '6px',
+                            background: `${tag.color}1A`,
+                            color: tag.color,
+                            border: `1px solid ${tag.color}40`,
+                          }}
+                        >
+                          {tag.name}
+                        </span>
+                        <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
+                          {tag.description}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={() => handleRemoveTag(tag.name)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          cursor: 'pointer',
+                          color: '#EF4444',
+                          padding: '4px',
+                        }}
+                        title="Delete Tag"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
+            )}
 
-              {/* SECTION B: OUTBOUND STATUTORY DEADLINE ALERTS */}
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                  Outbound Zoho Cliq Statutory Deadline Alerts
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                  Automatically dispatches interactive cards to drafters and paralegals on Zoho Cliq as statutory deadlines approach.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Zoho Cliq Outgoing Channel Webhook URL *
-                  </label>
-                  <input
-                    type="url"
-                    value={cliqWebhookUrl}
-                    onChange={(e) => setCliqWebhookUrl(e.target.value)}
-                    placeholder="https://cliq.zoho.com/api/v2/channelsbyname/.../incoming?zapikey=..."
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                    }}
-                  />
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Target Cliq Channel / Bot Name
-                  </label>
-                  <input
-                    type="text"
-                    value={cliqChannel}
-                    onChange={(e) => setCliqChannel(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '8px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                    }}
-                  />
-                </div>
-
-                {/* Notification Trigger Rules */}
+            {/* TAB 2: ZOHO CLIQ INTEGRATION (Inbound Assignment & Outbound Alerts) */}
+            {activeTab === 'CLIQ' && (
+              <div>
+                {/* SECTION A: INBOUND CLIQ ASSIGNMENT CHANNEL */}
                 <div
                   style={{
-                    padding: '14px',
-                    borderRadius: '8px',
-                    background: 'var(--page)',
-                    border: '1px solid var(--line)',
+                    marginBottom: '24px',
+                    padding: '18px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(14, 165, 233, 0.02))',
+                    border: '1.5px solid #0284C7',
                   }}
                 >
-                  <div style={{ fontSize: '12px', fontWeight: 800, marginBottom: '8px' }}>
-                    Automated Alert Trigger Windows
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <Zap size={18} color="#0284C7" />
+                      <h3 style={{ fontSize: '14px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
+                        Inbound Cliq Assignment Channel (Auto-Create Patents)
+                      </h3>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '4px',
+                        background: '#E0F2FE',
+                        color: '#0369A1',
+                        letterSpacing: '0.4px',
+                      }}
+                    >
+                      REAL-TIME SYNC
+                    </span>
                   </div>
-                  <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
-                    {[
-                      '30 Days Before Expiry',
-                      '15 Days Before Expiry',
-                      '7 Days (Critical Alert)',
-                      '1 Day Before Expiry (Urgent Ping)',
-                    ].map((rule) => (
-                      <label key={rule} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
-                        <input type="checkbox" defaultChecked />
-                        <span>{rule}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: '0 0 14px', lineHeight: 1.4 }}>
+                    When a patent admin posts an assignment message in Zoho Cliq (e.g. in <code>#patent-assignments</code>), the dashboard automatically ingests the message, extracts code, drafter, title, client, and generates the docket entry with all statutory deadlines scheduled.
+                  </p>
 
-                {/* Test Webhook Button */}
-                <div>
-                  <button
-                    onClick={handleTestCliq}
+                  {/* Webhook Endpoint Display */}
+                  <div style={{ marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                      <label style={{ fontSize: '11px', fontWeight: 800, color: 'var(--ink)' }}>
+                        Inbound Webhook Endpoint URL (Configure in Zoho Cliq)
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(inboundWebhookUrl);
+                          setCopiedInboundWebhook(true);
+                          setTimeout(() => setCopiedInboundWebhook(false), 2500);
+                        }}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          padding: '3px 8px',
+                          borderRadius: '4px',
+                          border: '1px solid var(--line)',
+                          background: copiedInboundWebhook ? '#10B981' : 'var(--surface)',
+                          color: copiedInboundWebhook ? '#fff' : 'var(--ink)',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {copiedInboundWebhook ? <Check size={12} /> : <Copy size={12} />}
+                        {copiedInboundWebhook ? 'Copied!' : 'Copy Endpoint'}
+                      </button>
+                    </div>
+                    <code
+                      style={{
+                        display: 'block',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        background: 'var(--surface)',
+                        border: '1px solid var(--line)',
+                        fontSize: '11px',
+                        color: 'var(--ink)',
+                        fontFamily: 'monospace',
+                      }}
+                    >
+                      {inboundWebhookUrl}
+                    </code>
+                  </div>
+
+                  {/* Interactive Cliq Message Tester & Simulator */}
+                  <div
                     style={{
-                      padding: '9px 18px',
-                      borderRadius: '6px',
+                      padding: '14px',
+                      borderRadius: '8px',
+                      background: 'var(--surface)',
                       border: '1px solid var(--line)',
-                      background: testSent ? '#10B981' : 'var(--surface)',
-                      color: testSent ? '#fff' : 'var(--ink)',
-                      fontSize: '12px',
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
                     }}
                   >
-                    {testSent ? <CheckCircle2 size={15} /> : <Send size={15} />}
-                    {testSent ? 'Test Payload Dispatched to Cliq!' : 'Send Test Notification Card'}
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
+                        Test & Ingest Cliq Message Directly
+                      </span>
+                      <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                        Type or paste any Cliq message to test parsing
+                      </span>
+                    </div>
 
-          {/* TAB 3: ZOHO CALENDAR INTEGRATION (Requirement 14) */}
-          {activeTab === 'CALENDAR' && (
-            <div>
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                  Zoho Calendar & Team Synchronization
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                  Sync statutory deadlines to the firm calendar and allow individual drafters to link their personal Zoho Calendars.
-                </p>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
-                    Firm Master Zoho Calendar Link / iCal Feed
-                  </label>
-                  <input
-                    type="url"
-                    value={firmCalendarUrl}
-                    onChange={(e) => setFirmCalendarUrl(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 12px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--line)',
-                      background: 'var(--page)',
-                      fontSize: '13px',
-                      fontFamily: 'monospace',
-                    }}
-                  />
-                </div>
-
-                <div style={{ fontSize: '12px', fontWeight: 800, marginTop: '8px' }}>
-                  Drafter Personal Calendar Feeds
-                </div>
-
-                {Object.entries(drafterCalendarMap).map(([drafter, calUrl]) => (
-                  <div key={drafter} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', alignItems: 'center' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 700 }}>{drafter}:</span>
-                    <input
-                      type="url"
-                      value={calUrl}
-                      onChange={(e) =>
-                        setDrafterCalendarMap((prev) => ({ ...prev, [drafter]: e.target.value }))
-                      }
+                    <textarea
+                      rows={2}
+                      value={cliqSimMessage}
+                      onChange={(e) => setCliqSimMessage(e.target.value)}
+                      placeholder="e.g. Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE"
                       style={{
+                        width: '100%',
                         padding: '8px 10px',
                         borderRadius: '6px',
                         border: '1px solid var(--line)',
                         background: 'var(--page)',
                         fontSize: '12px',
+                        fontFamily: 'monospace',
+                        marginBottom: '10px',
+                        resize: 'vertical',
+                      }}
+                    />
+
+                    {cliqSimResult?.success && cliqSimResult.record && (
+                      <div
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '6px',
+                          background: 'var(--page)',
+                          border: '1px solid var(--line)',
+                          marginBottom: '10px',
+                          fontSize: '12px',
+                        }}
+                      >
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '8px' }}>
+                          <div>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Matter Code: </span>
+                            <strong>{cliqSimResult.record.project_code}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Drafter: </span>
+                            <strong style={{ color: '#2563EB' }}>{cliqSimResult.record.assigned_to}</strong>
+                          </div>
+                          <div style={{ gridColumn: 'span 2' }}>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Title: </span>
+                            <strong>{cliqSimResult.record.title}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Client: </span>
+                            <strong>{cliqSimResult.record.applicant_name}</strong>
+                          </div>
+                          <div>
+                            <span style={{ color: 'var(--muted)', fontSize: '11px' }}>Filing Stage: </span>
+                            <strong style={{ color: '#8B5CF6' }}>Pre-Filing (Drafting)</strong>
+                          </div>
+                          <div style={{ gridColumn: 'span 2', fontSize: '11px', color: 'var(--muted)', fontStyle: 'italic', borderTop: '1px dashed var(--line)', paddingTop: '4px' }}>
+                            Statutory deadlines (Sec 9 CS Due, Form 1, Form 26) will be scheduled automatically upon filing at IPO.
+                          </div>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={handleCreateFromCliqSim}
+                          disabled={isSimCreating}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '6px',
+                            border: 'none',
+                            background: 'linear-gradient(135deg, #0284C7, #0369A1)',
+                            color: '#fff',
+                            fontSize: '12px',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                          }}
+                        >
+                          <Sparkles size={13} />
+                          {isSimCreating ? 'Creating Patent...' : `Create Patent Entry ${cliqSimResult.record.project_code} in Dashboard`}
+                        </button>
+                      </div>
+                    )}
+
+                    {cliqSimSuccess && (
+                      <div
+                        style={{
+                          padding: '8px 12px',
+                          borderRadius: '6px',
+                          background: '#ECFDF5',
+                          border: '1px solid #A7F3D0',
+                          color: '#065F46',
+                          fontSize: '12px',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <CheckCircle2 size={15} />
+                        {cliqSimSuccess}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* SECTION B: OUTBOUND STATUTORY DEADLINE ALERTS */}
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                    Outbound Zoho Cliq Statutory Deadline Alerts
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                    Automatically dispatches interactive cards to drafters and paralegals on Zoho Cliq as statutory deadlines approach.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                      Zoho Cliq Outgoing Channel Webhook URL *
+                    </label>
+                    <input
+                      type="url"
+                      value={cliqWebhookUrl}
+                      onChange={(e) => setCliqWebhookUrl(e.target.value)}
+                      placeholder="https://cliq.zoho.com/api/v2/channelsbyname/.../incoming?zapikey=..."
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
                       }}
                     />
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* TAB 4: FIRM AUDIT TRAIL (Requirement 7) */}
-          {activeTab === 'AUDIT' && (
-            <div>
-              <div style={{ marginBottom: '16px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
-                  Audit History & Modification Log
-                </h3>
-                <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                  Chronological trail tracking who entered or edited application records, filing dates, and checklist completions.
-                </p>
-              </div>
-
-              {auditLogs.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
-                  <History size={32} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
-                  <div>No audit trail entries recorded yet.</div>
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {auditLogs.map((log, idx) => (
-                    <div
-                      key={idx}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                      Target Cliq Channel / Bot Name
+                    </label>
+                    <input
+                      type="text"
+                      value={cliqChannel}
+                      onChange={(e) => setCliqChannel(e.target.value)}
                       style={{
-                        padding: '10px 14px',
-                        borderRadius: '8px',
+                        width: '100%',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
                         border: '1px solid var(--line)',
                         background: 'var(--page)',
+                        fontSize: '13px',
+                      }}
+                    />
+                  </div>
+
+                  {/* Notification Trigger Rules */}
+                  <div
+                    style={{
+                      padding: '14px',
+                      borderRadius: '8px',
+                      background: 'var(--page)',
+                      border: '1px solid var(--line)',
+                    }}
+                  >
+                    <div style={{ fontSize: '12px', fontWeight: 800, marginBottom: '8px' }}>
+                      Automated Alert Trigger Windows
+                    </div>
+                    <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+                      {[
+                        '30 Days Before Expiry',
+                        '15 Days Before Expiry',
+                        '7 Days (Critical Alert)',
+                        '1 Day Before Expiry (Urgent Ping)',
+                      ].map((rule) => (
+                        <label key={rule} style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px' }}>
+                          <input type="checkbox" defaultChecked />
+                          <span>{rule}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Test Webhook Button */}
+                  <div>
+                    <button
+                      onClick={handleTestCliq}
+                      style={{
+                        padding: '9px 18px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: testSent ? '#10B981' : 'var(--surface)',
+                        color: testSent ? '#fff' : 'var(--ink)',
+                        fontSize: '12px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'space-between',
+                        gap: '8px',
                       }}
                     >
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--accent)' }}>
-                            {log.project_code}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: '10px',
-                              fontWeight: 800,
-                              padding: '1px 6px',
-                              borderRadius: '4px',
-                              background: '#DBEAFE',
-                              color: '#1E40AF',
-                            }}
-                          >
-                            {log.action}
-                          </span>
-                          <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-                            by <strong>{log.changed_by}</strong> ({log.user_role})
-                          </span>
-                        </div>
-                        <div style={{ fontSize: '12px', marginTop: '2px' }}>
-                          {log.details || `Field '${log.field_name}' changed from '${log.old_value || 'None'}' to '${log.new_value}'`}
-                        </div>
-                      </div>
+                      {testSent ? <CheckCircle2 size={15} /> : <Send size={15} />}
+                      {testSent ? 'Test Payload Dispatched to Cliq!' : 'Send Test Notification Card'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
-                      <div style={{ fontSize: '11px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
-                        {new Date(log.created_at).toLocaleString()}
-                      </div>
+            {/* TAB 3: ZOHO CALENDAR INTEGRATION (Requirement 14) */}
+            {activeTab === 'CALENDAR' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                    Zoho Calendar & Team Synchronization
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                    Sync statutory deadlines to the firm calendar and allow individual drafters to link their personal Zoho Calendars.
+                  </p>
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 800, marginBottom: '6px' }}>
+                      Firm Master Zoho Calendar Link / iCal Feed
+                    </label>
+                    <input
+                      type="url"
+                      value={firmCalendarUrl}
+                      onChange={(e) => setFirmCalendarUrl(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '10px 12px',
+                        borderRadius: '6px',
+                        border: '1px solid var(--line)',
+                        background: 'var(--page)',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                      }}
+                    />
+                  </div>
+
+                  <div style={{ fontSize: '12px', fontWeight: 800, marginTop: '8px' }}>
+                    Drafter Personal Calendar Feeds
+                  </div>
+
+                  {Object.entries(drafterCalendarMap).map(([drafter, calUrl]) => (
+                    <div key={drafter} style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: '12px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 700 }}>{drafter}:</span>
+                      <input
+                        type="url"
+                        value={calUrl}
+                        onChange={(e) =>
+                          setDrafterCalendarMap((prev) => ({ ...prev, [drafter]: e.target.value }))
+                        }
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '6px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          fontSize: '12px',
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+
+            {/* TAB 4: FIRM AUDIT TRAIL (Requirement 7) */}
+            {activeTab === 'AUDIT' && (
+              <div>
+                <div style={{ marginBottom: '16px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '0 0 4px', color: 'var(--ink)' }}>
+                    Audit History & Modification Log
+                  </h3>
+                  <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
+                    Chronological trail tracking who entered or edited application records, filing dates, and checklist completions.
+                  </p>
+                </div>
+
+                {auditLogs.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: '30px', color: 'var(--muted)' }}>
+                    <History size={32} style={{ margin: '0 auto 8px', opacity: 0.5 }} />
+                    <div>No audit trail entries recorded yet.</div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {auditLogs.map((log, idx) => (
+                      <div
+                        key={idx}
+                        style={{
+                          padding: '10px 14px',
+                          borderRadius: '8px',
+                          border: '1px solid var(--line)',
+                          background: 'var(--page)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '12px', fontWeight: 900, color: 'var(--accent)' }}>
+                              {log.project_code}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '10px',
+                                fontWeight: 800,
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                background: '#DBEAFE',
+                                color: '#1E40AF',
+                              }}
+                            >
+                              {log.action}
+                            </span>
+                            <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
+                              by <strong>{log.changed_by}</strong> ({log.user_role})
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '12px', marginTop: '2px' }}>
+                            {log.details || `Field '${log.field_name}' changed from '${log.old_value || 'None'}' to '${log.new_value}'`}
+                          </div>
+                        </div>
+
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', whiteSpace: 'nowrap' }}>
+                          {new Date(log.created_at).toLocaleString()}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
 

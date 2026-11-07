@@ -107,7 +107,7 @@ export async function parseIdfDocx(fileInput) {
 
     // Extract all tables
     const tableNodes = Array.from(doc.getElementsByTagName('w:tbl'));
-    
+
     // Matrix representation of all tables
     const tables = tableNodes.map((tableNode) => {
       const rowNodes = Array.from(tableNode.getElementsByTagName('w:tr'));
@@ -136,7 +136,7 @@ export async function parseIdfDocx(fileInput) {
       for (const row of tables[t]) {
         for (let c = 0; c < row.length; c++) {
           const cell = row[c] || '';
-          
+
           // Check for email
           if (/email\s*id/i.test(cell)) {
             // Check current cell or subsequent cells for a real email address
@@ -148,7 +148,7 @@ export async function parseIdfDocx(fileInput) {
               }
             }
           }
-          
+
           // Check for phone
           if (/(ph\.\s*no|phone\s*number|contact)/i.test(cell)) {
             for (let nextC = c; nextC < row.length; nextC++) {
@@ -159,7 +159,7 @@ export async function parseIdfDocx(fileInput) {
               }
             }
           }
-          
+
           // Check for date of filling
           if (/date\s*of\s*filling/i.test(cell)) {
             for (let nextC = c; nextC < row.length; nextC++) {

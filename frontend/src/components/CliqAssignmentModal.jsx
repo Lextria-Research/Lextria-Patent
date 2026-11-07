@@ -308,9 +308,23 @@ export default function CliqAssignmentModal({
                 </div>
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Client / Applicant</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
-                    {rec.applicant_name} ({rec.is_mahe ? 'MAHE' : 'External'})
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
+                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
+                      {rec.applicant_name}
+                    </span>
+                    <span
+                      style={{
+                        fontSize: '10px',
+                        fontWeight: 800,
+                        padding: '1px 6px',
+                        borderRadius: '4px',
+                        background: rec.is_mahe ? '#DBEAFE' : '#E0E7FF',
+                        color: rec.is_mahe ? '#1E40AF' : '#3730A3',
+                      }}
+                    >
+                      {rec.is_mahe ? 'MAHE' : 'External'}
+                    </span>
+                  </div>
                 </div>
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Specification Type</span>
@@ -320,31 +334,36 @@ export default function CliqAssignmentModal({
                 </div>
               </div>
 
-              {/* Statutory Deadlines Summary */}
+              {/* Pre-Filing Status & Client Delivery Info */}
               <div
                 style={{
-                  padding: '10px 12px',
+                  padding: '10px 14px',
                   borderRadius: '6px',
                   background: 'var(--surface)',
                   border: '1px solid var(--line)',
                   fontSize: '11px',
                   display: 'flex',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: '8px',
+                  flexDirection: 'column',
+                  gap: '6px',
                 }}
               >
-                <div>
-                  <span style={{ color: 'var(--muted)' }}>Complete Spec Due: </span>
-                  <strong style={{ color: '#059669' }}>{rec.cs_deadline || '12m from PS'}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--muted)' }}>Docket Stage:</span>
+                  <span style={{ fontWeight: 800, color: '#8B5CF6' }}>
+                    Pre-Filing (Drafting / Awaiting Inventor Data)
+                  </span>
                 </div>
-                <div>
-                  <span style={{ color: 'var(--muted)' }}>Form 1 Due: </span>
-                  <strong style={{ color: '#0284C7' }}>{rec.form_1_deadline || '6m'}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ color: 'var(--muted)' }}>Client Delivery Target:</span>
+                  <strong style={{ color: rec.client_commitment_date ? '#059669' : 'var(--muted)' }}>
+                    {rec.client_commitment_date ? rec.client_commitment_date : 'Pending Drafter Scheduling'}
+                  </strong>
                 </div>
-                <div>
-                  <span style={{ color: 'var(--muted)' }}>Form 26 Due: </span>
-                  <strong style={{ color: '#F59E0B' }}>{rec.form_26_deadline || '3m'}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--line)', paddingTop: '6px', marginTop: '2px' }}>
+                  <span style={{ color: 'var(--muted)' }}>Statutory Deadlines (CS / Form 1 / Form 26):</span>
+                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
+                    Calculated automatically once filed at IPO (e.g. 12m for CS under Sec 9)
+                  </span>
                 </div>
               </div>
             </div>
@@ -383,7 +402,7 @@ export default function CliqAssignmentModal({
           }}
         >
           <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-            Statutory deadlines and priority timers will be initialized automatically.
+            Statutory deadlines (Sec 9 CS Due, Form 1, Form 26) will activate automatically upon filing at IPO.
           </span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
@@ -430,3 +449,4 @@ export default function CliqAssignmentModal({
     </div>
   );
 }
+
