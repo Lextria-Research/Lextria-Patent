@@ -114,42 +114,145 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
     const isCs = /\b(?:Complete Specification|CS)\b/i.test(text);
     const specType = isCs ? 'CS' : 'PS';
 
-    // 6. Filing dates & Statutory Deadlines:
-    // IMPORTANT: When an assignment message is posted in Cliq, the patent is ASSIGNED, not filed!
-    // ps_filing_date and statutory deadlines (Sec 9 CS Due, Sec 7 Form 1, Rule 135 Form 26)
-    // only start once the patent is filed at the Indian Patent Office (IPO).
+    // 6. Application Number & Key Dates Extraction
+    let appNumber = '';
+    const appExplicit = text.match(/(?:app(?:lication)?\s*(?:no\.?|number)?)\s*[:=-]?\s*([0-9]{10,14})/i);
+    if (appExplicit) {
+      appNumber = appExplicit[1].trim();
+    } else {
+      const appRaw = text.match(/\b(20[12]\d{9})\b/);
+      if (appRaw) appNumber = appRaw[1];
+    }
+
+    let filingDate = '';
+    const fileMatch = text.match(/(?:filed(?:\s*on)?|filing\s*date)\s*[:=-]?\s*([0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+    if (fileMatch) {
+      const p = fileMatch[1].trim();
+      const m = p.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+      filingDate = m ? `${m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}` : p;
+    }
+
+    // 7. DETECT PROSECUTION STATUS ACROSS ALL STATUTORY PHASES
+    const lower = text.toLowerCase();
+    let currentStatus = 'Idf sent, awaiting data';
+    let colorKey = 'PURPLE';
+    let isPostFiling = false;
+
+    if (lower.includes('form-30') || lower.includes('form 30') || lower.includes('hearing interest')) {
+      currentStatus = 'Form-30 Hearing Interest Filed'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('ws filed') || lower.includes('written submissions filed')) {
+      currentStatus = 'WS filed, waiting for Decision'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('ws sent for filing')) {
+      currentStatus = 'WS sent for filing'; colorKey = 'YELLOW'; isPostFiling = true;
+    } else if (lower.includes('hearing attended') || lower.includes('ws underdrafting') || lower.includes('ws under drafting')) {
+      currentStatus = 'Hearing attended, WS underdrafting'; colorKey = 'YELLOW'; isPostFiling = true;
+    } else if (lower.includes('hearing notice') || lower.includes('hearing scheduled') || (lower.includes('hearing') && lower.includes('notice'))) {
+      currentStatus = 'Hearing notice received'; colorKey = 'BLUE'; isPostFiling = true;
+    } else if (lower.includes('f4') || lower.includes('form 4') || lower.includes('extension of date of reply')) {
+      currentStatus = 'Extension of date of reply filing under F4'; colorKey = 'ORANGE'; isPostFiling = true;
+    } else if (lower.includes('form-3 filed') || lower.includes('form 3 filed')) {
+      currentStatus = 'Form-3 filed'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('fer reply filed') || lower.includes('fer response filed')) {
+      currentStatus = 'FER Reply filed, awaiting hearing'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('fer reply sent for filing')) {
+      currentStatus = 'FER reply sent for filing'; colorKey = 'YELLOW'; isPostFiling = true;
+    } else if (lower.includes('fer reply sent for confirmation')) {
+      currentStatus = 'FER Reply sent for confirmation'; colorKey = 'ORANGE'; isPostFiling = true;
+    } else if (lower.includes('fer reply under drafting') || lower.includes('drafting fer')) {
+      currentStatus = 'FER reply under drafting'; colorKey = 'YELLOW'; isPostFiling = true;
+    } else if (lower.includes('fer received') || lower.includes('fer notice') || lower.includes('first examination report') || /\bfer\b/.test(lower)) {
+      currentStatus = 'FER Received'; colorKey = 'BLUE'; isPostFiling = true;
+    } else if (lower.includes('patent granted') || /\bgranted\b/.test(lower)) {
+      currentStatus = 'Patent Granted, awaiting instructions for renewal'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('f9 & f18 filed') || lower.includes('f9 and f18 filed')) {
+      currentStatus = 'F9 & F18 filed'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('patent published') || /\bpublished\b/.test(lower)) {
+      currentStatus = 'Patent Published'; colorKey = 'BLUE'; isPostFiling = true;
+    } else if (lower.includes('cs filed') || lower.includes('complete spec filed')) {
+      currentStatus = 'CS Filed'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('cs underdrafting') || lower.includes('drafting cs')) {
+      currentStatus = 'CS underdrafting'; colorKey = 'YELLOW'; isPostFiling = false;
+    } else if (lower.includes('ps filed') || lower.includes('provisional filed')) {
+      currentStatus = 'PS Filed'; colorKey = 'GREEN'; isPostFiling = true;
+    } else if (lower.includes('ps underdrafting') || lower.includes('drafting ps') || lower.includes('drafting')) {
+      currentStatus = 'PS Underdrafting'; colorKey = 'YELLOW'; isPostFiling = false;
+    } else if (lower.includes('ip shift') || lower.includes('abandoned')) {
+      currentStatus = 'IP Shift'; colorKey = 'RED'; isPostFiling = false;
+    }
+
+    // 8. FORMER ATTORNEY TAKEOVER / TRANSFER DETECTION
+    const transferKeywords = /(?:transfer(?:red)?|takeover|taken\s*over|former\s*attorney|previous\s*(?:attorney|agent|counsel|firm)|leaving\s*(?:their\s*)?(?:former|previous)|change\s*(?:of|in)\s*agent|address\s*for\s*service|form\s*13|form-13)/i;
+    const isTransferredCase = transferKeywords.test(lower) || (isPostFiling && (appNumber || filingDate || transferKeywords.test(lower)));
+
     const today = new Date();
+    const todayIso = today.toISOString().split('T')[0];
+    const addMonthsDate = (baseStr, months) => {
+      const d = baseStr ? new Date(baseStr) : new Date();
+      d.setMonth(d.getMonth() + months);
+      return d.toISOString().split('T')[0];
+    };
+
+    const transferDate = isTransferredCase ? todayIso : '';
+    const form13Deadline = isTransferredCase ? addMonthsDate(todayIso, 3) : '';
+    const form26TransferDeadline = isTransferredCase ? addMonthsDate(todayIso, 3) : '';
+
+    let statusNotes = '';
+    const selectedTags = ['Cliq Assigned', isMahe ? 'MAHE' : 'External Client'];
+
+    if (isTransferredCase) {
+      selectedTags.push('Former Attorney Transfer');
+      selectedTags.push('Form 13 Req');
+      statusNotes = `⚡ FORMER ATTORNEY TRANSFER (TAKEOVER CASE):
+• Matter transferred from former attorney to Lextria Research on ${today.toLocaleDateString('en-IN')}.
+• MANDATORY STATUTORY ACTIONS:
+  1. Form-26 (Fresh Power of Attorney): File within 3 months of transfer (Due: ${form26TransferDeadline}) per Rule 135.
+  2. Form-13 (Change in Address for Service): File under Section 57 / Rule 81 to update IPO registry to Lextria Research.
+• Current Prosecution Status: ${currentStatus}.`;
+    } else {
+      statusNotes = `Pre-filing matter assigned via Zoho Cliq to ${assignedDrafter} on ${today.toLocaleDateString('en-IN')}.
+Status: ${currentStatus}. Form-13 not required (Lextria will file directly at IPO).`;
+    }
 
     const newRecord = {
       project_code: code,
       title: title,
+      application_number: appNumber || '',
       assigned_to: assignedDrafter,
       applicant_name: clientName,
       is_mahe: isMahe,
       specification_type: specType,
-      current_status: 'Idf sent, awaiting data',
-      color_code_status: 'PURPLE',
-      ps_filing_date: '',
+      current_status: currentStatus,
+      color_code_status: colorKey,
+      is_transferred_case: isTransferredCase,
+      former_attorney_transfer: isTransferredCase,
+      transfer_date: transferDate,
+      form_13_required: isTransferredCase,
+      form_13_status: isTransferredCase ? 'Pending' : 'Not Applicable',
+      form_13_deadline: form13Deadline,
+      ps_filing_date: filingDate || '',
       post_dated_date: '',
-      cs_filing_date: '',
+      cs_filing_date: (specType === 'CS' && filingDate) ? filingDate : '',
       cs_deadline: '',
       form_1_deadline: '',
-      form_26_deadline: '',
+      form_26_deadline: isTransferredCase ? form26TransferDeadline : '',
       rfe_deadline: '',
-      f1_status: 'Pending Filing at IPO',
-      f26_status: 'Pending Filing at IPO',
-      status_notes: `Auto-generated via Zoho Cliq assignment channel on ${today.toLocaleDateString('en-IN')}`,
+      f1_status: isTransferredCase ? 'Check Former Attorney' : 'Pending Filing at IPO',
+      f26_status: isTransferredCase ? 'Pending Transfer POA' : 'Pending Filing at IPO',
+      status_notes: statusNotes,
+      selectedTags: selectedTags,
       created_from: 'ZOHO_CLIQ',
       created_at: today.toISOString()
     };
 
-    console.log(`[ZOHO CLIQ WEBHOOK] Received assignment: ${code} assigned to ${assignedDrafter} (${title})`);
+    console.log(`[ZOHO CLIQ WEBHOOK] Received assignment: ${code} assigned to ${assignedDrafter} [Status: ${currentStatus}, Transferred: ${isTransferredCase}]`);
 
     // Return rich Zoho Cliq interactive response card
     res.json({
-      text: `✅ Patent Matter **${code}** successfully generated and assigned to **${assignedDrafter}**!`,
+      text: isTransferredCase
+        ? `⚡ Former Attorney Transfer Patent **${code}** successfully created and assigned to **${assignedDrafter}** at stage: **${currentStatus}**!\n📌 Form-13 (Address for Service) and Form-26 (Fresh POA) are required within 3 months.`
+        : `✅ Patent Matter **${code}** successfully generated and assigned to **${assignedDrafter}** at stage: **${currentStatus}**!`,
       card: {
-        title: `Patent Matter Assigned: ${code} → ${assignedDrafter}`,
+        title: `Patent Matter Assigned: ${code} → ${assignedDrafter} [${currentStatus}]`,
         theme: 'modern-inline'
       },
       slides: [
@@ -163,10 +266,12 @@ app.post('/api/webhooks/cliq-assignment', async (req, res) => {
               ['Title of Invention', title],
               ['Assigned Drafter', assignedDrafter],
               ['Client / Applicant', clientName],
+              ['Prosecution Stage', `${currentStatus} (${colorKey})`],
+              ['Takeover / Transfer', isTransferredCase ? `YES (From Former Attorney on ${todayIso})` : 'NO (Pre-Filing New Matter)'],
+              ['Form-13 (Address for Service)', isTransferredCase ? `MANDATORY under Sec 57/Rule 81 (Due: ${form13Deadline})` : 'Not Applicable (Pre-Filing)'],
+              ['Form-26 (Power of Attorney)', isTransferredCase ? `MANDATORY under Rule 135 (Due: ${form26TransferDeadline})` : 'Due within 3m of eventual filing'],
+              ['Application Number', appNumber || (isTransferredCase ? 'Pending Former Files' : 'Pending Filing at IPO')],
               ['Specification Type', specType === 'PS' ? 'Provisional Specification (PS)' : 'Complete Specification (CS)'],
-              ['Filing Stage', 'Pre-Filing (Drafting / Awaiting Data)'],
-              ['Initial Docket Status', 'Idf sent, awaiting data (Purple)'],
-              ['Statutory Deadlines', 'Will be calculated upon filing at IPO (e.g. 12m for CS under Sec 9)']
             ]
           }
         }

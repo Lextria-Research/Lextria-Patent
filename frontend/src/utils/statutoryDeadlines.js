@@ -302,8 +302,15 @@ export function calculateAllStatutoryDeadlines(params = {}) {
   const form1Deadline = addMonths(baseFilingDate, 6);
 
   // 3. Form 26 (Power of Attorney) Deadline - Rule 135(1)
-  // 3 months from filing of application
-  const form26Deadline = addMonths(baseFilingDate, 3);
+  // 3 months from filing of application (or 3 months from transfer date for takeover matters)
+  const transferDate = params.transfer_date || params.transferDate;
+  const isTransferred = Boolean(params.is_transferred_case || params.former_attorney_transfer || transferDate);
+  const form26TransferDeadline = (isTransferred && transferDate) ? addMonths(transferDate, 3) : (isTransferred ? addMonths(toIsoDate(now), 3) : null);
+  const form13Deadline = isTransferred ? (transferDate ? addMonths(transferDate, 3) : addMonths(toIsoDate(now), 3)) : null;
+
+  const form26Deadline = isTransferred && form26TransferDeadline 
+    ? form26TransferDeadline 
+    : (baseFilingDate ? addMonths(baseFilingDate, 3) : null);
 
   // 4. Form 3 (Statement & Undertaking under Section 8) - Rule 12(1) & 12(2)
   // 6 months from filing date or 3 months from Controller intimation
@@ -449,6 +456,9 @@ export function calculateAllStatutoryDeadlines(params = {}) {
     form_1_deadline: form1Deadline,
     form26Deadline,
     form_26_deadline: form26Deadline,
+    form13Deadline,
+    form_13_deadline: form13Deadline,
+    form_26_transfer_deadline: form26TransferDeadline,
     form3Deadline,
     form_3_deadline: form3Deadline,
     publicationDeadline,
@@ -533,14 +543,27 @@ export function getActiveStatutoryDeadlines(record) {
   }
 
   // 5. Form 26 (Power of Attorney) - Rule 135(1)
-  const f26Date = record.form_26_deadline || stat.form_26_deadline;
-  if (f26Date && !record.form_26_filing_date && record.f26_status !== 'Within Deadline') {
+  const isTransferredCase = Boolean(record.is_transferred_case || record.former_attorney_transfer || record.transfer_date);
+  const f26Date = record.form_26_deadline || stat.form_26_deadline || (isTransferredCase && record.transfer_date ? addMonths(record.transfer_date, 3) : null);
+  if (f26Date && !record.form_26_filing_date && record.f26_status !== 'Within Deadline' && record.f26_status !== 'Filed') {
     deadlines.push({
       type: 'F26',
-      label: 'Form 26 (POA) Due',
-      shortLabel: 'Form 26',
+      label: isTransferredCase ? 'Form 26 (Transfer POA) Due' : 'Form 26 (POA) Due',
+      shortLabel: isTransferredCase ? 'Form 26 Transfer' : 'Form 26',
       date: f26Date,
-      statutoryRef: 'Rule 135',
+      statutoryRef: isTransferredCase ? 'Rule 135 (3m from Transfer)' : 'Rule 135',
+    });
+  }
+
+  // 5B. Form 13 (Change in Address for Service - Former Attorney Transfer) - Section 57 / Rule 81
+  const f13Date = record.form_13_deadline || stat.form_13_deadline || (isTransferredCase && record.transfer_date ? addMonths(record.transfer_date, 3) : null);
+  if ((record.form_13_required || isTransferredCase) && f13Date && !record.form_13_filing_date && record.form_13_status !== 'Filed') {
+    deadlines.push({
+      type: 'FORM_13',
+      label: 'Form 13 (Change in Address for Service) Due',
+      shortLabel: 'Form 13 Due',
+      date: f13Date,
+      statutoryRef: 'Section 57 / Rule 81',
     });
   }
 

@@ -237,6 +237,17 @@ export const FORM_13_SUBTYPES = [
     numberField: 'application_number',
     numberFieldLabel: 'Application Number',
     defaultFeeMode: 'WITH_FEE'
+  },
+  {
+    id: 'FORM_13_CHANGE_ADDRESS_SERVICE',
+    label: 'Form 13: Change in Address for Service',
+    shortLabel: 'Form 13: Change in Address for Service',
+    code: 'FORM 13 => CHANGE IN ADDRESS FOR SERVICE',
+    description: 'Update official Address for Service to Lextria Research upon transfer/takeover from former attorney',
+    rule: 'Section 57 & Rule 81',
+    numberField: 'application_number',
+    numberFieldLabel: 'Application Number',
+    defaultFeeMode: 'WITH_FEE'
   }
 ];
 

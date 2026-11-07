@@ -1,10 +1,18 @@
 // frontend/src/components/CliqAssignmentModal.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   X, Zap, CheckCircle2, AlertTriangle, Copy, Check, MessageSquare,
-  Sparkles, ExternalLink, Shield, Calendar, User, Building, FileText
+  Sparkles, ExternalLink, Shield, Calendar, User, Building, FileText,
+  Clock, ArrowRight, CheckSquare, Layers
 } from 'lucide-react';
-import { parseCliqAssignmentMessage } from '../utils/cliqAssignmentParser.js';
+import { parseCliqAssignmentMessage, REGISTERED_DRAFTERS } from '../utils/cliqAssignmentParser.js';
+import {
+  STATUTORY_STATUSES,
+  PROSECUTION_PHASES,
+  STATUS_COLORS,
+  getStatusColor
+} from '../constants/patentStatuses.js';
+import { addMonths, toIsoDate, calculateAllStatutoryDeadlines } from '../utils/statutoryDeadlines.js';
 
 export default function CliqAssignmentModal({
   isOpen,
@@ -22,11 +30,29 @@ export default function CliqAssignmentModal({
   const [copiedWebhook, setCopiedWebhook] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
 
+  // Editable overrides for detected fields
+  const [selectedStatus, setSelectedStatus] = useState('Idf sent, awaiting data');
+  const [isTransferred, setIsTransferred] = useState(false);
+  const [transferDate, setTransferDate] = useState(toIsoDate(new Date()));
+  const [appNumber, setAppNumber] = useState('');
+  const [filingDate, setFilingDate] = useState('');
+  const [assignedDrafter, setAssignedDrafter] = useState('Anusha');
+  const [commitmentDate, setCommitmentDate] = useState('');
+
   // Automatically re-parse on input change
   useEffect(() => {
     if (messageText.trim()) {
       const res = parseCliqAssignmentMessage(messageText, records);
       setParseResult(res);
+      if (res.success && res.record) {
+        setSelectedStatus(res.record.current_status || 'Idf sent, awaiting data');
+        setIsTransferred(Boolean(res.record.is_transferred_case));
+        setTransferDate(res.record.transfer_date || toIsoDate(new Date()));
+        setAppNumber(res.record.application_number || '');
+        setFilingDate(res.record.ps_filing_date || '');
+        setAssignedDrafter(res.record.assigned_to || 'Anusha');
+        setCommitmentDate(res.record.client_commitment_date || '');
+      }
     } else {
       setParseResult(null);
     }
@@ -40,13 +66,99 @@ export default function CliqAssignmentModal({
     setTimeout(() => setCopiedWebhook(false), 2500);
   };
 
+  // Grouped statutory statuses for the selector dropdown
+  const groupedStatuses = useMemo(() => {
+    const map = {};
+    PROSECUTION_PHASES.forEach((phase) => {
+      map[phase.id] = {
+        phase,
+        statuses: STATUTORY_STATUSES.filter((s) => s.phase === phase.id)
+      };
+    });
+    // Add Phase 8 for IP Shift if not already mapped
+    const ipShiftStatuses = STATUTORY_STATUSES.filter((s) => s.phase === 'PHASE_8_IP_SHIFT');
+    if (ipShiftStatuses.length > 0) {
+      map['PHASE_8_IP_SHIFT'] = {
+        phase: { id: 'PHASE_8_IP_SHIFT', label: '8. IP Shift & Abandoned' },
+        statuses: ipShiftStatuses
+      };
+    }
+    return map;
+  }, []);
+
+  const handleStatusChange = (newStatusName) => {
+    setSelectedStatus(newStatusName);
+    const statusObj = STATUTORY_STATUSES.find((s) => s.name === newStatusName);
+    // If user selects a post-filing status, auto-enable transfer if not already
+    const isPostFiling = statusObj && ![
+      'PHASE_1_PS', 'PHASE_2_CS'
+    ].includes(statusObj.phase) || (statusObj && ['STATUS_6', 'STATUS_7', 'STATUS_11D'].includes(statusObj.id));
+
+    if (isPostFiling && !isTransferred) {
+      setIsTransferred(true);
+      if (!transferDate) setTransferDate(toIsoDate(new Date()));
+    }
+  };
+
   const handleCreate = () => {
     if (!parseResult?.success || !parseResult.record) return;
     setIsCreating(true);
     try {
-      onCreate(parseResult.record);
+      const baseRec = parseResult.record;
+      const effectiveTransferDate = isTransferred ? (transferDate || toIsoDate(new Date())) : '';
+      const f26Deadline = isTransferred ? addMonths(effectiveTransferDate, 3) : (filingDate ? addMonths(filingDate, 3) : '');
+      const f13Deadline = isTransferred ? addMonths(effectiveTransferDate, 3) : '';
+
+      const transferDisplayDate = effectiveTransferDate 
+        ? new Date(effectiveTransferDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : 'Immediate';
+      const f26DisplayDate = f26Deadline 
+        ? new Date(f26Deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : 'Within 3 Months';
+
+      let statusNotes = '';
+      const selectedTags = ['Cliq Assigned', baseRec.is_mahe ? 'MAHE' : 'External Client'];
+
+      if (isTransferred) {
+        selectedTags.push('Former Attorney Transfer');
+        selectedTags.push('Form 13 Req');
+        statusNotes = `⚡ FORMER ATTORNEY TRANSFER (TAKEOVER CASE):
+• Transferred to Lextria Research on ${transferDisplayDate}.
+• MANDATORY STATUTORY ACTIONS:
+  1. Form-26 (Fresh Power of Attorney): File within 3 months of transfer (Due: ${f26DisplayDate}) per Rule 135.
+  2. Form-13 (Change in Address for Service): File under Section 57 / Rule 81 to update IPO registry to Lextria Research.
+• Current Prosecution Status: ${selectedStatus}.
+• Assigned to ${assignedDrafter} via Zoho Cliq.`;
+      } else {
+        statusNotes = `Pre-filing matter assigned via Zoho Cliq to ${assignedDrafter} on ${new Date().toLocaleDateString('en-IN')}.
+Status: ${selectedStatus}. Form-13 is NOT required (Lextria will file directly at IPO). Statutory deadlines activate upon filing.`;
+      }
+
+      const finalizedRecord = {
+        ...baseRec,
+        assigned_to: assignedDrafter,
+        application_number: appNumber || '',
+        current_status: selectedStatus,
+        color_code_status: getStatusColor(selectedStatus).key,
+        is_transferred_case: isTransferred,
+        former_attorney_transfer: isTransferred,
+        transfer_date: effectiveTransferDate,
+        form_13_required: isTransferred,
+        form_13_status: isTransferred ? 'Pending' : 'Not Applicable',
+        form_13_deadline: f13Deadline,
+        form_26_deadline: f26Deadline,
+        ps_filing_date: filingDate || '',
+        cs_filing_date: (baseRec.specification_type === 'CS' && filingDate) ? filingDate : '',
+        client_commitment_date: commitmentDate || '',
+        f1_status: isTransferred ? 'Check Former Attorney' : (filingDate ? 'Pending' : 'Pending Filing at IPO'),
+        f26_status: isTransferred ? 'Pending Transfer POA' : (filingDate ? 'Pending' : 'Pending Filing at IPO'),
+        status_notes: statusNotes,
+        selectedTags: Array.from(new Set(selectedTags)),
+      };
+
+      onCreate(finalizedRecord);
       if (showToast) {
-        showToast(`✓ Patent Matter ${parseResult.record.project_code} successfully created and assigned to ${parseResult.record.assigned_to}!`);
+        showToast(`✓ Patent Matter ${finalizedRecord.project_code} successfully created and assigned to ${finalizedRecord.assigned_to}!`);
       }
       onClose();
     } catch (e) {
@@ -58,20 +170,31 @@ export default function CliqAssignmentModal({
 
   const sampleMessages = [
     {
-      label: 'Natural Sentence',
+      label: 'Pre-Filing (IDF/Drafting)',
       text: 'Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE',
     },
     {
-      label: 'Structured Key-Value',
-      text: `Code: AR48\nDrafter: Pramith\nTitle: AI Based Image Recognition for Medical Diagnostics\nClient: MAHE\nType: PS`,
+      label: 'Transfer: FER Stage',
+      text: 'Assign AR46 to Fiona - Transfer from former attorney, patent already filed (App No: 202341054321), FER Received on 15/09/2026. File Form 13 & Form 26.',
     },
     {
-      label: 'Slash Command',
-      text: '/assign AR50 Fiona "Autonomous Underwater Vehicle Navigation" MAHE',
+      label: 'Transfer: Hearing Stage',
+      text: 'Assign AR47 to Thanush - Takeover case from previous counsel for MAHE. Hearing notice received for 10 Dec 2026. File Form 13 address change & Form 26.',
+    },
+    {
+      label: 'Transfer: Published',
+      text: 'Assign AR48 to Pramith - Patent Published (App: 202241088776). Client transferred matter to Lextria. Complete CS drafting.',
+    },
+    {
+      label: 'Structured Key-Value',
+      text: `Code: AR49\nDrafter: Abhishek\nTitle: AI Based Image Recognition for Medical Diagnostics\nClient: MAHE\nType: PS\nStatus: PS Underdrafting`,
     },
   ];
 
   const rec = parseResult?.record;
+  const statusColorObj = getStatusColor(selectedStatus);
+  const calculatedF26Deadline = isTransferred && transferDate ? addMonths(transferDate, 3) : '';
+  const calculatedF13Deadline = isTransferred && transferDate ? addMonths(transferDate, 3) : '';
 
   return (
     <div
@@ -95,8 +218,8 @@ export default function CliqAssignmentModal({
           background: 'var(--surface)',
           borderRadius: '12px',
           width: '100%',
-          maxWidth: '720px',
-          maxHeight: '90vh',
+          maxWidth: '760px',
+          maxHeight: '92vh',
           display: 'flex',
           flexDirection: 'column',
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
@@ -133,10 +256,10 @@ export default function CliqAssignmentModal({
             </div>
             <div>
               <h2 style={{ fontSize: '17px', fontWeight: 800, margin: 0, color: 'var(--ink)' }}>
-                Zoho Cliq Patent Assignment Intake
+                Zoho Cliq Patent Assignment & Transfer Intake
               </h2>
               <p style={{ fontSize: '12px', color: 'var(--muted)', margin: 0 }}>
-                Parse assignment messages posted in Zoho Cliq and instantly generate patent docket entries
+                Parse messages at any prosecution stage; auto-detects former attorney transfers, Form 26, and Form 13 requirements
               </p>
             </div>
           </div>
@@ -156,12 +279,12 @@ export default function CliqAssignmentModal({
         </div>
 
         {/* Modal Body */}
-        <div style={{ overflowY: 'auto', padding: '24px', flex: 1 }}>
+        <div style={{ overflowY: 'auto', padding: '20px 24px', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          
           {/* Inbound Webhook URL Info Box */}
           <div
             style={{
-              marginBottom: '20px',
-              padding: '14px',
+              padding: '12px 14px',
               borderRadius: '8px',
               background: 'var(--page)',
               border: '1px solid var(--line)',
@@ -169,7 +292,7 @@ export default function CliqAssignmentModal({
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <MessageSquare size={16} color="#0284C7" />
+                <MessageSquare size={15} color="#0284C7" />
                 <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--ink)' }}>
                   Automated Cliq Inbound Webhook Endpoint
                 </span>
@@ -181,7 +304,7 @@ export default function CliqAssignmentModal({
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px',
-                  padding: '4px 10px',
+                  padding: '3px 8px',
                   borderRadius: '6px',
                   border: '1px solid var(--line)',
                   background: copiedWebhook ? '#10B981' : 'var(--surface)',
@@ -192,14 +315,14 @@ export default function CliqAssignmentModal({
                   transition: 'all 0.15s ease',
                 }}
               >
-                {copiedWebhook ? <Check size={13} /> : <Copy size={13} />}
+                {copiedWebhook ? <Check size={12} /> : <Copy size={12} />}
                 {copiedWebhook ? 'Copied URL!' : 'Copy Webhook URL'}
               </button>
             </div>
             <code
               style={{
                 display: 'block',
-                padding: '8px 10px',
+                padding: '6px 8px',
                 borderRadius: '6px',
                 background: 'var(--surface)',
                 border: '1px solid var(--line)',
@@ -211,24 +334,21 @@ export default function CliqAssignmentModal({
             >
               {webhookEndpoint}
             </code>
-            <p style={{ fontSize: '11px', color: 'var(--muted)', margin: '8px 0 0', lineHeight: 1.4 }}>
-              Tip: Configure this URL in your Zoho Cliq channel bot/outgoing webhook so any message in <code>#patent-assignments</code> creates docket entries 100% automatically!
-            </p>
           </div>
 
-          {/* Quick Preset Selector */}
-          <div style={{ marginBottom: '12px' }}>
+          {/* Preset Buttons */}
+          <div>
             <div style={{ fontSize: '12px', fontWeight: 800, marginBottom: '6px', color: 'var(--ink)' }}>
-              Paste Assignment Message from Cliq:
+              Select Scenario Preset or Paste Custom Message:
             </div>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '8px' }}>
               {sampleMessages.map((sample, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => setMessageText(sample.text)}
                   style={{
-                    padding: '4px 10px',
+                    padding: '4px 9px',
                     borderRadius: '6px',
                     border: '1px solid var(--line)',
                     background: messageText === sample.text ? '#E0F2FE' : 'var(--page)',
@@ -238,22 +358,22 @@ export default function CliqAssignmentModal({
                     cursor: 'pointer',
                   }}
                 >
-                  Preset: {sample.label}
+                  {sample.label}
                 </button>
               ))}
             </div>
             <textarea
-              rows={4}
+              rows={3}
               value={messageText}
               onChange={(e) => setMessageText(e.target.value)}
-              placeholder="e.g. Assign AR45 to Anusha - Title: Smart Automated Crop Harvesting System - Client: MAHE"
+              placeholder="e.g. Assign AR46 to Fiona - Transfer from former attorney, patent already filed (App No: 202341054321), FER Received on 15/09/2026."
               style={{
                 width: '100%',
-                padding: '12px',
+                padding: '10px 12px',
                 borderRadius: '8px',
                 border: '1px solid var(--line)',
                 background: 'var(--page)',
-                fontSize: '13px',
+                fontSize: '12.5px',
                 fontFamily: 'monospace',
                 color: 'var(--ink)',
                 resize: 'vertical',
@@ -265,114 +385,303 @@ export default function CliqAssignmentModal({
           {parseResult?.success && rec && (
             <div
               style={{
-                marginTop: '16px',
                 padding: '16px',
                 borderRadius: '10px',
-                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(14, 165, 233, 0.02))',
-                border: '1.5px solid #0284C7',
+                background: isTransferred 
+                  ? 'linear-gradient(135deg, rgba(245, 158, 11, 0.05), rgba(217, 119, 6, 0.02))'
+                  : 'linear-gradient(135deg, rgba(2, 132, 199, 0.05), rgba(14, 165, 233, 0.02))',
+                border: isTransferred ? '1.5px solid #F59E0B' : '1.5px solid #0284C7',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+              {/* Top Banner */}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <CheckCircle2 size={18} color="#0284C7" />
-                  <span style={{ fontSize: '13px', fontWeight: 800, color: '#0369A1' }}>
-                    Live Assignment Parsed Successfully
+                  <CheckCircle2 size={18} color={isTransferred ? '#D97706' : '#0284C7'} />
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: isTransferred ? '#B45309' : '#0369A1' }}>
+                    {isTransferred ? '⚡ Former Attorney Transfer Detected' : 'Live Assignment Parsed Successfully'}
                   </span>
                 </div>
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '3px 8px',
-                    borderRadius: '4px',
-                    background: '#8B5CF6',
-                    color: '#fff',
-                  }}
-                >
-                  Status: {rec.current_status}
-                </span>
+                
+                {/* Status Badge */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', fontWeight: 600 }}>Active Stage:</span>
+                  <span
+                    style={{
+                      fontSize: '11px',
+                      fontWeight: 800,
+                      padding: '3px 8px',
+                      borderRadius: '4px',
+                      background: statusColorObj.bg,
+                      color: statusColorObj.text,
+                      border: `1px solid ${statusColorObj.border}`
+                    }}
+                  >
+                    {selectedStatus}
+                  </span>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '14px' }}>
+              {/* Core Attributes Grid */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '14px' }}>
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Matter Code</span>
                   <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--ink)' }}>{rec.project_code}</span>
                 </div>
+
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Assigned Drafter</span>
-                  <span style={{ fontSize: '14px', fontWeight: 800, color: '#2563EB' }}>{rec.assigned_to}</span>
+                  <select
+                    value={assignedDrafter}
+                    onChange={(e) => setAssignedDrafter(e.target.value)}
+                    style={{
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      color: '#2563EB',
+                      padding: '3px 6px',
+                      borderRadius: '4px',
+                      border: '1px solid var(--line)',
+                      background: 'var(--surface)'
+                    }}
+                  >
+                    {REGISTERED_DRAFTERS.map((d) => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
                 </div>
-                <div style={{ gridColumn: 'span 2' }}>
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Invention Title</span>
-                  <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>{rec.title}</span>
-                </div>
+
                 <div>
                   <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Client / Applicant</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
-                      {rec.applicant_name}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '10px',
-                        fontWeight: 800,
-                        padding: '1px 6px',
-                        borderRadius: '4px',
-                        background: rec.is_mahe ? '#DBEAFE' : '#E0E7FF',
-                        color: rec.is_mahe ? '#1E40AF' : '#3730A3',
-                      }}
-                    >
-                      {rec.is_mahe ? 'MAHE' : 'External'}
-                    </span>
-                  </div>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>{rec.applicant_name}</span>
                 </div>
+
                 <div>
-                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Specification Type</span>
+                  <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Specification</span>
                   <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>
                     {rec.specification_type === 'PS' ? 'Provisional (PS)' : 'Complete (CS)'}
                   </span>
                 </div>
               </div>
 
-              {/* Pre-Filing Status & Client Delivery Info */}
-              <div
-                style={{
-                  padding: '10px 14px',
-                  borderRadius: '6px',
-                  background: 'var(--surface)',
-                  border: '1px solid var(--line)',
-                  fontSize: '11px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '6px',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--muted)' }}>Docket Stage:</span>
-                  <span style={{ fontWeight: 800, color: '#8B5CF6' }}>
-                    Pre-Filing (Drafting / Awaiting Inventor Data)
-                  </span>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'var(--muted)' }}>Client Delivery Target:</span>
-                  <strong style={{ color: rec.client_commitment_date ? '#059669' : 'var(--muted)' }}>
-                    {rec.client_commitment_date ? rec.client_commitment_date : 'Pending Drafter Scheduling'}
-                  </strong>
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px dashed var(--line)', paddingTop: '6px', marginTop: '2px' }}>
-                  <span style={{ color: 'var(--muted)' }}>Statutory Deadlines (CS / Form 1 / Form 26):</span>
-                  <span style={{ color: 'var(--muted)', fontStyle: 'italic' }}>
-                    Calculated automatically once filed at IPO (e.g. 12m for CS under Sec 9)
-                  </span>
+              {/* Invention Title */}
+              <div style={{ marginBottom: '14px' }}>
+                <span style={{ fontSize: '11px', color: 'var(--muted)', display: 'block' }}>Invention Title</span>
+                <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--ink)' }}>{rec.title}</span>
+              </div>
+
+              {/* STAGE & STATUS SELECTOR DROPDOWN */}
+              <div style={{
+                marginBottom: '14px',
+                padding: '12px',
+                borderRadius: '8px',
+                background: 'var(--surface)',
+                border: '1px solid var(--line)'
+              }}>
+                <label style={{ display: 'block', fontSize: '11.5px', fontWeight: 800, color: 'var(--ink)', marginBottom: '6px' }}>
+                  Prosecution Stage / Status (Detected from Message text):
+                </label>
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => handleStatusChange(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--page)',
+                    fontSize: '13px',
+                    fontWeight: 700,
+                    color: 'var(--ink)'
+                  }}
+                >
+                  {Object.values(groupedStatuses).map(({ phase, statuses }) => (
+                    <optgroup key={phase.id} label={phase.label}>
+                      {statuses.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} ({s.colorName.toUpperCase()})
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+                <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '4px' }}>
+                  Tip: Change this dropdown if you want to assign this patent to a different statutory phase.
                 </div>
               </div>
+
+              {/* FORMER ATTORNEY TRANSFER TOGGLE & ALERT BOX */}
+              <div style={{
+                marginBottom: '14px',
+                padding: '12px 14px',
+                borderRadius: '8px',
+                background: isTransferred ? 'rgba(245, 158, 11, 0.08)' : 'rgba(16, 185, 129, 0.05)',
+                border: isTransferred ? '1.5px solid #F59E0B' : '1px solid rgba(16, 185, 129, 0.3)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={isTransferred}
+                      onChange={(e) => setIsTransferred(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: '#D97706', cursor: 'pointer' }}
+                    />
+                    <span style={{ fontSize: '12.5px', fontWeight: 800, color: isTransferred ? '#92400E' : 'var(--ink)' }}>
+                      Transferred from Former Attorney (Already Filed at IPO)
+                    </span>
+                  </label>
+                  <span style={{
+                    fontSize: '10.5px',
+                    fontWeight: 800,
+                    padding: '2px 8px',
+                    borderRadius: '10px',
+                    background: isTransferred ? '#FEF3C7' : '#D1FAE5',
+                    color: isTransferred ? '#B45309' : '#065F46'
+                  }}>
+                    {isTransferred ? 'TAKEOVER CASE' : 'NEW PRE-FILING'}
+                  </span>
+                </div>
+
+                {isTransferred ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div style={{ fontSize: '12px', color: '#78350F', lineHeight: 1.45 }}>
+                      ⚡ <strong>Former Attorney Transfer Rule:</strong> Because this patent was already filed by another attorney/agent, two mandatory statutory filings must be initiated:
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                      {/* Form 26 Box */}
+                      <div style={{ padding: '8px 10px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#4F46E5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Shield size={13} /> 1. Form-26 (Power of Attorney)
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Rule 135: Mandatory fresh POA executed to Lextria within 3 months of transfer.
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', marginTop: '4px' }}>
+                          Due Date: {calculatedF26Deadline ? new Date(calculatedF26Deadline).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : 'Within 3 Months'}
+                        </div>
+                      </div>
+
+                      {/* Form 13 Box */}
+                      <div style={{ padding: '8px 10px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <Building size={13} /> 2. Form-13 (Address for Service)
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Sec 57 & Rule 81: Mandatory change of Address for Service to Lextria Research on IPO register.
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', marginTop: '4px' }}>
+                          Status: Pending Filing (Section 57)
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Transfer Details Form Inputs */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '10px', marginTop: '4px' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '3px' }}>
+                          Transfer / Takeover Date:
+                        </label>
+                        <input
+                          type="date"
+                          value={transferDate}
+                          onChange={(e) => setTransferDate(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--line)',
+                            background: 'var(--surface)',
+                            fontSize: '12px',
+                            color: 'var(--ink)'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '3px' }}>
+                          IPO Application Number:
+                        </label>
+                        <input
+                          type="text"
+                          value={appNumber}
+                          onChange={(e) => setAppNumber(e.target.value)}
+                          placeholder="e.g. 202341054321"
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--line)',
+                            background: 'var(--surface)',
+                            fontSize: '12px',
+                            color: 'var(--ink)'
+                          }}
+                        />
+                      </div>
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', fontWeight: 700, color: 'var(--muted)', marginBottom: '3px' }}>
+                          Original Filing Date (IPO):
+                        </label>
+                        <input
+                          type="date"
+                          value={filingDate}
+                          onChange={(e) => setFilingDate(e.target.value)}
+                          style={{
+                            width: '100%',
+                            padding: '6px 8px',
+                            borderRadius: '4px',
+                            border: '1px solid var(--line)',
+                            background: 'var(--surface)',
+                            fontSize: '12px',
+                            color: 'var(--ink)'
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '11.5px', color: '#065F46', lineHeight: 1.4 }}>
+                    ✓ <strong>Pre-Filing Matter:</strong> Form-13 is <strong>NOT required</strong> because Lextria Research will file the initial Form 1 at the Patent Office directly, recording Lextria as the address for service from day 1. Statutory deadlines will activate upon filing.
+                  </div>
+                )}
+              </div>
+
+              {/* Client Commitment Date Input */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '10px 14px',
+                borderRadius: '6px',
+                background: 'var(--surface)',
+                border: '1px solid var(--line)',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink)' }}>Client Delivery Target Date:</span>
+                  <div style={{ fontSize: '11px', color: 'var(--muted)' }}>Drafter deadline committed to client</div>
+                </div>
+                <input
+                  type="date"
+                  value={commitmentDate}
+                  onChange={(e) => setCommitmentDate(e.target.value)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '4px',
+                    border: '1px solid var(--line)',
+                    background: 'var(--page)',
+                    fontSize: '12px',
+                    color: 'var(--ink)'
+                  }}
+                />
+              </div>
+
             </div>
           )}
 
           {parseResult && !parseResult.success && (
             <div
               style={{
-                marginTop: '16px',
                 padding: '12px',
                 borderRadius: '8px',
                 background: '#FEF2F2',
@@ -401,8 +710,10 @@ export default function CliqAssignmentModal({
             justifyContent: 'space-between',
           }}
         >
-          <span style={{ fontSize: '12px', color: 'var(--muted)' }}>
-            Statutory deadlines (Sec 9 CS Due, Form 1, Form 26) will activate automatically upon filing at IPO.
+          <span style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
+            {isTransferred 
+              ? '⚡ Form-13 (Address for Service) and Form-26 will be tracked automatically in the docket.'
+              : 'Statutory deadlines (Sec 9 CS Due, Form 1, Form 26) will activate upon filing at IPO.'}
           </span>
           <div style={{ display: 'flex', gap: '10px' }}>
             <button
@@ -449,4 +760,3 @@ export default function CliqAssignmentModal({
     </div>
   );
 }
-

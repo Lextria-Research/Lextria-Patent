@@ -805,6 +805,69 @@ export default function SlideOverDrawer({
             {activeTab === 'overview' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
                 
+                {/* Former Attorney Takeover Alert Banner */}
+                {(record.is_transferred_case || record.former_attorney_transfer || record.form_13_required) && (
+                  <div style={{
+                    padding: '14px 16px',
+                    borderRadius: '8px',
+                    background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.08), rgba(217, 119, 6, 0.03))',
+                    border: '1.5px solid #F59E0B',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '10px'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <Shield size={18} color="#D97706" />
+                        <span style={{ fontSize: '13.5px', fontWeight: 800, color: '#B45309' }}>
+                          ⚡ Former Attorney Transfer (Takeover Case)
+                        </span>
+                      </div>
+                      <span style={{
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: '#FEF3C7',
+                        color: '#92400E',
+                        border: '1px solid #FDE68A'
+                      }}>
+                        Transferred to Lextria: {record.transfer_date ? new Date(record.transfer_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Active'}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '12px', color: 'var(--ink)', lineHeight: 1.45 }}>
+                      This patent matter was already filed at the Indian Patent Office by a previous attorney and has been transferred to Lextria Research. Two mandatory statutory compliance actions apply:
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '10px' }}>
+                      <div style={{ padding: '8px 10px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#4F46E5', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          1. Form-26 (Power of Attorney)
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Rule 135: File fresh POA within 3 months of takeover.
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#4F46E5', marginTop: '3px' }}>
+                          Due: {record.form_26_deadline || (record.transfer_date ? addMonths(record.transfer_date, 3) : 'Within 3 Months')}
+                        </div>
+                      </div>
+
+                      <div style={{ padding: '8px 10px', borderRadius: '6px', background: 'var(--surface)', border: '1px solid var(--line)' }}>
+                        <div style={{ fontSize: '11px', fontWeight: 800, color: '#D97706', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          2. Form-13 (Address for Service)
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '2px' }}>
+                          Sec 57 & Rule 81: Amend official service address to Lextria Research.
+                        </div>
+                        <div style={{ fontSize: '11px', fontWeight: 700, color: '#D97706', marginTop: '3px' }}>
+                          Status: {record.form_13_status || (record.form_13_filing_date ? 'Filed' : 'Pending Filing')}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* 1. Patent Key Identifiers Grid */}
                 <div style={{
                   display: 'grid',
@@ -1468,17 +1531,32 @@ export default function SlideOverDrawer({
                     const isUnfiled = ['idf sent, awaiting data', 'ps not yet filed', 'cs not yet filed', 'drafting in-progress', 'draft ready', 'awaiting client data'].includes(statusLower) || !record.application_number || record.application_number.toLowerCase().includes('not filed');
 
                     // Generate full unified chronological milestones array
+                    const isTransferredCase = Boolean(record.is_transferred_case || record.former_attorney_transfer || record.form_13_required);
                     const timelineItems = [
                       {
                         key: 'intake',
                         type: 'MILESTONE',
-                        label: 'Intake / IDF Received',
-                        rule: 'Matter Inception & Triage',
-                        date: record.idf_date || 'Intake Complete',
+                        label: isTransferredCase ? 'Matter Takeover / Transfer from Former Attorney' : 'Intake / IDF Received',
+                        rule: isTransferredCase ? 'Takeover from Former Attorney / Agent' : 'Matter Inception & Triage',
+                        date: isTransferredCase ? (record.transfer_date || record.created_at?.slice(0, 10) || 'Transfer Date') : (record.idf_date || 'Intake Complete'),
                         isCompleted: true,
-                        badgeColor: '#2563EB',
+                        badgeColor: isTransferredCase ? '#D97706' : '#2563EB',
                       },
                     ];
+
+                    // Former Attorney Transfer Checkpoints (Form 13)
+                    if (isTransferredCase) {
+                      timelineItems.push({
+                        key: 'f13_transfer',
+                        type: 'FORM_STATUTORY',
+                        label: 'Form 13 — Change in Address for Service',
+                        rule: 'Section 57 & Rule 81 (Former Attorney Takeover to Lextria Research)',
+                        date: record.form_13_filing_date || record.form_13_deadline || (record.transfer_date ? addMonths(record.transfer_date, 3) : null),
+                        isCompleted: record.form_13_status === 'Filed' || Boolean(record.form_13_filing_date),
+                        statusTag: record.form_13_status || (record.form_13_filing_date ? 'Filed' : 'Pending'),
+                        badgeColor: '#D97706',
+                      });
+                    }
 
                     if (!isDirectCS) {
                       // Provisional Specification Flow
@@ -1508,9 +1586,9 @@ export default function SlideOverDrawer({
                       timelineItems.push({
                         key: 'f26_poa',
                         type: 'FORM_STATUTORY',
-                        label: 'Form 26 — Power of Authority (POA)',
-                        rule: 'Section 127, 132 & Rule 135 (Within 3 Months of Filing)',
-                        date: record.form_26_filing_date || (record.ps_filing_date ? addMonths(record.ps_filing_date, 3) : null),
+                        label: isTransferredCase ? 'Form 26 — Fresh Power of Authority (Transfer Case)' : 'Form 26 — Power of Authority (POA)',
+                        rule: isTransferredCase ? 'Section 127, 132 & Rule 135 (Within 3 Months of Takeover)' : 'Section 127, 132 & Rule 135 (Within 3 Months of Filing)',
+                        date: record.form_26_filing_date || (isTransferredCase && record.transfer_date ? addMonths(record.transfer_date, 3) : (record.ps_filing_date ? addMonths(record.ps_filing_date, 3) : null)),
                         isCompleted: record.f26_status === 'Within Deadline' || Boolean(record.form_26_filing_date),
                         statusTag: record.f26_status || (record.form_26_filing_date ? 'Filed' : 'Pending'),
                         badgeColor: '#4F46E5',
@@ -1555,9 +1633,9 @@ export default function SlideOverDrawer({
                       timelineItems.push({
                         key: 'f26_poa',
                         type: 'FORM_STATUTORY',
-                        label: 'Form 26 — Power of Authority (POA)',
-                        rule: 'Section 127, 132 & Rule 135 (Within 3 Months of Filing)',
-                        date: record.form_26_filing_date || (record.cs_filing_date ? addMonths(record.cs_filing_date, 3) : null),
+                        label: isTransferredCase ? 'Form 26 — Fresh Power of Authority (Transfer Case)' : 'Form 26 — Power of Authority (POA)',
+                        rule: isTransferredCase ? 'Section 127, 132 & Rule 135 (Within 3 Months of Takeover)' : 'Section 127, 132 & Rule 135 (Within 3 Months of Filing)',
+                        date: record.form_26_filing_date || (isTransferredCase && record.transfer_date ? addMonths(record.transfer_date, 3) : (record.cs_filing_date ? addMonths(record.cs_filing_date, 3) : null)),
                         isCompleted: record.f26_status === 'Within Deadline' || Boolean(record.form_26_filing_date),
                         statusTag: record.f26_status || (record.form_26_filing_date ? 'Filed' : 'Pending'),
                         badgeColor: '#4F46E5',
