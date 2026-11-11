@@ -104,6 +104,8 @@ export async function exportToExcel(records, viewName = 'Patent Portfolio') {
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = `Lextria_Patent_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+  document.body.appendChild(anchor);
   anchor.click();
-  window.URL.revokeObjectURL(url);
+  document.body.removeChild(anchor);
+  setTimeout(() => window.URL.revokeObjectURL(url), 1500);
 }

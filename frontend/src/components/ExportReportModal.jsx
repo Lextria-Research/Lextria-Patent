@@ -1,10 +1,19 @@
 // frontend/src/components/ExportReportModal.jsx
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  X, Download, FileSpreadsheet, CheckSquare, Square,
-  Filter, Layers, CheckCircle2, ChevronRight
+  X, Download, FileSpreadsheet, CheckSquare, Square
 } from 'lucide-react';
 import ExcelJS from 'exceljs';
+
+function getColumnLetter(colIndex) {
+  let temp, letter = '';
+  while (colIndex > 0) {
+    temp = (colIndex - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    colIndex = Math.floor((colIndex - temp - 1) / 26);
+  }
+  return letter || 'A';
+}
 
 const AVAILABLE_COLUMNS = [
   { id: 'project_code', label: 'Project Code', category: 'Identifiers', defaultChecked: true },
@@ -53,8 +62,6 @@ export default function ExportReportModal({
   records = [],
   selectedRecords = [],
 }) {
-  if (!isOpen) return null;
-
   const [selectedCols, setSelectedCols] = useState(() => {
     const s = new Set();
     AVAILABLE_COLUMNS.forEach((c) => {
@@ -63,22 +70,29 @@ export default function ExportReportModal({
     return s;
   });
 
-  const [exportScope, setExportScope] = useState(
-    selectedRecords.length > 0 ? 'SELECTED' : 'ALL'
-  );
+  const [exportScope, setExportScope] = useState('ALL');
   const [selectedClient, setSelectedClient] = useState('ALL');
   const [reportTitle, setReportTitle] = useState('Lextria_Patent_Prosecution_Report');
+  const [format, setFormat] = useState('XLSX'); // XLSX or CSV
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setExportScope(selectedRecords.length > 0 ? 'SELECTED' : 'ALL');
+      setIsExporting(false);
+    }
+  }, [isOpen, selectedRecords.length]);
 
   const clientOptions = useMemo(() => {
     const counts = {};
-    records.forEach((r) => {
+    (records || []).forEach((r) => {
       const c = (r.applicant_name || r.client_name || '').trim();
       if (c) counts[c] = (counts[c] || 0) + 1;
     });
     return Object.keys(counts).sort().map((name) => ({ name, count: counts[name] }));
   }, [records]);
-  const [format, setFormat] = useState('XLSX'); // XLSX or CSV
-  const [isExporting, setIsExporting] = useState(false);
+
+  if (!isOpen) return null;
 
   const toggleCol = (id) => {
     const next = new Set(selectedCols);
@@ -102,150 +116,165 @@ export default function ExportReportModal({
     }
 
     setIsExporting(true);
-    let dataToExport = exportScope === 'SELECTED' && selectedRecords.length > 0
-      ? selectedRecords
-      : records;
+    try {
+      let dataToExport = exportScope === 'SELECTED' && selectedRecords.length > 0
+        ? selectedRecords
+        : records;
 
-    if (selectedClient !== 'ALL') {
-      dataToExport = dataToExport.filter((r) => {
-        const c = (r.applicant_name || r.client_name || '').trim();
-        return c.toLowerCase() === selectedClient.toLowerCase();
+      if (selectedClient !== 'ALL') {
+        dataToExport = dataToExport.filter((r) => {
+          const c = (r.applicant_name || r.client_name || '').trim();
+          return c.toLowerCase() === selectedClient.toLowerCase();
+        });
+      }
+
+      const resolveCellValue = (colId, row) => {
+        if (colId === 'inventor_institution') {
+          if (row.inventors && row.inventors[0]?.institution) {
+            return row.inventors.map((i) => i.institution).filter(Boolean).join(', ');
+          }
+          return row.applicant_name || '';
+        }
+        if (colId === 'inventor_gender') {
+          if (row.inventors && row.inventors[0]?.gender) {
+            return row.inventors.map((i) => `${i.name}: ${i.gender}`).join(', ');
+          }
+          return '';
+        }
+        if (colId === 'inventor_nationality') {
+          if (row.inventors && row.inventors[0]?.nationality) {
+            return row.inventors.map((i) => i.nationality).filter(Boolean).join(', ');
+          }
+          return 'Indian';
+        }
+        if (colId === 'inventor_country') {
+          if (row.inventors && row.inventors[0]?.country_of_residence) {
+            return row.inventors.map((i) => i.country_of_residence).filter(Boolean).join(', ');
+          }
+          return 'India';
+        }
+        const val = row[colId];
+        if (val === null || val === undefined) return '';
+        if (typeof val === 'object') {
+          if (Array.isArray(val)) return val.join(', ');
+          return JSON.stringify(val);
+        }
+        return val;
+      };
+
+      const chosenColumns = AVAILABLE_COLUMNS.filter((c) => selectedCols.has(c.id));
+
+      if (format === 'CSV') {
+        // Export as CSV
+        const headerRow = chosenColumns.map((c) => `"${c.label}"`).join(',');
+        const dataRows = dataToExport.map((row) =>
+          chosenColumns
+            .map((c) => {
+              const val = resolveCellValue(c.id, row);
+              return `"${String(val).replace(/"/g, '""')}"`;
+            })
+            .join(',')
+        );
+        const csvStr = [headerRow, ...dataRows].join('\r\n');
+        const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${reportTitle}_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1500);
+        setIsExporting(false);
+        onClose();
+        return;
+      }
+
+      // Export as Styled Excel via ExcelJS
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = 'Lextria Research';
+      workbook.created = new Date();
+
+      const worksheet = workbook.addWorksheet('Patent Portfolio');
+      const lastColLetter = getColumnLetter(chosenColumns.length);
+
+      // Title Header Block
+      worksheet.mergeCells(`A1:${lastColLetter}1`);
+      const titleCell = worksheet.getCell('A1');
+      titleCell.value = `LEXTRIA RESEARCH · PATENT PROSECUTION & DOCKETING REPORT`;
+      titleCell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
+      titleCell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF1B2A4A' },
+      };
+      titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.getRow(1).height = 30;
+
+      // Subtitle
+      worksheet.mergeCells(`A2:${lastColLetter}2`);
+      const subCell = worksheet.getCell('A2');
+      subCell.value = `Generated: ${new Date().toLocaleString()} · Total Applications: ${dataToExport.length}`;
+      subCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF475569' } };
+      subCell.alignment = { vertical: 'middle', horizontal: 'center' };
+      worksheet.getRow(2).height = 20;
+
+      // Table Column Headers
+      const headerRow = worksheet.getRow(4);
+      headerRow.height = 24;
+
+      chosenColumns.forEach((col, idx) => {
+        const cell = headerRow.getCell(idx + 1);
+        cell.value = col.label;
+        cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
+        cell.fill = {
+          type: 'pattern',
+          pattern: 'solid',
+          fgColor: { argb: 'FF2563EB' },
+        };
+        cell.alignment = { vertical: 'middle', horizontal: 'center' };
+        worksheet.getColumn(idx + 1).width = Math.max(col.label.length + 4, 15);
       });
-    }
 
-    const resolveCellValue = (colId, row) => {
-      if (colId === 'inventor_institution') {
-        if (row.inventors && row.inventors[0]?.institution) {
-          return row.inventors.map((i) => i.institution).filter(Boolean).join(', ');
-        }
-        return row.applicant_name || '';
-      }
-      if (colId === 'inventor_gender') {
-        if (row.inventors && row.inventors[0]?.gender) {
-          return row.inventors.map((i) => `${i.name}: ${i.gender}`).join(', ');
-        }
-        return '';
-      }
-      if (colId === 'inventor_nationality') {
-        if (row.inventors && row.inventors[0]?.nationality) {
-          return row.inventors.map((i) => i.nationality).filter(Boolean).join(', ');
-        }
-        return 'Indian';
-      }
-      if (colId === 'inventor_country') {
-        if (row.inventors && row.inventors[0]?.country_of_residence) {
-          return row.inventors.map((i) => i.country_of_residence).filter(Boolean).join(', ');
-        }
-        return 'India';
-      }
-      return row[colId] ?? '';
-    };
+      // Data rows
+      dataToExport.forEach((rec, rIdx) => {
+        const row = worksheet.getRow(5 + rIdx);
+        row.height = 20;
+        chosenColumns.forEach((col, cIdx) => {
+          const cell = row.getCell(cIdx + 1);
+          cell.value = resolveCellValue(col.id, rec);
+          cell.font = { name: 'Arial', size: 9 };
+          cell.alignment = { vertical: 'middle' };
+          if (rIdx % 2 === 1) {
+            cell.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFF8FAFC' },
+            };
+          }
+        });
+      });
 
-    const chosenColumns = AVAILABLE_COLUMNS.filter((c) => selectedCols.has(c.id));
-
-    if (format === 'CSV') {
-      // Export as CSV
-      const headerRow = chosenColumns.map((c) => `"${c.label}"`).join(',');
-      const dataRows = dataToExport.map((row) =>
-        chosenColumns
-          .map((c) => {
-            const val = resolveCellValue(c.id, row);
-            return `"${String(val).replace(/"/g, '""')}"`;
-          })
-          .join(',')
-      );
-      const csvStr = [headerRow, ...dataRows].join('\r\n');
-      const blob = new Blob([csvStr], { type: 'text/csv;charset=utf-8' });
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${reportTitle}_${new Date().toISOString().split('T')[0]}.csv`;
+      a.download = `${reportTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1500);
+
       setIsExporting(false);
       onClose();
-      return;
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert(`Export failed: ${err.message || 'Unknown error'}`);
+      setIsExporting(false);
     }
-
-    // Export as Styled Excel via ExcelJS
-    const workbook = new ExcelJS.Workbook();
-    workbook.creator = 'Lextria Research';
-    workbook.created = new Date();
-
-    const worksheet = workbook.addWorksheet('Patent Portfolio');
-
-    // Title Header Block
-    worksheet.mergeCells('A1', `${String.fromCharCode(64 + Math.min(chosenColumns.length, 26))}1`);
-    const titleCell = worksheet.getCell('A1');
-    titleCell.value = `LEXTRIA RESEARCH · PATENT PROSECUTION & DOCKETING REPORT`;
-    titleCell.font = { name: 'Arial', size: 13, bold: true, color: { argb: 'FFFFFFFF' } };
-    titleCell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF1B2A4A' },
-    };
-    titleCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    worksheet.getRow(1).height = 30;
-
-    // Subtitle
-    worksheet.mergeCells('A2', `${String.fromCharCode(64 + Math.min(chosenColumns.length, 26))}2`);
-    const subCell = worksheet.getCell('A2');
-    subCell.value = `Generated: ${new Date().toLocaleString()} · Total Applications: ${dataToExport.length}`;
-    subCell.font = { name: 'Arial', size: 10, italic: true, color: { argb: 'FF475569' } };
-    subCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    worksheet.getRow(2).height = 20;
-
-    // Table Column Headers
-    const headerRow = worksheet.getRow(4);
-    headerRow.height = 24;
-
-    chosenColumns.forEach((col, idx) => {
-      const cell = headerRow.getCell(idx + 1);
-      cell.value = col.label;
-      cell.font = { name: 'Arial', size: 10, bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF2563EB' },
-      };
-      cell.alignment = { vertical: 'middle', horizontal: 'center' };
-      worksheet.getColumn(idx + 1).width = Math.max(col.label.length + 4, 15);
-    });
-
-    // Data rows
-    dataToExport.forEach((rec, rIdx) => {
-      const row = worksheet.getRow(5 + rIdx);
-      row.height = 20;
-      chosenColumns.forEach((col, cIdx) => {
-        const cell = row.getCell(cIdx + 1);
-        cell.value = rec[col.id] ?? '';
-        cell.font = { name: 'Arial', size: 9 };
-        cell.alignment = { vertical: 'middle' };
-        if (rIdx % 2 === 1) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFF8FAFC' },
-          };
-        }
-      });
-    });
-
-    const buffer = await workbook.xlsx.writeBuffer();
-    const blob = new Blob([buffer], {
-      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${reportTitle}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setIsExporting(false);
-    onClose();
   };
 
   // Group columns by category
