@@ -318,7 +318,7 @@ export default function App() {
   };
 
   // ==========================================
-  // 5-STEP PROGRESSIVE UNDO ENGINE
+  // 5-STEP PROGRESSIVE UNDO & REDO ENGINE (MS WORD STYLE)
   // ==========================================
   const [undoStack, setUndoStack] = useState(() => {
     try {
@@ -330,6 +330,7 @@ export default function App() {
     } catch {}
     return [];
   });
+  const [redoStack, setRedoStack] = useState([]);
 
   const pushUndoStep = (step) => {
     setUndoStack((prev) => {
@@ -339,12 +340,26 @@ export default function App() {
       } catch {}
       return next;
     });
+    setRedoStack([]);
   };
 
   const handleProgressiveUndo = (stepIndex = 0) => {
     if (!undoStack || undoStack.length === 0) return;
     const targetStep = undoStack[stepIndex];
     if (!targetStep) return;
+
+    // Snapshot current state into Redo stack before reverting
+    const redoEntry = {
+      id: `redo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: targetStep.type,
+      actionLabel: targetStep.actionLabel,
+      detail: targetStep.detail,
+      targetCode: targetStep.targetCode,
+      redoRecords: records,
+      redoOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      timestamp: new Date().toISOString(),
+    };
+    setRedoStack((prev) => [redoEntry, ...prev].slice(0, 5));
 
     // 1. Restore records state
     if (Array.isArray(targetStep.previousRecords)) {
@@ -376,16 +391,16 @@ export default function App() {
     } catch {}
 
     // 5. Toast notification and Audit Log
-    const stepsLeft = remainingSteps.length;
+    const countUndone = stepIndex + 1;
     showToast(
-      `Progressive Undo (${stepIndex + 1}/${undoStack.length}): Reverted ${targetStep.actionLabel}. (${stepsLeft}/5 remaining)`,
+      `Undo: Reverted ${countUndone === 1 ? targetStep.actionLabel : `${countUndone} actions`}.`,
       'info'
     );
 
     recordAuditLog(
       'PROGRESSIVE_UNDO',
       targetStep.targetCode || 'PORTFOLIO',
-      `Reverted ${targetStep.actionLabel}. ${targetStep.detail || ''} (${stepsLeft} steps remaining in 5-step buffer)`
+      `Reverted ${targetStep.actionLabel}. ${targetStep.detail || ''}`
     );
 
     // 6. Background Supabase Revert Sync
@@ -430,33 +445,85 @@ export default function App() {
     })();
   };
 
+  const handleRedo = () => {
+    if (!redoStack || redoStack.length === 0) return;
+    const targetRedo = redoStack[0];
+    if (!targetRedo) return;
+
+    // Save current state back into undoStack
+    const undoEntry = {
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: targetRedo.type,
+      actionLabel: targetRedo.actionLabel,
+      detail: targetRedo.detail,
+      targetCode: targetRedo.targetCode,
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      timestamp: new Date().toISOString(),
+    };
+    setUndoStack((prev) => [undoEntry, ...prev].slice(0, 5));
+    setRedoStack((prev) => prev.slice(1));
+
+    if (Array.isArray(targetRedo.redoRecords)) {
+      setRecords(targetRedo.redoRecords);
+    }
+
+    try {
+      if (targetRedo.redoOverrides) {
+        localStorage.setItem('patent_local_overrides', JSON.stringify(targetRedo.redoOverrides));
+      }
+    } catch {}
+
+    if (selectedRecord && Array.isArray(targetRedo.redoRecords)) {
+      const restored = targetRedo.redoRecords.find((r) => r.project_code === selectedRecord.project_code);
+      setSelectedRecord(restored || null);
+    }
+
+    showToast(`Redo: Restored ${targetRedo.actionLabel}.`, 'info');
+    recordAuditLog(
+      'PROGRESSIVE_REDO',
+      targetRedo.targetCode || 'PORTFOLIO',
+      `Redone: ${targetRedo.actionLabel}`
+    );
+  };
+
   const handleClearUndoHistory = () => {
     setUndoStack([]);
+    setRedoStack([]);
     try {
       sessionStorage.removeItem('patent_undo_stack');
     } catch {}
-    showToast('Progressive undo history buffer cleared (0/5 steps).', 'info');
+    showToast('Undo & Redo buffer cleared.', 'info');
   };
 
-  // Keyboard Shortcut: Ctrl+Z / Cmd+Z for 5-Step Progressive Undo
+  // Keyboard Shortcut: Ctrl+Z (Undo) and Ctrl+Y / Ctrl+Shift+Z (Redo)
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
-        const activeEl = document.activeElement;
-        const isInput =
-          activeEl &&
-          (activeEl.tagName === 'INPUT' ||
-            activeEl.tagName === 'TEXTAREA' ||
-            activeEl.isContentEditable);
-        if (!isInput && undoStack.length > 0) {
-          e.preventDefault();
-          handleProgressiveUndo(0);
-        }
+      const isZ = e.key.toLowerCase() === 'z';
+      const isY = e.key.toLowerCase() === 'y';
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+
+      if (!isCmdOrCtrl) return;
+
+      const activeEl = document.activeElement;
+      const isInput =
+        activeEl &&
+        (activeEl.tagName === 'INPUT' ||
+          activeEl.tagName === 'TEXTAREA' ||
+          activeEl.isContentEditable);
+      if (isInput) return;
+
+      if (isZ && !e.shiftKey && undoStack.length > 0) {
+        e.preventDefault();
+        handleProgressiveUndo(0);
+      } else if ((isY || (isZ && e.shiftKey)) && redoStack.length > 0) {
+        e.preventDefault();
+        handleRedo();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [undoStack, records, selectedRecord]);
+  }, [undoStack, redoStack, records, selectedRecord]);
 
   // Fetch interconnected clients from core.clients on startup (Requirement 12)
   useEffect(() => {
@@ -1421,16 +1488,17 @@ export default function App() {
         <div
           style={{
             height: '52px',
-            padding: '0 24px',
+            padding: '0 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '16px',
+            gap: '12px',
             borderBottom: '1px solid var(--line)',
+            overflow: 'hidden',
           }}
         >
           {/* Left: Firm Brand & Product */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0, flexShrink: 1, overflow: 'hidden' }}>
             <div
               style={{
                 width: '32px',
@@ -1449,25 +1517,37 @@ export default function App() {
             >
               L
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-              <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: 'var(--ink)', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, overflow: 'hidden' }}>
+              <span style={{ fontWeight: 800, fontSize: '15px', letterSpacing: '-0.2px', color: 'var(--ink)', whiteSpace: 'nowrap', flexShrink: 0 }}>
                 LEXTRIA IP
               </span>
-              <span style={{ color: 'var(--line)', fontSize: '13px' }}>|</span>
-              <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                Patent Prosecution & Docketing Dashboard
+              <span style={{ color: 'var(--line)', fontSize: '13px', flexShrink: 0 }}>|</span>
+              <span
+                style={{
+                  fontSize: '12px',
+                  color: 'var(--muted)',
+                  fontWeight: 600,
+                  whiteSpace: 'nowrap',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  maxWidth: '220px',
+                }}
+                title="Patent Prosecution & Docketing Dashboard"
+              >
+                Patent Dashboard
               </span>
             </div>
           </div>
 
           {/* Right: Global Utility Actions & User Profile */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
 
-            {/* 5-Step Progressive Undo Button */}
+            {/* MS Word Compact Undo / Redo Toolbar */}
             <ProgressiveUndoButton
               undoStack={undoStack}
+              redoStack={redoStack}
               onUndo={handleProgressiveUndo}
-              onClearHistory={handleClearUndoHistory}
+              onRedo={handleRedo}
             />
 
             {/* Reassign Button (Super Admin) */}
