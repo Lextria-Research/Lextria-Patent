@@ -52,6 +52,40 @@ const DEFAULT_TAGS = [
   { id: 'tag_4', name: 'Political', color: '#8B5CF6', description: 'Institutionally sensitive matter (VIP inventor or strategic IP)' },
 ];
 
+// One-time automatic migration to purge pre-reset legacy local cache and overrides
+const STORAGE_RESET_VERSION = 'v2026_11_13_portfolio_wipe';
+try {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    if (localStorage.getItem('patent_storage_reset_version') !== STORAGE_RESET_VERSION) {
+      localStorage.removeItem('patent_local_overrides');
+      localStorage.removeItem('patent_audit_logs');
+      localStorage.removeItem('patent_completed_deadlines');
+      localStorage.removeItem('patent_undo_stack');
+      localStorage.removeItem('patent_redo_stack');
+      localStorage.removeItem('lextria_cliq_queue');
+      // Purge any matter-specific local keys (misc forms, inventors, applicants, vault, etc.)
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k &&
+          (k.startsWith('patent_misc_forms_') ||
+           k.startsWith('patent_inventors_') ||
+           k.startsWith('patent_applicants_') ||
+           k.startsWith('patent_docs_vault_') ||
+           k.startsWith('patent_local_overrides'))
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach((k) => localStorage.removeItem(k));
+      localStorage.setItem('patent_storage_reset_version', STORAGE_RESET_VERSION);
+    }
+  }
+} catch (e) {
+  console.warn('Failed to perform storage purge:', e);
+}
+
 export default function App() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem('theme') || 'light'
@@ -632,7 +666,7 @@ export default function App() {
   useEffect(() => {
     async function loadPortfolioRecords() {
       try {
-        const resp = await fetch('/master_records.json');
+        const resp = await fetch(`/master_records.json?t=${Date.now()}`, { cache: 'no-store' });
         if (resp.ok) {
           const rawData = await resp.json();
           const data = seedCommitmentDates(rawData).map((r) => {
@@ -678,12 +712,13 @@ export default function App() {
                 return rec;
               });
               const existingCodes = new Set(data.map((r) => r.project_code));
-              const extraCreated = Object.values(overrides).filter(
+              // If data is empty (portfolio wiped), do not resurrect legacy overrides as phantom records
+              const extraCreated = data.length > 0 ? Object.values(overrides).filter(
                 (r) => r && r.project_code && !existingCodes.has(r.project_code)
               ).map((r) => ({
                 ...r,
                 current_status: normalizeStatus(r.current_status, r.specification_type)
-              }));
+              })) : [];
               setRecords([...extraCreated, ...merged]);
               return;
             }

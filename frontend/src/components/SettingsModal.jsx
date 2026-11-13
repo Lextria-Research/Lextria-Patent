@@ -1852,6 +1852,53 @@ export default function SettingsModal({
           }}
         >
           <button
+            type="button"
+            onClick={() => {
+              if (window.confirm('Clear all local matter overrides, cached audit logs, and reset the Patent Dashboard?')) {
+                localStorage.removeItem('patent_local_overrides');
+                localStorage.removeItem('patent_audit_logs');
+                localStorage.removeItem('patent_completed_deadlines');
+                localStorage.removeItem('patent_undo_stack');
+                localStorage.removeItem('patent_redo_stack');
+                localStorage.removeItem('lextria_cliq_queue');
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                  const k = localStorage.key(i);
+                  if (
+                    k &&
+                    (k.startsWith('patent_misc_forms_') ||
+                     k.startsWith('patent_inventors_') ||
+                     k.startsWith('patent_applicants_') ||
+                     k.startsWith('patent_docs_vault_') ||
+                     k.startsWith('patent_local_overrides'))
+                  ) {
+                    keysToRemove.push(k);
+                  }
+                }
+                keysToRemove.forEach((k) => localStorage.removeItem(k));
+                window.location.reload();
+              }
+            }}
+            style={{
+              marginRight: 'auto',
+              padding: '8px 14px',
+              borderRadius: '6px',
+              border: '1px solid #EF4444',
+              background: 'rgba(239, 68, 68, 0.08)',
+              color: '#EF4444',
+              fontSize: '12px',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+            }}
+            title="Purge local storage matter overrides and reload"
+          >
+            <Trash2 size={13} /> Reset Local Cache
+          </button>
+
+          <button
             onClick={onClose}
             style={{
               padding: '8px 18px',
