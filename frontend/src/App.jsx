@@ -26,6 +26,7 @@ import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
 import CliqAssignmentModal from './components/CliqAssignmentModal';
+import ProgressiveUndoButton from './components/ProgressiveUndoButton';
 import ErrorBoundary from './components/ErrorBoundary';
 import { exportToExcel } from './utils/exportEngine';
 import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
@@ -316,6 +317,147 @@ export default function App() {
     });
   };
 
+  // ==========================================
+  // 5-STEP PROGRESSIVE UNDO ENGINE
+  // ==========================================
+  const [undoStack, setUndoStack] = useState(() => {
+    try {
+      const saved = sessionStorage.getItem('patent_undo_stack');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed.slice(0, 5);
+      }
+    } catch {}
+    return [];
+  });
+
+  const pushUndoStep = (step) => {
+    setUndoStack((prev) => {
+      const next = [step, ...prev].slice(0, 5);
+      try {
+        sessionStorage.setItem('patent_undo_stack', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const handleProgressiveUndo = (stepIndex = 0) => {
+    if (!undoStack || undoStack.length === 0) return;
+    const targetStep = undoStack[stepIndex];
+    if (!targetStep) return;
+
+    // 1. Restore records state
+    if (Array.isArray(targetStep.previousRecords)) {
+      setRecords(targetStep.previousRecords);
+    }
+
+    // 2. Restore localStorage overrides
+    try {
+      if (targetStep.previousOverrides) {
+        localStorage.setItem('patent_local_overrides', JSON.stringify(targetStep.previousOverrides));
+      }
+    } catch (e) {
+      console.warn('Failed to restore localStorage overrides during undo:', e);
+    }
+
+    // 3. Restore selectedRecord if active
+    if (selectedRecord && Array.isArray(targetStep.previousRecords)) {
+      const restoredSelected = targetStep.previousRecords.find(
+        (r) => r.project_code === selectedRecord.project_code
+      );
+      setSelectedRecord(restoredSelected || null);
+    }
+
+    // 4. Update the undoStack (pop steps up to stepIndex)
+    const remainingSteps = undoStack.slice(stepIndex + 1);
+    setUndoStack(remainingSteps);
+    try {
+      sessionStorage.setItem('patent_undo_stack', JSON.stringify(remainingSteps));
+    } catch {}
+
+    // 5. Toast notification and Audit Log
+    const stepsLeft = remainingSteps.length;
+    showToast(
+      `Progressive Undo (${stepIndex + 1}/${undoStack.length}): Reverted ${targetStep.actionLabel}. (${stepsLeft}/5 remaining)`,
+      'info'
+    );
+
+    recordAuditLog(
+      'PROGRESSIVE_UNDO',
+      targetStep.targetCode || 'PORTFOLIO',
+      `Reverted ${targetStep.actionLabel}. ${targetStep.detail || ''} (${stepsLeft} steps remaining in 5-step buffer)`
+    );
+
+    // 6. Background Supabase Revert Sync
+    (async () => {
+      try {
+        if (targetStep.type === 'UPDATE' && targetStep.revertData?.previousRecord) {
+          const prev = targetStep.revertData.previousRecord;
+          await patentDb
+            .from('applications')
+            .update({
+              title: prev.title,
+              application_number: prev.application_number || null,
+              patent_number: prev.patent_number || null,
+              specification_type: prev.specification_type || 'PS',
+              applicant_name: prev.applicant_name || null,
+              assigned_to: prev.assigned_to || null,
+              current_status: prev.current_status,
+              color_code_status: prev.color_code_status,
+            })
+            .eq('project_code', targetStep.revertData.projectCode);
+        } else if (targetStep.type === 'CREATE' && targetStep.revertData?.createdProjectCode) {
+          await patentDb
+            .from('applications')
+            .delete()
+            .eq('project_code', targetStep.revertData.createdProjectCode);
+        } else if (targetStep.type === 'REASSIGN' && targetStep.revertData?.previousAssignments) {
+          for (const assign of targetStep.revertData.previousAssignments) {
+            await patentDb
+              .from('applications')
+              .update({ assigned_to: assign.assigned_to })
+              .eq('project_code', assign.project_code);
+          }
+        } else if (targetStep.type === 'IMPORT' && targetStep.revertData?.importedProjectCodes) {
+          await patentDb
+            .from('applications')
+            .delete()
+            .in('project_code', targetStep.revertData.importedProjectCodes);
+        }
+      } catch (err) {
+        console.warn('Background Supabase revert sync notice:', err);
+      }
+    })();
+  };
+
+  const handleClearUndoHistory = () => {
+    setUndoStack([]);
+    try {
+      sessionStorage.removeItem('patent_undo_stack');
+    } catch {}
+    showToast('Progressive undo history buffer cleared (0/5 steps).', 'info');
+  };
+
+  // Keyboard Shortcut: Ctrl+Z / Cmd+Z for 5-Step Progressive Undo
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey) {
+        const activeEl = document.activeElement;
+        const isInput =
+          activeEl &&
+          (activeEl.tagName === 'INPUT' ||
+            activeEl.tagName === 'TEXTAREA' ||
+            activeEl.isContentEditable);
+        if (!isInput && undoStack.length > 0) {
+          e.preventDefault();
+          handleProgressiveUndo(0);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [undoStack, records, selectedRecord]);
+
   // Fetch interconnected clients from core.clients on startup (Requirement 12)
   useEffect(() => {
     async function fetchClients() {
@@ -537,6 +679,20 @@ export default function App() {
     };
 
     // 1. Update state immediately (0ms instant UI update)
+    pushUndoStep({
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: 'CREATE',
+      actionLabel: `Created matter ${newRecord.project_code}`,
+      detail: newRecord.title ? `Title: "${newRecord.title.slice(0, 45)}"` : 'New application registered',
+      targetCode: newRecord.project_code,
+      timestamp: new Date().toISOString(),
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      revertData: {
+        createdProjectCode: newRecord.project_code,
+      },
+    });
+
     setRecords((prev) => [newRecord, ...prev]);
 
     // 2. Persist to local overrides immediately
@@ -666,6 +822,34 @@ export default function App() {
     };
 
     // 1. Update state immediately (0ms instant UI update)
+    let changeSummary = '';
+    if (updatedFields.current_status && updatedFields.current_status !== existing.current_status) {
+      changeSummary = `Status: ${existing.current_status || 'Draft'} → ${updatedFields.current_status}`;
+    } else if (updatedFields.assigned_to && updatedFields.assigned_to !== existing.assigned_to) {
+      changeSummary = `Drafter: ${existing.assigned_to || 'Unassigned'} → ${updatedFields.assigned_to}`;
+    } else if (updatedFields.client_commitment_date !== undefined && updatedFields.client_commitment_date !== existing.client_commitment_date) {
+      changeSummary = `Commitment: ${existing.client_commitment_date || 'None'} → ${updatedFields.client_commitment_date || 'Cleared'}`;
+    } else {
+      const changedKeys = Object.keys(updatedFields).filter((k) => updatedFields[k] !== existing[k]);
+      changeSummary = `Updated: ${changedKeys.slice(0, 3).join(', ')}`;
+    }
+
+    pushUndoStep({
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: 'UPDATE',
+      actionLabel: `Updated matter ${projectCode}`,
+      detail: changeSummary,
+      targetCode: projectCode,
+      timestamp: new Date().toISOString(),
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      revertData: {
+        projectCode,
+        previousRecord: { ...existing },
+        updatedFields,
+      },
+    });
+
     setRecords((prev) =>
       prev.map((r) => (r.project_code === projectCode ? finalizedRecord : r))
     );
@@ -936,6 +1120,31 @@ export default function App() {
   // CRUD 3: SAVE MANUAL SENIOR NOTES (0ms Optimistic UI)
   // ==========================================
   const handleSaveManualNotes = (projectCode, notesData) => {
+    const existing = records.find((r) => r.project_code === projectCode);
+    pushUndoStep({
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: 'SAVE_NOTES',
+      actionLabel: `Updated notes for ${projectCode}`,
+      detail: notesData.senior_notes
+        ? `Notes: "${notesData.senior_notes.slice(0, 40)}..."`
+        : 'Updated notes and action items',
+      targetCode: projectCode,
+      timestamp: new Date().toISOString(),
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      revertData: {
+        projectCode,
+        previousNotes: existing
+          ? {
+              senior_notes: existing.senior_notes,
+              pending_actions: existing.pending_actions,
+              follow_up_date: existing.follow_up_date,
+              action_assignee: existing.action_assignee,
+            }
+          : {},
+      },
+    });
+
     let updatedRecord = null;
     setRecords((prev) =>
       prev.map((r) => {
@@ -988,6 +1197,21 @@ export default function App() {
     const stagedRecords = Array.isArray(arg1) ? arg1 : (Array.isArray(arg2) ? arg2 : []);
     const importedCount = typeof arg1 === 'number' ? arg1 : stagedRecords.length;
     if (stagedRecords.length === 0) return;
+
+    const importedCodes = stagedRecords.map((r) => r.project_code).filter(Boolean);
+    pushUndoStep({
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: 'IMPORT',
+      actionLabel: `Bulk imported ${importedCount} application(s)`,
+      detail: `Imported codes: ${importedCodes.slice(0, 4).join(', ')}${importedCodes.length > 4 ? ` (+${importedCodes.length - 4} more)` : ''}`,
+      targetCode: `${importedCount} matters`,
+      timestamp: new Date().toISOString(),
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      revertData: {
+        importedProjectCodes: importedCodes,
+      },
+    });
 
     setRecords((prev) => [...stagedRecords, ...prev]);
 
@@ -1045,6 +1269,31 @@ export default function App() {
 
   const handleReassignBatch = (projectCodes, targetDrafter, reason, notes) => {
     const updatedTimestamp = new Date().toISOString();
+
+    const previousAssignments = projectCodes.map((code) => {
+      const r = records.find((rec) => rec.project_code === code) || {};
+      return {
+        project_code: code,
+        assigned_to: r.assigned_to || null,
+        reassignment_reason: r.reassignment_reason || null,
+        reassignment_notes: r.reassignment_notes || null,
+      };
+    });
+
+    pushUndoStep({
+      id: `undo_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      type: 'REASSIGN',
+      actionLabel: `Reassigned ${projectCodes.length} matter(s) to ${targetDrafter}`,
+      detail: `Matters: ${projectCodes.join(', ')}. Reason: ${reason}`,
+      targetCode: projectCodes.join(', '),
+      timestamp: new Date().toISOString(),
+      previousRecords: records,
+      previousOverrides: JSON.parse(localStorage.getItem('patent_local_overrides') || '{}'),
+      revertData: {
+        reassignedCodes: projectCodes,
+        previousAssignments,
+      },
+    });
 
     // 1. Immediate optimistic UI state update
     setRecords((prev) =>
@@ -1213,6 +1462,13 @@ export default function App() {
 
           {/* Right: Global Utility Actions & User Profile */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+
+            {/* 5-Step Progressive Undo Button */}
+            <ProgressiveUndoButton
+              undoStack={undoStack}
+              onUndo={handleProgressiveUndo}
+              onClearHistory={handleClearUndoHistory}
+            />
 
             {/* Reassign Button (Super Admin) */}
             {isSuperAdmin(currentUser) && (
