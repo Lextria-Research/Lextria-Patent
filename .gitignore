@@ -44,4 +44,6 @@ Thumbs.db
 
 # Backups and Dumps
 *.dump
+*.zip
+backups/
 data/extracted_pg_dump/
