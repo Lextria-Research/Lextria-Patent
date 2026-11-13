@@ -529,7 +529,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  Overdue {Math.abs(diff)}d Â· {nearest.shortLabel}
+                  Overdue {Math.abs(diff)}d · {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -541,7 +541,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                  Due {diff === 0 ? 'today' : `in ${diff}d`} Â· {nearest.shortLabel}
+                  Due {diff === 0 ? 'today' : `in ${diff}d`} · {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -553,7 +553,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                  In {diff}d Â· {nearest.shortLabel}
+                  In {diff}d · {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -564,7 +564,7 @@ export default function MasterDataGrid({
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In {diff}d Â· {nearest.shortLabel}
+                In {diff}d · {nearest.shortLabel}
               </span>
               <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                 Due {formattedDate} ({nearest.statutoryRef})
@@ -648,7 +648,7 @@ export default function MasterDataGrid({
                     gap: '2px',
                   }}
                 >
-                  âš ï¸ Exceeds {nearest.shortLabel}
+                  ⚠️ Exceeds {nearest.shortLabel}
                 </span>
               )}
             </div>
@@ -748,7 +748,7 @@ export default function MasterDataGrid({
                   flexShrink: 0
                 }}
               >
-                {drafter ? drafter.slice(0, 2).toUpperCase() : 'â€”'}
+                {drafter ? drafter.slice(0, 2).toUpperCase() : '—'}
               </div>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
                 {drafter || 'Unassigned'}
@@ -860,7 +860,7 @@ export default function MasterDataGrid({
                 onClick={onClearKpiFilter}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B2E', fontWeight: 800, padding: 0 }}
               >
-                Ã—
+                ×
               </button>
             </div>
           )}
@@ -957,13 +957,13 @@ export default function MasterDataGrid({
             title="Filter by Color Code Status (Green, Yellow, Grey, Orange, Purple, Blue, Red)"
           >
             <option value="ALL">All Colors ({records.length})</option>
-            <option value="GREEN">ðŸŸ¢ Green ({colorCountsMap.GREEN})</option>
-            <option value="YELLOW">ðŸŸ¡ Yellow ({colorCountsMap.YELLOW})</option>
-            <option value="GREY">âšª Grey ({colorCountsMap.GREY})</option>
-            <option value="ORANGE">ðŸŸ  Orange ({colorCountsMap.ORANGE})</option>
-            <option value="PURPLE">ðŸŸ£ Purple ({colorCountsMap.PURPLE})</option>
-            <option value="BLUE">ðŸ”µ Blue ({colorCountsMap.BLUE})</option>
-            <option value="RED">ðŸ”´ Red Â· Abandoned/Shift ({colorCountsMap.RED})</option>
+            <option value="GREEN">🟢 Green ({colorCountsMap.GREEN})</option>
+            <option value="YELLOW">🟡 Yellow ({colorCountsMap.YELLOW})</option>
+            <option value="GREY">⚪ Grey ({colorCountsMap.GREY})</option>
+            <option value="ORANGE">🟠 Orange ({colorCountsMap.ORANGE})</option>
+            <option value="PURPLE">🟣 Purple ({colorCountsMap.PURPLE})</option>
+            <option value="BLUE">🔵 Blue ({colorCountsMap.BLUE})</option>
+            <option value="RED">🔴 Red · Abandoned/Shift ({colorCountsMap.RED})</option>
           </select>
 
           {/* Status Dropdown Filter (Phase Grouped & Statutory) */}
@@ -993,7 +993,7 @@ export default function MasterDataGrid({
               return (
                 <optgroup key={group.phaseId} label={`${group.phaseLabel} (${groupTotal})`}>
                   <option value={`PHASE:${group.phaseId}`}>
-                    â–¸ All {group.shortLabel} ({groupTotal})
+                    ▸ All {group.shortLabel} ({groupTotal})
                   </option>
                   {group.statuses.map((st) => {
                     const cnt = statusCountsMap[st.name] || 0;
@@ -1108,8 +1108,8 @@ export default function MasterDataGrid({
           {[
             { id: 'ALL', label: 'All', count: records.length, color: 'var(--muted)', bg: 'transparent' },
             { id: 'OVERDUE', label: 'Overdue', count: deliveryUrgencyCounts.overdue, color: '#DC2626', bg: '#FEE2E2', dot: '#DC2626' },
-            { id: 'DUE_2', label: 'Due in â‰¤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
-            { id: 'DUE_7', label: 'Due in â‰¤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
+            { id: 'DUE_2', label: 'Due in ≤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
+            { id: 'DUE_7', label: 'Due in ≤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
             { id: 'ON_TRACK', label: 'On track', count: deliveryUrgencyCounts.onTrack, color: '#16A34A', bg: '#DCFCE7', dot: '#16A34A' },
             { id: 'NO_DATE', label: 'No date set', count: deliveryUrgencyCounts.noDate, color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
           ].map((chip) => {
@@ -1432,7 +1432,7 @@ export default function MasterDataGrid({
         }}
       >
         <div>
-          Showing 1â€“{Math.min(rows.length, 25)} of {rows.length} records
+          Showing 1–{Math.min(rows.length, 25)} of {rows.length} records
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
