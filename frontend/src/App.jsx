@@ -2048,27 +2048,29 @@ export default function App() {
 
             {/* Streamlined Virtualized Table Data Grid (Requirement 11) */}
             <div style={{ flex: 1, overflow: 'hidden', marginTop: '12px' }}>
-              <MasterDataGrid
-                records={roleFilteredRecords}
-                onSelectRecord={(rec) => handleSelectRecord(rec)}
-                selectedCode={selectedRecord?.project_code}
-                onOpenImport={() => setIsImporterOpen(true)}
-                onExportExcel={handleQuickExport}
-                onOpenExportReport={(subset) => {
-                  setExportRecordsSelection(subset);
-                  setIsExportOpen(true);
-                }}
-                activeKpiFilter={activeKpiFilter}
-                onClearKpiFilter={() => setActiveKpiFilter(null)}
-                onOpenCreate={() => setIsCreateOpen(true)}
-                onOpenEdit={(rec) => setEditingRecord(rec)}
-                onOpenTimeline={(rec) => handleOpenTimeline(rec)}
-                onOpenReassign={(item) => handleOpenReassign(item)}
-                userRole={currentUser.role}
-                selectedDrafter={currentUser.drafterName}
-                clients={clients}
-                tags={tags}
-              />
+              <ErrorBoundary>
+                <MasterDataGrid
+                  records={roleFilteredRecords}
+                  onSelectRecord={(rec) => handleSelectRecord(rec)}
+                  selectedCode={selectedRecord?.project_code}
+                  onOpenImport={() => setIsImporterOpen(true)}
+                  onExportExcel={handleQuickExport}
+                  onOpenExportReport={(subset) => {
+                    setExportRecordsSelection(subset);
+                    setIsExportOpen(true);
+                  }}
+                  activeKpiFilter={activeKpiFilter}
+                  onClearKpiFilter={() => setActiveKpiFilter(null)}
+                  onOpenCreate={() => setIsCreateOpen(true)}
+                  onOpenEdit={(rec) => setEditingRecord(rec)}
+                  onOpenTimeline={(rec) => handleOpenTimeline(rec)}
+                  onOpenReassign={(item) => handleOpenReassign(item)}
+                  userRole={currentUser.role}
+                  selectedDrafter={currentUser.drafterName}
+                  clients={clients}
+                  tags={tags}
+                />
+              </ErrorBoundary>
             </div>
           </div>
         )}

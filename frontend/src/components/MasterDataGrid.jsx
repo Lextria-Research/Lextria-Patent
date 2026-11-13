@@ -15,6 +15,24 @@ import { getStatusColor, STATUS_COLORS, PROSECUTION_PHASES, STATUTORY_STATUSES, 
 import DEFAULT_CLIENTS from '../data/clients.json';
 import { getNearestStatutoryDeadline } from '../utils/statutoryDeadlines';
 
+// Helper to format specification type (CS / PS / CS-PS / Divisional)
+export const formatSpecType = (type, hasPs, hasCs) => {
+  const val = String(type || '').toUpperCase();
+  if (val === 'PS_TO_CS' || (hasPs && hasCs) || val.includes('CS-PS') || val.includes('PS TO CS')) {
+    return { label: 'PS-CS', bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED' };
+  }
+  if (val === 'CS' || val.includes('COMPLETE')) {
+    return { label: 'CS', bg: 'rgba(16, 185, 129, 0.12)', fg: '#059669' };
+  }
+  if (val === 'PS' || val.includes('PROVISIONAL')) {
+    return { label: 'PS', bg: 'rgba(59, 130, 246, 0.12)', fg: '#2563EB' };
+  }
+  if (val === 'DIVISIONAL') {
+    return { label: 'Divisional', bg: 'rgba(245, 158, 11, 0.12)', fg: '#D97706' };
+  }
+  return { label: val || 'PS', bg: 'rgba(107, 114, 128, 0.12)', fg: '#4B5563' };
+};
+
 export default function MasterDataGrid({
   records = [],
   onSelectRecord,
@@ -147,12 +165,15 @@ export default function MasterDataGrid({
       });
     }
 
-    // Patent Type filter (Requirement 2: PS, PS-CS, CS)
+    // Patent Type filter (Requirement 2: PS, PS-CS, CS, Divisional, Other)
     if (patentTypeFilter !== 'ALL') {
       data = data.filter((r) => {
-        const spec = formatSpecType(r.specification_type, r.ps_filing_date, r.cs_filing_date).label;
+        const spec = formatSpecType(r.specification_type, r.ps_filing_date, r.cs_filing_date)?.label || 'PS';
         if (patentTypeFilter === 'PS-CS') {
           return spec === 'PS-CS' || spec === 'CS-PS' || (r.specification_type || '').toUpperCase() === 'PS_TO_CS';
+        }
+        if (patentTypeFilter === 'OTHER') {
+          return !['PS', 'CS', 'PS-CS', 'CS-PS'].includes(spec);
         }
         return spec === patentTypeFilter;
       });
@@ -327,24 +348,6 @@ export default function MasterDataGrid({
       return { bg: `${found.color}1A`, fg: found.color, border: `${found.color}4D` };
     }
     return { bg: 'rgba(59, 130, 246, 0.1)', fg: '#2563EB', border: 'rgba(59, 130, 246, 0.25)' };
-  };
-
-  // Helper to format specification type (CS / PS / CS-PS)
-  const formatSpecType = (type, hasPs, hasCs) => {
-    const val = String(type || '').toUpperCase();
-    if (val === 'PS_TO_CS' || (hasPs && hasCs) || val.includes('CS-PS') || val.includes('PS TO CS')) {
-      return { label: 'PS-CS', bg: 'rgba(139, 92, 246, 0.12)', fg: '#7C3AED' };
-    }
-    if (val === 'CS' || val.includes('COMPLETE')) {
-      return { label: 'CS', bg: 'rgba(16, 185, 129, 0.12)', fg: '#059669' };
-    }
-    if (val === 'PS' || val.includes('PROVISIONAL')) {
-      return { label: 'PS', bg: 'rgba(59, 130, 246, 0.12)', fg: '#2563EB' };
-    }
-    if (val === 'DIVISIONAL') {
-      return { label: 'Divisional', bg: 'rgba(245, 158, 11, 0.12)', fg: '#D97706' };
-    }
-    return { label: val || 'PS', bg: 'rgba(107, 114, 128, 0.12)', fg: '#4B5563' };
   };
 
   // =========================================================================
@@ -526,7 +529,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  Overdue {Math.abs(diff)}d · {nearest.shortLabel}
+                  Overdue {Math.abs(diff)}d Â· {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -538,7 +541,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                  Due {diff === 0 ? 'today' : `in ${diff}d`} · {nearest.shortLabel}
+                  Due {diff === 0 ? 'today' : `in ${diff}d`} Â· {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -550,7 +553,7 @@ export default function MasterDataGrid({
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                  In {diff}d · {nearest.shortLabel}
+                  In {diff}d Â· {nearest.shortLabel}
                 </span>
                 <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                   Due {formattedDate} ({nearest.statutoryRef})
@@ -561,7 +564,7 @@ export default function MasterDataGrid({
           return (
             <div style={{ display: 'flex', flexDirection: 'column' }}>
               <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In {diff}d · {nearest.shortLabel}
+                In {diff}d Â· {nearest.shortLabel}
               </span>
               <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
                 Due {formattedDate} ({nearest.statutoryRef})
@@ -645,7 +648,7 @@ export default function MasterDataGrid({
                     gap: '2px',
                   }}
                 >
-                  ⚠️ Exceeds {nearest.shortLabel}
+                  âš ï¸ Exceeds {nearest.shortLabel}
                 </span>
               )}
             </div>
@@ -745,7 +748,7 @@ export default function MasterDataGrid({
                   flexShrink: 0
                 }}
               >
-                {drafter ? drafter.slice(0, 2).toUpperCase() : '—'}
+                {drafter ? drafter.slice(0, 2).toUpperCase() : 'â€”'}
               </div>
               <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
                 {drafter || 'Unassigned'}
@@ -857,7 +860,7 @@ export default function MasterDataGrid({
                 onClick={onClearKpiFilter}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#C23B2E', fontWeight: 800, padding: 0 }}
               >
-                ×
+                Ã—
               </button>
             </div>
           )}
@@ -911,26 +914,28 @@ export default function MasterDataGrid({
             ))}
           </select>
 
-          {/* Patent Type Filter Dropdown (PS, PS-CS, CS) */}
+          {/* Patent Type Filter Dropdown (PS, PS-CS, CS, Divisional, Other) */}
           <select
             value={patentTypeFilter}
             onChange={(e) => setPatentTypeFilter(e.target.value)}
             style={{
               padding: '7px 10px',
               borderRadius: '6px',
-              border: '1px solid var(--line)',
+              border: patentTypeFilter !== 'ALL' ? '1.5px solid var(--accent, #3A86FF)' : '1px solid var(--line)',
               background: 'var(--page)',
               color: 'var(--ink)',
               fontSize: '12px',
               fontWeight: 600,
               maxWidth: '140px'
             }}
-            title="Filter by Patent Specification Type (PS, PS-CS, CS)"
+            title="Filter by Patent Specification Type (PS, PS-CS, CS, Other)"
           >
             <option value="ALL">All Types</option>
             <option value="PS">PS (Provisional)</option>
             <option value="PS-CS">PS-CS (Prov to Complete)</option>
             <option value="CS">CS (Direct Complete)</option>
+            <option value="Divisional">Divisional</option>
+            <option value="OTHER">Other Types</option>
           </select>
 
           {/* Color-wise Filter Dropdown (Green, Yellow, Grey, Orange, Purple, Blue, Red) */}
@@ -952,13 +957,13 @@ export default function MasterDataGrid({
             title="Filter by Color Code Status (Green, Yellow, Grey, Orange, Purple, Blue, Red)"
           >
             <option value="ALL">All Colors ({records.length})</option>
-            <option value="GREEN">🟢 Green ({colorCountsMap.GREEN})</option>
-            <option value="YELLOW">🟡 Yellow ({colorCountsMap.YELLOW})</option>
-            <option value="GREY">⚪ Grey ({colorCountsMap.GREY})</option>
-            <option value="ORANGE">🟠 Orange ({colorCountsMap.ORANGE})</option>
-            <option value="PURPLE">🟣 Purple ({colorCountsMap.PURPLE})</option>
-            <option value="BLUE">🔵 Blue ({colorCountsMap.BLUE})</option>
-            <option value="RED">🔴 Red · Abandoned/Shift ({colorCountsMap.RED})</option>
+            <option value="GREEN">ðŸŸ¢ Green ({colorCountsMap.GREEN})</option>
+            <option value="YELLOW">ðŸŸ¡ Yellow ({colorCountsMap.YELLOW})</option>
+            <option value="GREY">âšª Grey ({colorCountsMap.GREY})</option>
+            <option value="ORANGE">ðŸŸ  Orange ({colorCountsMap.ORANGE})</option>
+            <option value="PURPLE">ðŸŸ£ Purple ({colorCountsMap.PURPLE})</option>
+            <option value="BLUE">ðŸ”µ Blue ({colorCountsMap.BLUE})</option>
+            <option value="RED">ðŸ”´ Red Â· Abandoned/Shift ({colorCountsMap.RED})</option>
           </select>
 
           {/* Status Dropdown Filter (Phase Grouped & Statutory) */}
@@ -988,7 +993,7 @@ export default function MasterDataGrid({
               return (
                 <optgroup key={group.phaseId} label={`${group.phaseLabel} (${groupTotal})`}>
                   <option value={`PHASE:${group.phaseId}`}>
-                    ▸ All {group.shortLabel} ({groupTotal})
+                    â–¸ All {group.shortLabel} ({groupTotal})
                   </option>
                   {group.statuses.map((st) => {
                     const cnt = statusCountsMap[st.name] || 0;
@@ -1103,8 +1108,8 @@ export default function MasterDataGrid({
           {[
             { id: 'ALL', label: 'All', count: records.length, color: 'var(--muted)', bg: 'transparent' },
             { id: 'OVERDUE', label: 'Overdue', count: deliveryUrgencyCounts.overdue, color: '#DC2626', bg: '#FEE2E2', dot: '#DC2626' },
-            { id: 'DUE_2', label: 'Due in ≤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
-            { id: 'DUE_7', label: 'Due in ≤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
+            { id: 'DUE_2', label: 'Due in â‰¤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
+            { id: 'DUE_7', label: 'Due in â‰¤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
             { id: 'ON_TRACK', label: 'On track', count: deliveryUrgencyCounts.onTrack, color: '#16A34A', bg: '#DCFCE7', dot: '#16A34A' },
             { id: 'NO_DATE', label: 'No date set', count: deliveryUrgencyCounts.noDate, color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
           ].map((chip) => {
@@ -1427,7 +1432,7 @@ export default function MasterDataGrid({
         }}
       >
         <div>
-          Showing 1–{Math.min(rows.length, 25)} of {rows.length} records
+          Showing 1â€“{Math.min(rows.length, 25)} of {rows.length} records
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
