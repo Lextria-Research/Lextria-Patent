@@ -15,6 +15,7 @@ const MONTH_NAMES = [
 
 export default function CalendarView({
   records = [],
+  allRecords = [],
   currentUser,
   onOpenDrawer,
   onOpenTimeline,
@@ -23,6 +24,21 @@ export default function CalendarView({
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [urgencyFilter, setUrgencyFilter] = useState('ALL'); // ALL, OVERDUE, DUE_2, DUE_7, ON_TRACK
   const [selectedDayDeadlines, setSelectedDayDeadlines] = useState(null);
+  const [selectedDrafter, setSelectedDrafter] = useState('ALL');
+
+  const isDrafterUser = ['PATENT_DRAFTER', 'DRAFTER'].includes(currentUser?.role);
+  const isDrafterAdminUser = ['PATENT_DRAFTER_ADMIN', 'DRAFTER_ADMIN'].includes(currentUser?.role);
+
+  const availableDrafters = useMemo(() => {
+    const src = allRecords && allRecords.length > 0 ? allRecords : records;
+    const set = new Set();
+    src.forEach((r) => {
+      if (r?.assigned_to && !['not assigned', 'unassigned', 'none', '-'].includes(r.assigned_to.toLowerCase())) {
+        set.add(r.assigned_to.trim());
+      }
+    });
+    return Array.from(set).sort();
+  }, [allRecords, records]);
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
@@ -32,11 +48,20 @@ export default function CalendarView({
   const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
   const goToday = () => setCurrentDate(new Date());
 
+  const calendarRecords = useMemo(() => {
+    if ((isDrafterAdminUser || currentUser?.role === 'SUPER_ADMIN') && selectedDrafter !== 'ALL') {
+      return records.filter(
+        (r) => r.assigned_to && r.assigned_to.trim().toLowerCase() === selectedDrafter.toLowerCase()
+      );
+    }
+    return records;
+  }, [records, isDrafterAdminUser, currentUser, selectedDrafter]);
+
   // Aggregate all events by YYYY-MM-DD
   const eventsByDate = useMemo(() => {
     const map = {};
 
-    records.forEach((r) => {
+    calendarRecords.forEach((r) => {
       const addEvent = (dateStr, type, typeLabel, color) => {
         if (!dateStr) return;
         const key = dateStr.slice(0, 10);
@@ -53,9 +78,29 @@ export default function CalendarView({
         });
       };
 
-      // CS Deadline
+      // IPO Statutory Deadline (CS Due)
       if (r.cs_deadline && !r.cs_filing_date) {
         addEvent(r.cs_deadline, 'CS', 'CS Due', '#EF4444');
+      }
+      // IPO Statutory Deadline (PS Due)
+      if (r.ps_deadline && !r.ps_filing_date) {
+        addEvent(r.ps_deadline, 'PS', 'PS Due', '#3B82F6');
+      }
+      // Client Delivery Date (Equal Visual Prominence)
+      if ((r.client_commitment_date || r.client_delivery_date) && !r.is_abandoned) {
+        addEvent(r.client_commitment_date || r.client_delivery_date, 'COMMITMENT', 'Client Delivery', '#EA580C');
+      }
+      // Client Meeting (Equal Visual Prominence)
+      if (r.client_meeting_date && !r.is_abandoned) {
+        addEvent(r.client_meeting_date, 'MEETING', 'Client Meeting', '#059669');
+      }
+      // Internal Deadline (Equal Visual Prominence)
+      if (r.internal_deadline && !r.is_abandoned) {
+        addEvent(r.internal_deadline, 'INTERNAL', 'Internal Deadline', '#8B5CF6');
+      }
+      // External Deadline (Equal Visual Prominence)
+      if (r.external_deadline && !r.is_abandoned) {
+        addEvent(r.external_deadline, 'EXTERNAL', 'External Deadline', '#D97706');
       }
       // FER Reply Deadline
       if (r.fer_reply_deadline && !r.fer_reply_filing_date) {
@@ -63,63 +108,52 @@ export default function CalendarView({
       }
       // Hearing Written Submissions
       if (r.ws_deadline && !r.ws_filing_date) {
-        addEvent(r.ws_deadline, 'WS', 'Hearing WS Due', '#8B5CF6');
+        addEvent(r.ws_deadline, 'WS', 'Hearing WS Due', '#6366F1');
+      }
+      // Form-30 Hearing Interest
+      if (r.form_30_deadline && r.form_30_status !== 'Filed') {
+        addEvent(r.form_30_deadline, 'F30', 'Form-30 Due', '#DC2626');
       }
       // Form 1
       if (r.form_1_deadline && r.f1_status !== 'Within Deadline') {
-        addEvent(r.form_1_deadline, 'F1', 'Form 1 Due', '#3B82F6');
+        addEvent(r.form_1_deadline, 'F1', 'Form 1 Due', '#2563EB');
       }
       // Form 26
       if (r.form_26_deadline && r.f26_status !== 'Within Deadline') {
-        addEvent(r.form_26_deadline, 'F26', 'Form 26 POA Due', '#06B6D4');
+        addEvent(r.form_26_deadline, 'F26', 'Form 26 Due', '#06B6D4');
       }
       // Renewal Annuity
       if (r.next_renewal_date) {
         addEvent(r.next_renewal_date, 'ANNUITY', 'Annuity Due', '#10B981');
       }
-      // Client Delivery Commitment (Prominent in Reference UI Design Page 3)
-      if (r.client_commitment_date && !r.is_abandoned) {
-        addEvent(r.client_commitment_date, 'COMMITMENT', 'Client delivery', '#EA580C');
-      }
 
-      // 3-Day Filing Acknowledgment to Inventor (Requirement 5)
+      // 3-Day Filing Acknowledgment to Inventor
       const statusLower = (r.current_status || '').toLowerCase();
       if (statusLower.includes('sent for filing') && !r.is_abandoned && !r.ack_sent_to_inventor_date) {
         const ackDate = r.filing_ack_deadline || (r.sent_for_filing_date ? addDays(r.sent_for_filing_date, 3) : addDays(r.status_updated_at || r.updated_at || new Date(), 3));
         addEvent(ackDate, 'INVENTOR_ACK', '3-Day Filing Ack Due', '#D97706');
       }
 
-      // 6-Day FER Reply Draft Confirmation to Inventor (Requirement 6)
+      // 6-Day FER Reply Draft Confirmation to Inventor
       if ((statusLower.includes('fer received') || (r.fer_notice_date && !statusLower.includes('reply filed') && !statusLower.includes('hearing'))) && !r.is_abandoned && !r.fer_draft_sent_date) {
         const ferRefDate = r.fer_notice_date || r.status_updated_at || r.updated_at || new Date();
         const confirmDate = r.fer_draft_confirmation_deadline || addDays(ferRefDate, 6);
         addEvent(confirmDate, 'FER_CONFIRM', '6-Day FER Draft Due', '#EA580C');
       }
-
-      // Bi-Monthly Post-Filing Inventor Updates (Every 2 Months) (Requirement 7)
-      const earliestFiling = (r.ps_filing_date && r.cs_filing_date)
-        ? (new Date(r.ps_filing_date) <= new Date(r.cs_filing_date) ? r.ps_filing_date : r.cs_filing_date)
-        : (r.ps_filing_date || r.cs_filing_date);
-      if (earliestFiling && !r.is_abandoned && !r.grant_date) {
-        const cycleInfo = getUpcomingInventorUpdateCycle(earliestFiling, []);
-        if (cycleInfo && cycleInfo.dueDate) {
-          addEvent(cycleInfo.dueDate, 'INVENTOR_UPDATE', `Inventor Update (${cycleInfo.cycleMonths}M)`, '#6366F1');
-        }
-      }
     });
 
     return map;
-  }, [records]);
+  }, [calendarRecords]);
 
-  // Upcoming events within the next 30 days for sidebar (Matching Reference UI Design Page 3)
+  // Upcoming events within the next 30 days for sidebar (with equal prominence)
   const upcomingEvents = useMemo(() => {
     const list = [];
     const now = new Date();
     const future30 = new Date(now.getTime() + 30 * 86400000);
 
-    records.forEach((r) => {
+    calendarRecords.forEach((r) => {
       if (r.is_abandoned) return;
-      const checkAndAdd = (dateStr, type, typeLabel) => {
+      const checkAndAdd = (dateStr, type, typeLabel, color) => {
         if (!dateStr) return;
         const d = new Date(dateStr);
         if (d >= new Date(now.getFullYear(), now.getMonth(), now.getDate() - 5) && d <= future30) {
@@ -129,6 +163,7 @@ export default function CalendarView({
             title: r.title,
             type,
             typeLabel,
+            color,
             dateStr,
             dateObj: d,
             diffDays,
@@ -137,20 +172,38 @@ export default function CalendarView({
         }
       };
 
-      if (r.client_commitment_date) {
-        checkAndAdd(r.client_commitment_date, 'COMMITMENT', 'Client delivery');
+      if (r.client_commitment_date || r.client_delivery_date) {
+        checkAndAdd(r.client_commitment_date || r.client_delivery_date, 'COMMITMENT', 'Client Delivery', '#EA580C');
       }
       if (r.cs_deadline && !r.cs_filing_date) {
-        checkAndAdd(r.cs_deadline, 'CS', 'CS Filing');
+        checkAndAdd(r.cs_deadline, 'CS', 'CS Due', '#EF4444');
+      }
+      if (r.ps_deadline && !r.ps_filing_date) {
+        checkAndAdd(r.ps_deadline, 'PS', 'PS Due', '#3B82F6');
+      }
+      if (r.client_meeting_date) {
+        checkAndAdd(r.client_meeting_date, 'MEETING', 'Client Meeting', '#059669');
+      }
+      if (r.internal_deadline) {
+        checkAndAdd(r.internal_deadline, 'INTERNAL', 'Internal Deadline', '#8B5CF6');
+      }
+      if (r.external_deadline) {
+        checkAndAdd(r.external_deadline, 'EXTERNAL', 'External Deadline', '#D97706');
       }
       if (r.fer_reply_deadline && !r.fer_reply_filing_date) {
-        checkAndAdd(r.fer_reply_deadline, 'FER', 'FER Response');
+        checkAndAdd(r.fer_reply_deadline, 'FER', 'FER Reply Due', '#F59E0B');
+      }
+      if (r.ws_deadline && !r.ws_filing_date) {
+        checkAndAdd(r.ws_deadline, 'WS', 'Hearing WS Due', '#6366F1');
+      }
+      if (r.form_30_deadline && r.form_30_status !== 'Filed') {
+        checkAndAdd(r.form_30_deadline, 'F30', 'Form-30 Due', '#DC2626');
       }
     });
 
     list.sort((a, b) => a.dateObj - b.dateObj);
     return list;
-  }, [records]);
+  }, [calendarRecords]);
 
   // Calendar grid computation
   const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -308,6 +361,33 @@ export default function CalendarView({
               </button>
             ))}
           </div>
+
+          {/* Drafter Filter / Group Selector (Drafter Admin & Super Admin) */}
+          {(isDrafterAdminUser || currentUser?.role === 'SUPER_ADMIN') && (
+            <select
+              value={selectedDrafter}
+              onChange={(e) => setSelectedDrafter(e.target.value)}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '14px',
+                border: selectedDrafter !== 'ALL' ? '1.5px solid #7C3AED' : '1px solid var(--line)',
+                background: selectedDrafter !== 'ALL' ? 'rgba(124, 58, 237, 0.1)' : 'var(--page)',
+                color: selectedDrafter !== 'ALL' ? '#7C3AED' : 'var(--ink)',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                outline: 'none',
+              }}
+              title="Filter / Group by Drafter"
+            >
+              <option value="ALL">All Drafters (Grouped)</option>
+              {availableDrafters.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Zoho Calendar Integration Actions */}
@@ -453,33 +533,95 @@ export default function CalendarView({
                     )}
                   </div>
 
-                  {/* Event Chips (Up to 3 shown) */}
+                  {/* Event Chips (Drafter Admin groups by Drafter Name with due counts; Drafter shows all events with equal visual prominence) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', flex: 1, overflow: 'hidden' }}>
-                    {dayEvents.slice(0, 3).map((ev, eIdx) => (
-                      <div
-                        key={eIdx}
-                        style={{
-                          fontSize: '10px',
-                          fontWeight: 700,
-                          padding: '2px 5px',
-                          borderRadius: '4px',
-                          background: `${ev.color}18`,
-                          color: ev.color,
-                          borderLeft: `3px solid ${ev.color}`,
-                          whiteSpace: 'nowrap',
-                          overflow: 'hidden',
-                          textOverflow: 'ellipsis',
-                        }}
-                        title={`[${ev.project_code}] ${ev.typeLabel}: ${ev.title}`}
-                      >
-                        <strong>{ev.project_code}</strong>: {ev.typeLabel}
-                      </div>
-                    ))}
-
-                    {dayEvents.length > 3 && (
-                      <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--muted)', textAlign: 'right' }}>
-                        +{dayEvents.length - 3} more...
-                      </div>
+                    {isDrafterAdminUser || currentUser?.role === 'SUPER_ADMIN' ? (
+                      (() => {
+                        const drafterGroups = {};
+                        dayEvents.forEach((ev) => {
+                          const dName = ev.assigned_to || 'Unassigned';
+                          if (!drafterGroups[dName]) drafterGroups[dName] = [];
+                          drafterGroups[dName].push(ev);
+                        });
+                        const groupEntries = Object.entries(drafterGroups);
+                        return (
+                          <>
+                            {groupEntries.slice(0, 3).map(([dName, dEvs]) => (
+                              <button
+                                key={dName}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedDayDeadlines({ dateStr, drafterName: dName, events: dEvs });
+                                }}
+                                style={{
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  padding: '2px 5px',
+                                  borderRadius: '4px',
+                                  background: 'rgba(124, 58, 237, 0.12)',
+                                  color: '#7C3AED',
+                                  border: '1px solid rgba(124, 58, 237, 0.3)',
+                                  cursor: 'pointer',
+                                  whiteSpace: 'nowrap',
+                                  overflow: 'hidden',
+                                  textOverflow: 'ellipsis',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  gap: '4px',
+                                  textAlign: 'left',
+                                }}
+                                title={`Click to view ${dEvs.length} dues for ${dName}`}
+                              >
+                                <span>{dName}</span>
+                                <span style={{ fontWeight: 800, fontSize: '9px', background: '#7C3AED', color: '#fff', borderRadius: '8px', padding: '0 4px' }}>
+                                  {dEvs.length} {dEvs.length === 1 ? 'due' : 'dues'}
+                                </span>
+                              </button>
+                            ))}
+                            {groupEntries.length > 3 && (
+                              <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--muted)', textAlign: 'right' }}>
+                                +{groupEntries.length - 3} more...
+                              </div>
+                            )}
+                          </>
+                        );
+                      })()
+                    ) : (
+                      <>
+                        {dayEvents.slice(0, 3).map((ev, eIdx) => (
+                          <div
+                            key={eIdx}
+                            style={{
+                              fontSize: '10px',
+                              fontWeight: 700,
+                              padding: '2px 5px',
+                              borderRadius: '4px',
+                              background: `${ev.color}15`,
+                              color: ev.color,
+                              borderLeft: `3px solid ${ev.color}`,
+                              borderTop: `1px solid ${ev.color}30`,
+                              borderRight: `1px solid ${ev.color}30`,
+                              borderBottom: `1px solid ${ev.color}30`,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                            }}
+                            title={`[${ev.project_code}] ${ev.typeLabel}: ${ev.title}`}
+                          >
+                            <span style={{ fontWeight: 800 }}>{ev.typeLabel}:</span>
+                            <span>{ev.project_code}</span>
+                          </div>
+                        ))}
+                        {dayEvents.length > 3 && (
+                          <div style={{ fontSize: '9px', fontWeight: 700, color: 'var(--muted)', textAlign: 'right' }}>
+                            +{dayEvents.length - 3} more...
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -690,10 +832,11 @@ export default function CalendarView({
             >
               <div>
                 <h3 style={{ fontSize: '15px', fontWeight: 800, margin: 0 }}>
-                  Deadlines for {selectedDayDeadlines.dateStr}
+                  {selectedDayDeadlines.drafterName ? `${selectedDayDeadlines.drafterName} — ` : 'Deadlines for '}
+                  {selectedDayDeadlines.dateStr}
                 </h3>
                 <p style={{ fontSize: '11px', color: 'var(--muted)', margin: '2px 0 0' }}>
-                  {selectedDayDeadlines.events.length} statutory milestones due on this date
+                  {selectedDayDeadlines.events.length} {selectedDayDeadlines.drafterName ? `dues assigned to ${selectedDayDeadlines.drafterName}` : 'statutory milestones due on this date'}
                 </p>
               </div>
 

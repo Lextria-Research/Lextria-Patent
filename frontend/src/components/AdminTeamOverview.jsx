@@ -1,5 +1,6 @@
 // frontend/src/components/AdminTeamOverview.jsx
 import React, { useState, useMemo } from 'react';
+import { isSuperAdmin as checkIsSuperAdmin } from '../lib/authStore';
 import {
   Shield, AlertTriangle, Clock, CheckCircle2, User, Users,
   Calendar, ArrowRight, ExternalLink, Filter, ChevronDown, ChevronUp,
@@ -178,11 +179,9 @@ export default function AdminTeamOverview({
 
   // Compute live statistics from master records
   const liveStats = useMemo(() => {
-    if (!records || records.length === 0) return REFERENCE_FIGURES;
-
-    const nonAbandoned = records.filter((r) => !r.is_abandoned);
+    const nonAbandoned = (records || []).filter((r) => !r.is_abandoned);
     const activeTotal = nonAbandoned.length;
-    const avgPerDrafter = Math.round(activeTotal / OFFICIAL_DRAFTERS.length) || 75;
+    const avgPerDrafter = OFFICIAL_DRAFTERS.length > 0 ? Math.round(activeTotal / OFFICIAL_DRAFTERS.length) : 0;
 
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
@@ -194,8 +193,8 @@ export default function AdminTeamOverview({
         return assigned.includes(d.name.toLowerCase());
       });
 
-      const count = dRecords.length || (REFERENCE_FIGURES.workload.find((w) => w.name === d.name)?.active || 50);
-      const loadPct = Math.round((count / (avgPerDrafter || 75)) * 100);
+      const count = dRecords.length;
+      const loadPct = avgPerDrafter > 0 ? Math.round((count / avgPerDrafter) * 100) : 0;
 
       // Stage mix
       let drafting = 0;
@@ -204,7 +203,7 @@ export default function AdminTeamOverview({
 
       dRecords.forEach((r) => {
         const st = (r.current_status || '').toLowerCase();
-        if (st.includes('awaiting data') || st.includes('idf sent') || st.includes('query')) {
+        if (st.includes('awaiting data') || st.includes('idf sent') || st.includes('query') || st.includes('awaiting')) {
           query++;
         } else if (st.includes('review') || st.includes('confirmation') || st.includes('sent for')) {
           signoff++;
@@ -212,20 +211,6 @@ export default function AdminTeamOverview({
           drafting++;
         }
       });
-
-      // If records were empty for this drafter, use reference distribution
-      if (drafting === 0 && signoff === 0 && query === 0) {
-        const ref = REFERENCE_FIGURES.workload.find((w) => w.name === d.name);
-        if (ref) {
-          drafting = ref.drafting;
-          signoff = ref.signoff;
-          query = ref.query;
-        } else {
-          drafting = Math.round(count * 0.7);
-          signoff = Math.round(count * 0.25);
-          query = count - drafting - signoff;
-        }
-      }
 
       // Overdue & Due in 7 days
       let overdue = 0;
@@ -251,12 +236,8 @@ export default function AdminTeamOverview({
         }
       });
 
-      const ref = REFERENCE_FIGURES.workload.find((w) => w.name === d.name);
-      const overdueFinal = dRecords.length > 0 ? overdue : (ref?.overdue ?? 0);
-      const due7dFinal = dRecords.length > 0 ? due7d : (ref?.due7d ?? 5);
-
-      let nextDueLabel = ref?.nextDueLabel || 'On track';
-      let nextMatter = ref?.nextMatter || `${dRecords[0]?.project_code || 'Matter'} · Upcoming`;
+      let nextDueLabel = 'On track';
+      let nextMatter = dRecords[0] ? `${dRecords[0].project_code} · Upcoming` : 'None';
 
       if (nearestRecord) {
         if (nearestDueDays === 0) nextDueLabel = 'Due today';
@@ -276,8 +257,8 @@ export default function AdminTeamOverview({
         drafting,
         signoff,
         query,
-        due7d: due7dFinal,
-        overdue: overdueFinal,
+        due7d,
+        overdue,
         nextDueLabel,
         nextMatter,
         nextDueDays: nearestDueDays,
@@ -332,12 +313,34 @@ export default function AdminTeamOverview({
     // Sort attention list: highest overdue first, then today, then upcoming
     attentionList.sort((a, b) => b.daysLate - a.daysLate);
 
-    const finalNeedsAttention = attentionList.length >= 4
-      ? attentionList.slice(0, 10)
-      : REFERENCE_FIGURES.needsAttention.map((item) => {
-          const match = records.find((r) => r.project_code === item.matter);
-          return { ...item, record: match || null };
-        });
+    // Dynamic 14-day capacity heatmap
+    const heatmapDays = [];
+    for (let i = 0; i < 14; i++) {
+      const targetDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+      const dayNum = String(targetDate.getDate());
+      const label = i === 0 ? 'Today' : targetDate.toLocaleDateString('en-US', { weekday: 'short' });
+      const monthName = targetDate.toLocaleDateString('en-US', { month: 'short' });
+      heatmapDays.push({
+        label,
+        dayNum,
+        monthName,
+        isToday: i === 0,
+        isoDate: targetDate.toISOString().split('T')[0],
+      });
+    }
+
+    const heatmapGrid = {};
+    OFFICIAL_DRAFTERS.forEach((d) => {
+      const dRecords = nonAbandoned.filter((r) =>
+        (r.assigned_to || '').toLowerCase().includes(d.name.toLowerCase())
+      );
+      heatmapGrid[d.name] = heatmapDays.map((day) => {
+        return dRecords.filter((r) => {
+          const dStr = r.client_commitment_date || r.internal_deadline || r.cs_deadline || r.ps_deadline;
+          return dStr === day.isoDate;
+        }).length;
+      });
+    });
 
     const totalOverdue = workload.reduce((acc, w) => acc + w.overdue, 0);
     const overdueDrafters = workload.filter((w) => w.overdue > 0).length;
@@ -348,15 +351,15 @@ export default function AdminTeamOverview({
     return {
       activeMatters: activeTotal,
       avgPerDrafter,
-      overdueDeliveries: totalOverdue || REFERENCE_FIGURES.overdueDeliveries,
-      overdueDraftersCount: overdueDrafters || REFERENCE_FIGURES.overdueDraftersCount,
-      dueIn7Days: totalDue7d || REFERENCE_FIGURES.dueIn7Days,
-      awaitingSignoff: totalSignoff || REFERENCE_FIGURES.awaitingSignoff,
-      openQueries: totalQueries || REFERENCE_FIGURES.openQueries,
+      overdueDeliveries: totalOverdue,
+      overdueDraftersCount: overdueDrafters,
+      dueIn7Days: totalDue7d,
+      awaitingSignoff: totalSignoff,
+      openQueries: totalQueries,
       workload,
-      needsAttention: finalNeedsAttention,
-      heatmapDays: REFERENCE_FIGURES.heatmapDays,
-      heatmapGrid: REFERENCE_FIGURES.heatmapGrid,
+      needsAttention: attentionList.slice(0, 10),
+      heatmapDays,
+      heatmapGrid,
     };
   }, [records]);
 
@@ -374,7 +377,7 @@ export default function AdminTeamOverview({
     }
   };
 
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = checkIsSuperAdmin(currentUser);
 
   return (
     <div
@@ -425,7 +428,7 @@ export default function AdminTeamOverview({
               Lextria IP
             </div>
             <div style={{ fontSize: '13px', color: 'var(--muted)', fontWeight: 500 }}>
-              Team overview · {isSuperAdmin ? 'Super Admin' : 'Patent Admin'}
+              Team overview · {isSuperAdmin ? 'Super Admin' : (currentUser?.roleLabel || 'Drafter Admin')}
             </div>
           </div>
         </div>
@@ -433,10 +436,10 @@ export default function AdminTeamOverview({
         {/* Date & Docket Context */}
         <div style={{ textAlign: 'right' }}>
           <div style={{ fontSize: '13.5px', fontWeight: 700, color: 'var(--ink)' }}>
-            As of Tuesday, 27 October 2026
+            As of {new Date().toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </div>
           <div style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 500 }}>
-            8 drafters · firm-wide docket
+            {OFFICIAL_DRAFTERS.length} drafters · firm-wide docket
           </div>
         </div>
       </div>
@@ -449,7 +452,7 @@ export default function AdminTeamOverview({
               Team overview
             </h1>
             <p style={{ fontSize: '13.5px', color: 'var(--muted)', margin: '4px 0 0', fontWeight: 400 }}>
-              Workload, due dates and roadblocks across all 8 drafters.
+              Workload, due dates and roadblocks across all {OFFICIAL_DRAFTERS.length} drafters.
             </p>
           </div>
 
@@ -1067,7 +1070,27 @@ export default function AdminTeamOverview({
                           <div
                             onClick={() => {
                               if (cnt > 0) {
-                                setSelectedCellInfo({ drafter: d.name, day: liveStats.heatmapDays[dayIdx], count: cnt });
+                                const targetDay = liveStats.heatmapDays[dayIdx];
+                                const matchingRecords = (records || []).filter((r) => {
+                                  if (r.is_abandoned) return false;
+                                  const assigned = (r.assigned_to || '').toLowerCase();
+                                  if (!assigned.includes(d.name.toLowerCase())) return false;
+                                  const dStr = r.client_commitment_date || r.internal_deadline || r.cs_deadline || r.ps_deadline;
+                                  return dStr === targetDay.isoDate;
+                                });
+
+                                if (onNavigateToPortfolio) {
+                                  onNavigateToPortfolio({
+                                    type: 'HEATMAP_CELL',
+                                    drafter: d.name,
+                                    date: targetDay.isoDate,
+                                    dayLabel: `${targetDay.label}, ${targetDay.dayNum} ${targetDay.monthName || ''}`.trim(),
+                                    projectCodes: matchingRecords.map((r) => r.project_code),
+                                    count: matchingRecords.length,
+                                  });
+                                } else {
+                                  setSelectedCellInfo({ drafter: d.name, day: targetDay, count: cnt });
+                                }
                               }
                             }}
                             style={{
@@ -1082,9 +1105,22 @@ export default function AdminTeamOverview({
                               justifyContent: 'center',
                               fontSize: '12px',
                               cursor: cnt > 0 ? 'pointer' : 'default',
-                              transition: 'transform 0.1s ease',
+                              transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                              boxShadow: cnt > 0 ? '0 1px 2px rgba(0,0,0,0.1)' : 'none',
                             }}
-                            title={cnt > 0 ? `${d.name}: ${cnt} deliveries due on ${liveStats.heatmapDays[dayIdx].label} ${liveStats.heatmapDays[dayIdx].dayNum}` : ''}
+                            onMouseEnter={(e) => {
+                              if (cnt > 0) {
+                                e.currentTarget.style.transform = 'scale(1.12)';
+                                e.currentTarget.style.boxShadow = '0 3px 8px rgba(37,99,235,0.4)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (cnt > 0) {
+                                e.currentTarget.style.transform = 'scale(1)';
+                                e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.1)';
+                              }
+                            }}
+                            title={cnt > 0 ? `Click to view ${d.name}'s ${cnt} deliveries due on ${liveStats.heatmapDays[dayIdx].label} ${liveStats.heatmapDays[dayIdx].dayNum} in Portfolio Master` : ''}
                           >
                             {cnt > 0 ? cnt : ''}
                           </div>
@@ -1481,12 +1517,29 @@ export default function AdminTeamOverview({
               {selectedCellInfo.drafter} · {selectedCellInfo.count} Deliveries Due
             </div>
             <div style={{ fontSize: '11.5px', color: '#94a3b8' }}>
-              Scheduled for {selectedCellInfo.day.label}, {selectedCellInfo.day.dayNum} October
+              Scheduled for {selectedCellInfo.day.label}, {selectedCellInfo.day.dayNum} {selectedCellInfo.day.monthName || ''}
             </div>
           </div>
           <button
             onClick={() => {
-              if (onNavigateToPortfolio) onNavigateToPortfolio(selectedCellInfo.drafter);
+              if (onNavigateToPortfolio && selectedCellInfo) {
+                const targetDay = selectedCellInfo.day;
+                const matchingRecords = (records || []).filter((r) => {
+                  if (r.is_abandoned) return false;
+                  const assigned = (r.assigned_to || '').toLowerCase();
+                  if (!assigned.includes(selectedCellInfo.drafter.toLowerCase())) return false;
+                  const dStr = r.client_commitment_date || r.internal_deadline || r.cs_deadline || r.ps_deadline;
+                  return dStr === targetDay.isoDate;
+                });
+                onNavigateToPortfolio({
+                  type: 'HEATMAP_CELL',
+                  drafter: selectedCellInfo.drafter,
+                  date: targetDay.isoDate,
+                  dayLabel: `${targetDay.label}, ${targetDay.dayNum} ${targetDay.monthName || ''}`.trim(),
+                  projectCodes: matchingRecords.map((r) => r.project_code),
+                  count: matchingRecords.length,
+                });
+              }
               setSelectedCellInfo(null);
             }}
             style={{

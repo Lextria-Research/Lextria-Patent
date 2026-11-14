@@ -8,15 +8,21 @@ export const ROLES = {
     description: 'Full administrative control, user provisioning, system settings, and portfolio oversight.',
     color: '#3B82F6',
   },
+  PATENT_DRAFTER_ADMIN: {
+    key: 'PATENT_DRAFTER_ADMIN',
+    label: 'Drafter Admin',
+    description: 'Lead drafter management, drafting allocations, team deadlines and calendar oversight.',
+    color: '#7C3AED',
+  },
   PARALEGAL_HEAD: {
     key: 'PARALEGAL_HEAD',
-    label: 'Paralegal Head',
+    label: 'Patent Paralegal Admin',
     description: 'Lead paralegal management, docketing authority, matter triage, and filings.',
     color: '#10B981',
   },
   PARALEGAL_ASSOCIATE: {
     key: 'PARALEGAL_ASSOCIATE',
-    label: 'Paralegal Associates',
+    label: 'Patent Paralegal Associate',
     description: 'Formalities execution, CBR docketing, miscellaneous form filings, and client communications.',
     color: '#06B6D4',
   },
@@ -30,9 +36,10 @@ export const ROLES = {
 
 export const ROLE_OPTIONS = [
   { value: 'SUPER_ADMIN', label: 'Superadmin', description: 'Complete system, user management and docketing control' },
-  { value: 'PARALEGAL_HEAD', label: 'Paralegal Head', description: 'Lead docketing authority, formalities triage and all filings' },
-  { value: 'PARALEGAL_ASSOCIATE', label: 'Paralegal Associates', description: 'Formalities execution, CBR receipts and filing forms' },
-  { value: 'PATENT_DRAFTER', label: 'Patent Drafters', description: 'Drafting cockpit, assigned matter specification prep' },
+  { value: 'PATENT_DRAFTER_ADMIN', label: 'Drafter Admin', description: 'Lead drafter management, drafting allocations and team calendar' },
+  { value: 'PARALEGAL_HEAD', label: 'Patent Paralegal Admin', description: 'Lead docketing authority, formalities triage and all filings' },
+  { value: 'PARALEGAL_ASSOCIATE', label: 'Patent Paralegal Associate', description: 'Formalities execution, CBR receipts and filing forms' },
+  { value: 'PATENT_DRAFTER', label: 'Drafter', description: 'Drafting cockpit, assigned matter specification prep' },
 ];
 
 export const ROOT_SUPER_ADMIN = {
@@ -67,6 +74,24 @@ export function getRegisteredUsers() {
 
     // Filter out corrupted entries or old mock users without passwords
     users = users.filter((u) => u && u.email && u.password);
+
+    // Enforce Drafter Admin role for Thanush & Anusha
+    users = users.map((u) => {
+      const email = (u.email || '').toLowerCase().trim();
+      const name = (u.name || '').toLowerCase().trim();
+      if (email.includes('thanush') || email.includes('anusha') || name.includes('thanush') || name.includes('anusha')) {
+        return {
+          ...u,
+          role: 'PATENT_DRAFTER_ADMIN',
+          roleLabel: 'Drafter Admin',
+          color: '#7C3AED',
+          isRoot: false,
+          drafterName: u.name || (email.includes('thanush') ? 'Thanush' : 'Anusha'),
+        };
+      }
+      return u;
+    });
+    localStorage.setItem(USERS_STORAGE_KEY, JSON.stringify(users));
 
     // Ensure the root superadmin is present and synced
     const rootIndex = users.findIndex(
@@ -123,6 +148,27 @@ export async function authenticate(loginId, password) {
   try {
     let authEmail = cleanId.includes('@') ? cleanId.toLowerCase() : null;
 
+    // Map common names to email if needed
+    const NAME_MAP = {
+      'pranav': 'pranavbhat@lextria.in',
+      'pranav bhat': 'pranavbhat@lextria.in',
+      'sharan': 'sharan@lextria.in',
+      'mounisha': 'mounisha@lextria.in',
+      'prathvi': 'prathvi@lextria.in',
+      'anusha': 'anusha@lextria.in',
+      'ayush': 'ayush@lextria.in',
+      'chaitra': 'chaitra@lextria.in',
+      'kaushal': 'kaushal.kamath@lextria.in',
+      'thanush': 'thanush@lextria.in',
+      'akshara': 'akshara@lextria.in',
+      'manoj': 'exec@lextria-demo.test',
+      'manoj kumar': 'exec@lextria-demo.test',
+      'exec': 'exec@lextria-demo.test'
+    };
+    if (!authEmail && NAME_MAP[cleanId.toLowerCase()]) {
+      authEmail = NAME_MAP[cleanId.toLowerCase()];
+    }
+
     if (!authEmail) {
       try {
         const { data: profileMatch } = await coreDb
@@ -139,27 +185,7 @@ export async function authenticate(loginId, password) {
       }
     }
 
-    const finalEmail = authEmail || cleanId.toLowerCase();
-
-    // Map common names to email if needed
-    const NAME_MAP = {
-      'pranav': 'pranavbhat@lextria.in',
-      'pranav bhat': 'pranavbhat@lextria.in',
-      'sharan': 'sharan@lextria.in',
-      'mounisha': 'mounisha@lextria.in',
-      'anusha': 'anusha@lextria.in',
-      'ayush': 'ayush@lextria.in',
-      'chaitra': 'chaitra@lextria.in',
-      'kaushal': 'kaushal.kamath@lextria.in',
-      'thanush': 'thanush@lextria.in',
-      'akshara': 'akshara@lextria.in',
-      'manoj': 'exec@lextria-demo.test',
-      'manoj kumar': 'exec@lextria-demo.test',
-      'exec': 'exec@lextria-demo.test'
-    };
-    if (!authEmail && NAME_MAP[cleanId.toLowerCase()]) {
-      authEmail = NAME_MAP[cleanId.toLowerCase()];
-    }
+    const finalEmail = authEmail || (cleanId.includes('@') ? cleanId.toLowerCase() : `${cleanId.toLowerCase().replace(/[^a-z0-9]/g, '')}@lextria.in`);
 
     // Convenience password normalization for legacy passwords
     if ((cleanPassword === '334' || cleanPassword === 'LextriaPT@334') && finalEmail === 'pranavbhat@lextria.in') {
@@ -168,7 +194,9 @@ export async function authenticate(loginId, password) {
     if (cleanPassword === '334') {
       if (finalEmail === 'sharan@lextria.in') cleanPassword = 'Sharan@334';
       if (finalEmail === 'mounisha@lextria.in') cleanPassword = 'Mounisha@334';
+      if (finalEmail === 'prathvi@lextria.in') cleanPassword = 'Prathvi@334';
       if (finalEmail === 'thanush@lextria.in') cleanPassword = 'Thanush@334';
+      if (finalEmail === 'anusha@lextria.in') cleanPassword = 'Anusha@334';
       if (finalEmail === 'akshara@lextria.in') cleanPassword = 'Akshara@334';
     }
 
@@ -196,15 +224,25 @@ export async function authenticate(loginId, password) {
         throw new Error('Access to Patent Dashboard is not enabled for your account. Please contact an Administrator.');
       }
 
+      // Thanush & Anusha are strictly Drafter Admin (never Super Admin)
+      const isThanushOrAnusha = finalEmail.includes('thanush') || 
+                                finalEmail.includes('anusha') || 
+                                cleanId.toLowerCase().includes('thanush') || 
+                                cleanId.toLowerCase().includes('anusha');
+
       // Explicit role mapping from dashboard_access.patent.role configured in Universal Settings
       let patentRole = 'PATENT_DRAFTER';
       const configuredRole = (patAccess.role || '').toUpperCase();
 
-      if (configuredRole === 'DRAFTER' || configuredRole === 'PATENT_DRAFTER') {
+      if (isThanushOrAnusha) {
+        patentRole = 'PATENT_DRAFTER_ADMIN';
+      } else if (configuredRole === 'DRAFTER_ADMIN' || configuredRole === 'PATENT_DRAFTER_ADMIN') {
+        patentRole = 'PATENT_DRAFTER_ADMIN';
+      } else if (configuredRole === 'DRAFTER' || configuredRole === 'PATENT_DRAFTER') {
         patentRole = 'PATENT_DRAFTER';
       } else if (configuredRole === 'FILER' || configuredRole === 'PARALEGAL_ASSOCIATE' || configuredRole === 'PARALEGAL') {
         patentRole = 'PARALEGAL_ASSOCIATE';
-      } else if (configuredRole === 'AUDITOR' || configuredRole === 'PARALEGAL_HEAD') {
+      } else if (configuredRole === 'AUDITOR' || configuredRole === 'PARALEGAL_HEAD' || configuredRole === 'PATENT_PARALEGAL_ADMIN') {
         patentRole = 'PARALEGAL_HEAD';
       } else if (configuredRole === 'ADMIN' || configuredRole === 'SUPER_ADMIN') {
         patentRole = 'SUPER_ADMIN';
@@ -220,8 +258,12 @@ export async function authenticate(loginId, password) {
         patentRole = 'PATENT_DRAFTER';
       }
 
+      if (isThanushOrAnusha) {
+        patentRole = 'PATENT_DRAFTER_ADMIN';
+      }
+
       const roleMeta = ROLES[patentRole] || ROLES.PATENT_DRAFTER;
-      const displayName = userProfile?.display_name || meta.display_name || finalEmail.split('@')[0];
+      const displayName = userProfile?.display_name || meta.display_name || (finalEmail.includes('thanush') ? 'Thanush' : finalEmail.includes('anusha') ? 'Anusha' : finalEmail.split('@')[0]);
 
       const universalUser = {
         id: authUser.id,
@@ -233,7 +275,7 @@ export async function authenticate(loginId, password) {
         color: roleMeta.color,
         department: userProfile?.department || 'Patent Drafting',
         drafterName: displayName,
-        isRoot: patentRole === 'SUPER_ADMIN',
+        isRoot: patentRole === 'SUPER_ADMIN' && !isThanushOrAnusha,
         isUniversal: true,
       };
 
@@ -261,6 +303,16 @@ export async function authenticate(loginId, password) {
   if (!matchedUser) return null;
 
   const { password: _, ...safeUser } = matchedUser;
+  const isThanushOrAnushaSafe = (safeUser.email || '').toLowerCase().includes('thanush') ||
+                               (safeUser.name || '').toLowerCase().includes('thanush') ||
+                               (safeUser.email || '').toLowerCase().includes('anusha') ||
+                               (safeUser.name || '').toLowerCase().includes('anusha');
+  if (isThanushOrAnushaSafe) {
+    safeUser.role = 'PATENT_DRAFTER_ADMIN';
+    safeUser.roleLabel = 'Drafter Admin';
+    safeUser.color = '#7C3AED';
+    safeUser.isRoot = false;
+  }
   setCurrentUser(safeUser);
   return safeUser;
 }
@@ -271,13 +323,20 @@ export function getCurrentUser() {
     if (!raw) return null;
     const user = JSON.parse(raw);
     if (!user) return null;
-    // Defensive check: if Thanush was cached as SUPER_ADMIN from old test sessions, correct to Drafter
-    if (user.email === 'thanush@lextria.in' && user.role === 'SUPER_ADMIN') {
-      user.role = 'PATENT_DRAFTER';
-      user.roleLabel = 'Drafter';
+    const email = (user.email || '').toLowerCase().trim();
+    const name = (user.name || '').toLowerCase().trim();
+    // Defensive check: ensure Thanush & Anusha are strictly Drafter Admin
+    if (
+      email.includes('thanush') ||
+      email.includes('anusha') ||
+      name.includes('thanush') ||
+      name.includes('anusha')
+    ) {
+      user.role = 'PATENT_DRAFTER_ADMIN';
+      user.roleLabel = 'Drafter Admin';
       user.isRoot = false;
-      user.drafterName = 'Thanush';
-      user.color = '#8B5CF6';
+      user.drafterName = user.name || (email.includes('thanush') ? 'Thanush' : 'Anusha');
+      user.color = '#7C3AED';
       localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(user));
     }
     return user;
@@ -475,7 +534,7 @@ export function getActiveDrafters(records = []) {
     const users = getRegisteredUsers();
     (users || []).forEach((u) => {
       const role = (u.role || '').toUpperCase();
-      if (['PATENT_DRAFTER', 'DRAFTER', 'SUPER_ADMIN'].includes(role)) {
+      if (['PATENT_DRAFTER', 'DRAFTER', 'PATENT_DRAFTER_ADMIN', 'DRAFTER_ADMIN', 'SUPER_ADMIN'].includes(role)) {
         add(u.drafterName || u.name);
       }
     });
@@ -495,20 +554,55 @@ export function getActiveDrafters(records = []) {
   );
 }
 
-export const isSuperAdmin = (u) => u?.role === 'SUPER_ADMIN';
-export const isParalegalHead = (u) => u?.role === 'PARALEGAL_HEAD';
-export const isParalegalAssociate = (u) => u?.role === 'PARALEGAL_ASSOCIATE';
-export const isParalegal = (u) => ['PARALEGAL_HEAD', 'PARALEGAL_ASSOCIATE', 'PARALEGAL'].includes(u?.role);
+export const isSuperAdmin = (u) => {
+  if (!u) return false;
+  const email = (u?.email || '').toLowerCase().trim();
+  const name = (u?.name || '').toLowerCase().trim();
+  if (email.includes('thanush') || email.includes('anusha') || name.includes('thanush') || name.includes('anusha')) {
+    return false;
+  }
+  return u?.role === 'SUPER_ADMIN';
+};
+
+export const isDrafterAdmin = (u) => {
+  if (!u) return false;
+  const email = (u?.email || '').toLowerCase().trim();
+  const name = (u?.name || '').toLowerCase().trim();
+  if (email.includes('thanush') || email.includes('anusha') || name.includes('thanush') || name.includes('anusha')) {
+    return true;
+  }
+  return ['PATENT_DRAFTER_ADMIN', 'DRAFTER_ADMIN', 'patent_drafter_admin'].includes(u?.role);
+};
+export const isParalegalHead = (u) => ['PARALEGAL_HEAD', 'PATENT_PARALEGAL_ADMIN', 'patent_paralegal_admin'].includes(u?.role);
+export const isParalegalAssociate = (u) => ['PARALEGAL_ASSOCIATE', 'PATENT_PARALEGAL_ASSOCIATE', 'patent_paralegal_associate'].includes(u?.role);
+export const isParalegal = (u) => isParalegalHead(u) || isParalegalAssociate(u) || ['PARALEGAL_HEAD', 'PARALEGAL_ASSOCIATE', 'PARALEGAL'].includes(u?.role);
 export const isDrafter = (u) => ['PATENT_DRAFTER', 'DRAFTER'].includes(u?.role);
+export const canUndoPatentEntries = (u) => {
+  if (!u) return false;
+  const role = (u?.role || '').toLowerCase();
+  return (
+    isSuperAdmin(u) ||
+    isParalegal(u) ||
+    role === 'superadmin' ||
+    role === 'patent_admin' ||
+    role === 'paralegal' ||
+    role === 'paralegal_head' ||
+    role === 'paralegal_associate'
+  );
+};
 
 export const getRoleLabel = (role) => {
   switch (role) {
     case 'SUPER_ADMIN': return 'Superadmin';
-    case 'PARALEGAL_HEAD': return 'Paralegal Head';
-    case 'PARALEGAL_ASSOCIATE': return 'Paralegal Associates';
-    case 'PATENT_DRAFTER': return 'Drafter';
-    case 'PARALEGAL': return 'Paralegal';
+    case 'PATENT_DRAFTER_ADMIN':
+    case 'DRAFTER_ADMIN': return 'Drafter Admin';
+    case 'PARALEGAL_HEAD':
+    case 'PATENT_PARALEGAL_ADMIN': return 'Patent Paralegal Admin';
+    case 'PARALEGAL_ASSOCIATE':
+    case 'PATENT_PARALEGAL_ASSOCIATE': return 'Patent Paralegal Associate';
+    case 'PATENT_DRAFTER':
     case 'DRAFTER': return 'Drafter';
+    case 'PARALEGAL': return 'Patent Paralegal Associate';
     default: return role || 'User';
   }
 };

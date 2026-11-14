@@ -14,6 +14,22 @@ import {
 import { getStatusColor, STATUS_COLORS, PROSECUTION_PHASES, STATUTORY_STATUSES, getStatusPhase } from '../constants/patentStatuses';
 import DEFAULT_CLIENTS from '../data/clients.json';
 import { getNearestStatutoryDeadline } from '../utils/statutoryDeadlines';
+import { getActiveDrafters } from '../lib/authStore';
+
+export function getRecordEffectiveColor(r) {
+  if (!r) return 'GREY';
+  const st = r.current_status || '';
+  const isRed = r.is_abandoned === true ||
+    st.toLowerCase().includes('ip shift') ||
+    st.toLowerCase().includes('abandon') ||
+    (r.color_code_status || '').toUpperCase() === 'RED';
+  if (isRed) return 'RED';
+  if (r.color_code_status && STATUS_COLORS[r.color_code_status.toUpperCase()]) {
+    return r.color_code_status.toUpperCase();
+  }
+  const stCol = getStatusColor(st);
+  return stCol?.key || 'GREY';
+}
 
 // Helper to format specification type (CS / PS / CS-PS / Divisional)
 export const formatSpecType = (type, hasPs, hasCs) => {
@@ -35,6 +51,7 @@ export const formatSpecType = (type, hasPs, hasCs) => {
 
 export default function MasterDataGrid({
   records = [],
+  allRecords = [],
   onSelectRecord,
   selectedCode,
   onOpenImport,
@@ -48,9 +65,16 @@ export default function MasterDataGrid({
   onOpenReassign,
   userRole = 'SUPER_ADMIN',
   selectedDrafter = null,
+  selectedDrafterFilter = null,
+  onSelectDrafterFilter = null,
   clients: clientsProp = [],
   tags = [],
 }) {
+  const isDrafterUser = ['PATENT_DRAFTER', 'DRAFTER'].includes(userRole);
+  const isDrafterAdminUser = ['PATENT_DRAFTER_ADMIN', 'DRAFTER_ADMIN'].includes(userRole);
+  const hideClientDelivery = isDrafterUser || isDrafterAdminUser;
+  const hideDrafterColumn = isDrafterUser;
+
   const clients = (Array.isArray(clientsProp) && clientsProp.length > 0) ? clientsProp : DEFAULT_CLIENTS;
   const [globalFilter, setGlobalFilter] = useState('');
   const [clientFilter, setClientFilter] = useState('ALL');
@@ -204,24 +228,8 @@ export default function MasterDataGrid({
         const targetPhase = statusFilter.replace('PHASE:', '');
         data = data.filter((r) => getStatusPhase(r.current_status) === targetPhase);
       } else {
-        data = data.filter((r) => (r.current_status || '').toLowerCase() === statusFilter.toLowerCase());
+        data = data.filter((r) => (r.current_status || '').trim().toLowerCase() === statusFilter.trim().toLowerCase());
       }
-    }
-
-    // Delivery Urgency filter (Matching Reference UI Design)
-    if (deliveryUrgencyFilter !== 'ALL') {
-      const now = new Date();
-      data = data.filter((r) => {
-        if (!r.client_commitment_date) {
-          return deliveryUrgencyFilter === 'NO_DATE';
-        }
-        const diff = Math.round((new Date(r.client_commitment_date) - now) / 86400000);
-        if (deliveryUrgencyFilter === 'OVERDUE') return diff < 0;
-        if (deliveryUrgencyFilter === 'DUE_2') return diff >= 0 && diff <= 2;
-        if (deliveryUrgencyFilter === 'DUE_7') return diff > 2 && diff <= 7;
-        if (deliveryUrgencyFilter === 'ON_TRACK') return diff > 7;
-        return true;
-      });
     }
 
     // Role-based drafter filtering (Requirement 3)
@@ -231,23 +239,7 @@ export default function MasterDataGrid({
 
     // Color-wise filter (Green, Yellow, Grey, Orange, Purple, Blue, Red)
     if (colorFilter && colorFilter !== 'ALL') {
-      data = data.filter((r) => {
-        const isRed = r.is_abandoned === true ||
-          (r.current_status || '').toLowerCase().includes('ip shift') ||
-          (r.current_status || '').toLowerCase().includes('abandon') ||
-          (r.color_code_status || '').toUpperCase() === 'RED';
-
-        if (colorFilter === 'RED') {
-          return isRed;
-        }
-        if (isRed) {
-          return false;
-        }
-
-        const stCol = getStatusColor(r.current_status);
-        const rColorKey = (r.color_code_status || '').toUpperCase();
-        return rColorKey === colorFilter || stCol?.key === colorFilter;
-      });
+      data = data.filter((r) => getRecordEffectiveColor(r) === colorFilter);
     }
 
     // Global Search filter
@@ -271,21 +263,9 @@ export default function MasterDataGrid({
   const colorCountsMap = useMemo(() => {
     const counts = { GREEN: 0, YELLOW: 0, GREY: 0, ORANGE: 0, PURPLE: 0, BLUE: 0, RED: 0 };
     records.forEach((r) => {
-      const isRed = r.is_abandoned === true ||
-        (r.current_status || '').toLowerCase().includes('ip shift') ||
-        (r.current_status || '').toLowerCase().includes('abandon') ||
-        (r.color_code_status || '').toUpperCase() === 'RED';
-
-      if (isRed) {
-        counts.RED++;
-      } else {
-        const stCol = getStatusColor(r.current_status);
-        const k = (r.color_code_status && counts[r.color_code_status.toUpperCase()] !== undefined)
-          ? r.color_code_status.toUpperCase()
-          : (stCol?.key || 'GREY');
-        if (counts[k] !== undefined) counts[k]++;
-        else counts.GREY++;
-      }
+      const k = getRecordEffectiveColor(r);
+      if (counts[k] !== undefined) counts[k]++;
+      else counts.GREY++;
     });
     return counts;
   }, [records]);
@@ -333,6 +313,11 @@ export default function MasterDataGrid({
     });
     return Array.from(set).filter(Boolean).sort();
   }, [clients, records]);
+
+  // Drafter options for Drafter Admin and Super Admin filter selector
+  const drafterOptions = useMemo(() => {
+    return getActiveDrafters(allRecords && allRecords.length > 0 ? allRecords : records);
+  }, [allRecords, records]);
 
   // Helper to resolve tag color
   const getTagColor = (tagName) => {
@@ -574,87 +559,89 @@ export default function MasterDataGrid({
         },
       },
 
-      // 5. Client Delivery (Dedicated Prominent Column beside Statutory Deadline)
-      {
-        accessorKey: 'client_commitment_date',
-        header: 'Client delivery',
-        size: 160,
-        sortingFn: (rowA, rowB) => {
-          const dateA = rowA.original.client_commitment_date || '9999-99-99';
-          const dateB = rowB.original.client_commitment_date || '9999-99-99';
-          return dateA.localeCompare(dateB);
-        },
-        cell: ({ row }) => {
-          const cd = row.original.client_commitment_date;
-          const nearest = getNearestStatutoryDeadline(row.original);
-          const isBreached = cd && nearest && new Date(cd).getTime() > new Date(nearest.date).getTime();
+      // 5. Client Delivery (Dedicated Prominent Column beside Statutory Deadline - Hidden for Drafter & Drafter Admin)
+      ...(hideClientDelivery ? [] : [
+        {
+          accessorKey: 'client_commitment_date',
+          header: 'Client delivery',
+          size: 160,
+          sortingFn: (rowA, rowB) => {
+            const dateA = rowA.original.client_commitment_date || '9999-99-99';
+            const dateB = rowB.original.client_commitment_date || '9999-99-99';
+            return dateA.localeCompare(dateB);
+          },
+          cell: ({ row }) => {
+            const cd = row.original.client_commitment_date;
+            const nearest = getNearestStatutoryDeadline(row.original);
+            const isBreached = cd && nearest && new Date(cd).getTime() > new Date(nearest.date).getTime();
 
-          if (!cd) {
+            if (!cd) {
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>No date set</span>
+                  <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Delivery not scheduled</span>
+                </div>
+              );
+            }
+            const now = new Date();
+            const diff = Math.round((new Date(cd) - now) / 86400000);
+            const d = new Date(cd);
+            const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            let statusEl = null;
+            if (diff < 0) {
+              statusEl = (
+                <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
+                  Overdue {Math.abs(diff)} days
+                </span>
+              );
+            } else if (diff <= 2) {
+              statusEl = (
+                <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
+                  Due {diff === 0 ? 'today' : `in ${diff} days`}
+                </span>
+              );
+            } else if (diff <= 7) {
+              statusEl = (
+                <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
+                  In {diff} days
+                </span>
+              );
+            } else {
+              statusEl = (
+                <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
+                  In {diff} days
+                </span>
+              );
+            }
+
             return (
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ color: 'var(--muted)', fontSize: '12px', fontWeight: 600 }}>No date set</span>
-                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>Delivery not scheduled</span>
+                {statusEl}
+                <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
+                  Due {formattedDate}
+                </span>
+                {isBreached && (
+                  <span
+                    title={'Client delivery date (' + cd + ') is after statutory deadline (' + nearest.shortLabel + ': ' + nearest.date + ')'}
+                    style={{
+                      color: '#DC2626',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      marginTop: '2px',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '2px',
+                    }}
+                  >
+                    ⚠️ Exceeds {nearest.shortLabel}
+                  </span>
+                )}
               </div>
             );
-          }
-          const now = new Date();
-          const diff = Math.round((new Date(cd) - now) / 86400000);
-          const d = new Date(cd);
-          const formattedDate = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-          let statusEl = null;
-          if (diff < 0) {
-            statusEl = (
-              <span style={{ color: '#DC2626', fontWeight: 800, fontSize: '12px' }}>
-                Overdue {Math.abs(diff)} days
-              </span>
-            );
-          } else if (diff <= 2) {
-            statusEl = (
-              <span style={{ color: '#EA580C', fontWeight: 800, fontSize: '12px' }}>
-                Due {diff === 0 ? 'today' : `in ${diff} days`}
-              </span>
-            );
-          } else if (diff <= 7) {
-            statusEl = (
-              <span style={{ color: '#D97706', fontWeight: 800, fontSize: '12px' }}>
-                In {diff} days
-              </span>
-            );
-          } else {
-            statusEl = (
-              <span style={{ color: '#059669', fontWeight: 700, fontSize: '12px' }}>
-                In {diff} days
-              </span>
-            );
-          }
-
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {statusEl}
-              <span style={{ color: 'var(--muted)', fontSize: '10.5px' }}>
-                Due {formattedDate}
-              </span>
-              {isBreached && (
-                <span
-                  title={'Client delivery date (' + cd + ') is after statutory deadline (' + nearest.shortLabel + ': ' + nearest.date + ')'}
-                  style={{
-                    color: '#DC2626',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    marginTop: '2px',
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '2px',
-                  }}
-                >
-                  ⚠️ Exceeds {nearest.shortLabel}
-                </span>
-              )}
-            </div>
-          );
-        },
-      },
+          },
+        }
+      ]),
 
       // 5. Specification Type (Type)
       {
@@ -694,8 +681,8 @@ export default function MasterDataGrid({
         size: 160,
         cell: ({ row }) => {
           const st = row.original.current_status || 'Idf sent, awaiting data';
-          const isRed = row.original.is_abandoned || st.toLowerCase().includes('ip shift') || st.toLowerCase().includes('abandon') || (row.original.color_code_status || '').toUpperCase() === 'RED';
-          const col = isRed ? STATUS_COLORS.RED : getStatusColor(st);
+          const effColor = getRecordEffectiveColor(row.original);
+          const col = STATUS_COLORS[effColor] || STATUS_COLORS.GREY;
 
           return (
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
@@ -724,41 +711,43 @@ export default function MasterDataGrid({
         },
       },
 
-      // 7. Drafter Assigned
-      {
-        accessorKey: 'assigned_to',
-        header: 'Drafter',
-        size: 140,
-        cell: ({ row }) => {
-          const drafter = row.original.assigned_to;
-          return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <div
-                style={{
-                  width: '22px',
-                  height: '22px',
-                  borderRadius: '50%',
-                  background: 'var(--accent-soft)',
-                  color: 'var(--accent)',
-                  fontSize: '10px',
-                  fontWeight: 800,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  flexShrink: 0
-                }}
-              >
-                {drafter ? drafter.slice(0, 2).toUpperCase() : '—'}
+      // 7. Drafter Assigned (Hidden from tables for Drafter login only)
+      ...(hideDrafterColumn ? [] : [
+        {
+          accessorKey: 'assigned_to',
+          header: 'Drafter',
+          size: 140,
+          cell: ({ row }) => {
+            const drafter = row.original.assigned_to;
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div
+                  style={{
+                    width: '22px',
+                    height: '22px',
+                    borderRadius: '50%',
+                    background: 'var(--accent-soft)',
+                    color: 'var(--accent)',
+                    fontSize: '10px',
+                    fontWeight: 800,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}
+                >
+                  {drafter ? drafter.slice(0, 2).toUpperCase() : '—'}
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
+                  {drafter || 'Unassigned'}
+                </span>
               </div>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--ink)' }}>
-                {drafter || 'Unassigned'}
-              </span>
-            </div>
-          );
-        },
-      },
+            );
+          },
+        }
+      ]),
     ];
-  }, [onSelectRecord, onOpenTimeline, onOpenEdit, userRole, tags]);
+  }, [onSelectRecord, onOpenTimeline, onOpenEdit, userRole, tags, hideClientDelivery, hideDrafterColumn]);
 
   const table = useReactTable({
     data: filteredData,
@@ -1008,6 +997,34 @@ export default function MasterDataGrid({
             })}
           </select>
 
+          {/* Drafter Filter / Group Selector for Drafter Admin & Super Admin */}
+          {(isDrafterAdminUser || userRole === 'SUPER_ADMIN') && (
+            <select
+              value={selectedDrafterFilter || ''}
+              onChange={(e) => onSelectDrafterFilter && onSelectDrafterFilter(e.target.value || null)}
+              style={{
+                padding: '7px 10px',
+                borderRadius: '6px',
+                border: selectedDrafterFilter ? '1.5px solid #7C3AED' : '1px solid var(--line)',
+                background: selectedDrafterFilter ? 'rgba(124, 58, 237, 0.08)' : 'var(--page)',
+                color: 'var(--ink)',
+                fontSize: '12px',
+                fontWeight: 600,
+                maxWidth: '170px',
+                outline: 'none',
+                cursor: 'pointer'
+              }}
+              title="Filter / Group by Drafter"
+            >
+              <option value="">All Drafters</option>
+              {drafterOptions.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          )}
+
           <span style={{ fontSize: '12px', color: 'var(--muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
             {filteredData.length} records
           </span>
@@ -1037,24 +1054,26 @@ export default function MasterDataGrid({
             </button>
           )}
 
-          <button
-            onClick={onOpenImport}
-            style={{
-              padding: '7px 12px',
-              borderRadius: '6px',
-              border: '1px solid var(--line)',
-              background: 'var(--surface)',
-              color: 'var(--ink)',
-              fontSize: '12px',
-              fontWeight: 600,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
-            }}
-          >
-            <Upload size={14} /> Smart Import
-          </button>
+          {onOpenImport && (
+            <button
+              onClick={onOpenImport}
+              style={{
+                padding: '7px 12px',
+                borderRadius: '6px',
+                border: '1px solid var(--line)',
+                background: 'var(--surface)',
+                color: 'var(--ink)',
+                fontSize: '12px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <Upload size={14} /> Smart Import
+            </button>
+          )}
 
           {/* Export Report (Opens ExportReportModal for customizable export) */}
           <button
@@ -1077,81 +1096,6 @@ export default function MasterDataGrid({
           >
             <Download size={14} /> Export Report
           </button>
-        </div>
-      </div>
-
-      {/* DELIVERY URGENCY Filter Row (Matching Reference UI Design Page 1) */}
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '8px 18px',
-          background: 'var(--page)',
-          borderBottom: '1px solid var(--line)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <span
-          style={{
-            fontSize: '10.5px',
-            fontWeight: 800,
-            color: 'var(--muted)',
-            textTransform: 'uppercase',
-            letterSpacing: '0.6px',
-          }}
-        >
-          DELIVERY URGENCY
-        </span>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'ALL', label: 'All', count: records.length, color: 'var(--muted)', bg: 'transparent' },
-            { id: 'OVERDUE', label: 'Overdue', count: deliveryUrgencyCounts.overdue, color: '#DC2626', bg: '#FEE2E2', dot: '#DC2626' },
-            { id: 'DUE_2', label: 'Due in ≤ 2 days', count: deliveryUrgencyCounts.due2, color: '#EA580C', bg: '#FFEDD5', dot: '#EA580C' },
-            { id: 'DUE_7', label: 'Due in ≤ 7 days', count: deliveryUrgencyCounts.due7, color: '#D97706', bg: '#FEF3C7', dot: '#D97706' },
-            { id: 'ON_TRACK', label: 'On track', count: deliveryUrgencyCounts.onTrack, color: '#16A34A', bg: '#DCFCE7', dot: '#16A34A' },
-            { id: 'NO_DATE', label: 'No date set', count: deliveryUrgencyCounts.noDate, color: '#6B7280', bg: '#F3F4F6', dot: '#9CA3AF' },
-          ].map((chip) => {
-            const isAct = deliveryUrgencyFilter === chip.id;
-            return (
-              <button
-                key={chip.id}
-                onClick={() => setDeliveryUrgencyFilter(isAct && chip.id !== 'ALL' ? 'ALL' : chip.id)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '4px 10px',
-                  borderRadius: '16px',
-                  border: isAct ? `1.5px solid ${chip.color}` : '1px solid var(--line)',
-                  background: isAct ? (chip.id === 'ALL' ? 'var(--surface)' : chip.bg) : 'var(--surface)',
-                  color: isAct ? chip.color : 'var(--ink)',
-                  fontSize: '11px',
-                  fontWeight: isAct ? 800 : 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.15s ease',
-                }}
-              >
-                {chip.dot && (
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: chip.dot }} />
-                )}
-                <span>{chip.label}</span>
-                <span
-                  style={{
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    padding: '1px 5px',
-                    borderRadius: '8px',
-                    background: isAct ? 'rgba(0,0,0,0.08)' : 'var(--page)',
-                    color: isAct ? chip.color : 'var(--muted)',
-                  }}
-                >
-                  {chip.count}
-                </span>
-              </button>
-            );
-          })}
         </div>
       </div>
 

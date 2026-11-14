@@ -14,9 +14,11 @@ import {
   setCurrentUser as setStoredUser,
   logout,
   isSuperAdmin,
+  isDrafterAdmin,
   isParalegal,
   isDrafter,
-  getRoleLabel
+  getRoleLabel,
+  canUndoPatentEntries
 } from './lib/authStore';
 import DeadlinesTab from './components/DeadlinesTab';
 import CalendarView from './components/CalendarView';
@@ -25,11 +27,13 @@ import AdminTeamOverview from './components/AdminTeamOverview';
 import ReassignMatterModal from './components/ReassignMatterModal';
 import SettingsModal from './components/SettingsModal';
 import ExportReportModal from './components/ExportReportModal';
-import CliqAssignmentModal from './components/CliqAssignmentModal';
+import NotificationPanel from './components/NotificationPanel';
 import ProgressiveUndoButton from './components/ProgressiveUndoButton';
 import ErrorBoundary from './components/ErrorBoundary';
+import initialMasterRecords from './data/master_records.json';
 import { exportToExcel } from './utils/exportEngine';
-import { calculateAllStatutoryDeadlines } from './utils/statutoryDeadlines';
+import { calculateAllStatutoryDeadlines, addMonths, toIsoDate } from './utils/statutoryDeadlines';
+import { filterNotificationsForUser } from './utils/cliqAssignmentParser';
 import { normalizeStatus } from './constants/patentStatuses';
 import { supabase, patentDb, coreDb } from './lib/supabase';
 import {
@@ -42,7 +46,7 @@ import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings, LogOut,
   Plus, Download, UserCheck, Shield, Briefcase, Scale,
-  Sparkles, CheckCircle2, AlertTriangle, Layers, Users, Zap
+  Sparkles, CheckCircle2, AlertTriangle, Layers, Users, Zap, Bell
 } from 'lucide-react';
 
 const DEFAULT_TAGS = [
@@ -90,7 +94,36 @@ export default function App() {
   const [theme, setTheme] = useState(
     () => localStorage.getItem('theme') || 'light'
   );
-  const [records, setRecords] = useState([]);
+  const [records, setRecords] = useState(() => {
+    try {
+      const overrides = JSON.parse(localStorage.getItem('patent_local_overrides') || '{}');
+      if (Array.isArray(initialMasterRecords) && initialMasterRecords.length > 0) {
+        const merged = initialMasterRecords.map((rec) => {
+          const ov = overrides[rec.project_code];
+          if (ov) {
+            const updated = { ...rec, ...ov };
+            if ((updated.specification_type || '').toUpperCase() === 'CS') {
+              updated.ps_filing_date = null;
+            }
+            updated.current_status = normalizeStatus(updated.current_status, updated.specification_type);
+            return updated;
+          }
+          return rec;
+        });
+        const existingCodes = new Set(initialMasterRecords.map((r) => r.project_code));
+        const extraCreated = Object.values(overrides).filter(
+          (r) => r && r.project_code && !existingCodes.has(r.project_code)
+        ).map((r) => ({
+          ...r,
+          current_status: normalizeStatus(r.current_status, r.specification_type),
+        }));
+        return [...extraCreated, ...merged];
+      }
+    } catch (e) {
+      console.warn('Initial master records load error:', e);
+    }
+    return initialMasterRecords || [];
+  });
   const [selectedRecord, setSelectedRecord] = useState(null);
   const [drawerInitialTab, setDrawerInitialTab] = useState('overview');
 
@@ -119,7 +152,7 @@ export default function App() {
   const [isImporterOpen, setIsImporterOpen] = useState(false);
   const [isTvMode, setIsTvMode] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [isCliqModalOpen, setIsCliqModalOpen] = useState(false);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
 
   // Zoho Cliq Assignment Queue with Notification Badge
   const [cliqQueue, setCliqQueue] = useState(() => {
@@ -195,9 +228,120 @@ export default function App() {
     ];
   });
 
-  const pendingCliqCount = useMemo(() => {
-    return cliqQueue.filter(q => q.status === 'PENDING_REVIEW').length;
-  }, [cliqQueue]);
+  // Role-Aware Cliq & IPO Notifications Store (Workflows A, B, C)
+  const [notifications, setNotifications] = useState(() => {
+    try {
+      const saved = localStorage.getItem('lextria_patent_notifications');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch (e) {
+      console.error('Failed to parse lextria_patent_notifications', e);
+    }
+    return [
+      {
+        id: 'notif_init_1',
+        type: 'NEW_ASSIGNMENT',
+        title: 'New Patent Assignment: AR55 - Novel IoT Smart Metering Device',
+        message: 'New patent assignment received via Zoho Cliq for Thanush. Matter: AR55 (Manipal Academy of Higher Education). Target delivery: 2026-12-05.',
+        status: 'PENDING_ACCEPTANCE',
+        createdAt: new Date().toISOString(),
+        targetRole: 'DRAFTER',
+        targetDrafterName: 'Thanush',
+        payload: {
+          projectCode: 'AR55',
+          drafterName: 'Thanush',
+          patentRecord: {
+            project_code: 'AR55',
+            title: 'Novel IoT Smart Metering Device with Dynamic Frequency Scaling',
+            client_name: 'Manipal Academy of Higher Education (MAHE)',
+            applicant_name: 'Manipal Academy of Higher Education (MAHE)',
+            applicant_type: 'EDUCATIONAL',
+            entity_category: 'EDUCATIONAL_INSTITUTION',
+            is_mahe: true,
+            assigned_to: 'Thanush',
+            current_status: 'Idf sent, awaiting data',
+            current_phase: 'PHASE_1_PS',
+            color_code_status: 'PURPLE',
+            specification_type: 'PS',
+            client_commitment_date: '2026-12-05',
+            created_at: new Date().toISOString(),
+            created_from: 'ZOHO_CLIQ',
+          },
+        },
+      },
+      {
+        id: 'notif_init_2',
+        type: 'PROSECUTION_TASK',
+        title: 'IPO Office Action: First Examination Report (FER) on LEX-SEED-001',
+        message: 'Official IPO action [First Examination Report (FER)] received for Application No. 202441001001 (LEX-SEED-001). Please review and accept prosecution task.',
+        status: 'PENDING_ACCEPTANCE',
+        createdAt: new Date().toISOString(),
+        targetRole: 'DRAFTER',
+        targetDrafterName: 'Amith',
+        payload: {
+          projectCode: 'LEX-SEED-001',
+          applicationNumber: '202441001001',
+          keyword: 'First Examination Report (FER)',
+          newStatus: 'FER Received',
+          newPhase: 'PHASE_4_FER',
+          assignedDrafter: 'Amith',
+        },
+      },
+      {
+        id: 'notif_init_3',
+        type: 'HEARING_FORM30',
+        title: 'Hearing Form-30 Action: LEX-SEED-001',
+        message: 'Hearing scheduled on 2026-12-20 for Application 202441001001 (LEX-SEED-001). Action item: Accept Form-30 (Hearing Interest Filing). Statutory Deadline: 2026-12-17 (H_Date - 3 days).',
+        status: 'PENDING_ACCEPTANCE',
+        createdAt: new Date().toISOString(),
+        targetRole: 'PATENT_PARALEGAL_ADMIN',
+        targetDrafterName: null,
+        payload: {
+          projectCode: 'LEX-SEED-001',
+          applicationNumber: '202441001001',
+          hearingDate: '2026-12-20',
+          deadline: '2026-12-17',
+          action: 'FORM_30',
+          assignedDrafter: 'Amith',
+        },
+      },
+      {
+        id: 'notif_init_4',
+        type: 'HEARING_WS',
+        title: 'Hearing WS Filing: LEX-SEED-001',
+        message: 'Hearing scheduled on 2026-12-20 for Application 202441001001 (LEX-SEED-001). Action item: Accept Written Submission (WS) Filing. Statutory Deadline: 2027-01-04 (H_Date + 15 days).',
+        status: 'PENDING_ACCEPTANCE',
+        createdAt: new Date().toISOString(),
+        targetRole: 'DRAFTER',
+        targetDrafterName: 'Amith',
+        payload: {
+          projectCode: 'LEX-SEED-001',
+          applicationNumber: '202441001001',
+          hearingDate: '2026-12-20',
+          deadline: '2027-01-04',
+          action: 'WS_FILING',
+          drafter: 'Amith',
+        },
+      },
+    ];
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('lextria_patent_notifications', JSON.stringify(notifications));
+    } catch (e) {}
+  }, [notifications]);
+
+  // Role-filtered unread/pending notification count
+  const userNotifications = useMemo(() => {
+    return filterNotificationsForUser(notifications, currentUser);
+  }, [notifications, currentUser]);
+
+  const pendingNotificationCount = useMemo(() => {
+    return userNotifications.filter((n) => n.status === 'PENDING_ACCEPTANCE').length;
+  }, [userNotifications]);
 
   const handleUpdateCliqQueue = (updatedQueue) => {
     setCliqQueue(updatedQueue);
@@ -235,6 +379,7 @@ export default function App() {
   const [reassignRecord, setReassignRecord] = useState(null);
   const [toast, setToast] = useState(null);
   const [selectedDrafterFilter, setSelectedDrafterFilter] = useState(null);
+  const [selectedHeatmapFilter, setSelectedHeatmapFilter] = useState(null);
 
   // Authenticated User Account State (Requirement 1 & 3)
   // Authenticated User Account State (Strictly ephemeral: refresh & links always open at Login)
@@ -286,7 +431,7 @@ export default function App() {
           Ayush: 'https://calendar.zoho.com/eventreq/ayush-patents',
           Abhishek: 'https://calendar.zoho.com/eventreq/abhishek-patents',
           Fiona: 'https://calendar.zoho.com/eventreq/fiona-patents',
-        }
+        },
       };
     } catch {
       return {};
@@ -734,9 +879,21 @@ export default function App() {
     loadPortfolioRecords();
   }, []);
 
-  // Filter records strictly by authenticated drafter (Requirement 3 & Super Admin Drafter Matrix)
+  // Filter records strictly by authenticated drafter (Requirement 3 & Super Admin / Drafter Admin Matrix)
   const roleFilteredRecords = useMemo(() => {
     if (!currentUser) return records;
+
+    if (selectedHeatmapFilter) {
+      const codes = new Set(selectedHeatmapFilter.projectCodes || []);
+      return records.filter((r) => {
+        if (codes.size > 0) return codes.has(r.project_code);
+        const assigned = (r.assigned_to || '').toLowerCase();
+        const matchesDrafter = !selectedHeatmapFilter.drafter || assigned.includes(selectedHeatmapFilter.drafter.toLowerCase());
+        const dStr = r.client_commitment_date || r.internal_deadline || r.cs_deadline || r.ps_deadline;
+        return matchesDrafter && dStr === selectedHeatmapFilter.date;
+      });
+    }
+
     if (isDrafter(currentUser)) {
       const drafterKey = (currentUser.drafterName || currentUser.name || '').trim().toLowerCase();
       return records.filter(
@@ -745,16 +902,25 @@ export default function App() {
           r.assigned_to.trim().toLowerCase() === drafterKey
       );
     }
-    if (isSuperAdmin(currentUser) && selectedDrafterFilter) {
+    if ((isSuperAdmin(currentUser) || isDrafterAdmin(currentUser)) && selectedDrafterFilter) {
       return records.filter(
         (r) =>
           r.assigned_to &&
           r.assigned_to.trim().toLowerCase() === selectedDrafterFilter.trim().toLowerCase()
       );
     }
-    // Super Admin and Paralegal Staff see all firm matters
+    // Drafter Admin (without drafter filter), Super Admin and Paralegal Staff see all firm matters
     return records;
-  }, [records, currentUser, selectedDrafterFilter]);
+  }, [records, currentUser, selectedDrafterFilter, selectedHeatmapFilter]);
+
+  const canViewTvBoard = Boolean(
+    currentUser &&
+    !isDrafter(currentUser) &&
+    !isDrafterAdmin(currentUser) &&
+    (isSuperAdmin(currentUser) || isParalegal(currentUser))
+  );
+
+  const canImport = Boolean(currentUser && !isDrafter(currentUser) && !isDrafterAdmin(currentUser));
 
   // Existing project codes for auto-generation
   const existingCodes = useMemo(
@@ -1219,6 +1385,123 @@ export default function App() {
   };
 
   // ==========================================
+  // Role-Aware Cliq & IPO Notification Handlers (Workflows A, B, C)
+  // ==========================================
+  const handleAcceptNotification = (notif) => {
+    if (!notif) return;
+
+    if (notif.type === 'NEW_ASSIGNMENT' && notif.payload?.patentRecord) {
+      // Workflow A: Insert / activate patent into active dashboard
+      const rec = notif.payload.patentRecord;
+      handleCreateApplication(rec);
+      showToast(`Patent matter ${rec.project_code} activated and assigned to ${rec.assigned_to}!`, 'success');
+
+      // Dispatch confirmation notification to Patent Paralegal Admin
+      const confNotif = {
+        id: `notif_conf_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        type: 'CONFIRMATION',
+        title: `Assignment Accepted: ${rec.project_code}`,
+        message: `Patent ${rec.application_number || rec.project_code} - "${rec.title}" assignment accepted by ${rec.assigned_to}`,
+        status: 'READ',
+        createdAt: new Date().toISOString(),
+        targetRole: 'PATENT_PARALEGAL_ADMIN',
+        targetDrafterName: null,
+        payload: {
+          projectCode: rec.project_code,
+          applicationNumber: rec.application_number,
+          drafterName: rec.assigned_to,
+        },
+      };
+      setNotifications((prev) => [confNotif, ...prev.map((n) => (n.id === notif.id ? { ...n, status: 'ACCEPTED' } : n))]);
+      return;
+    }
+
+    if (notif.type === 'PROSECUTION_TASK' && notif.payload?.projectCode) {
+      // Workflow B: Update application stage / status
+      const { projectCode, newStatus, newPhase, keyword, assignedDrafter, applicationNumber } = notif.payload;
+      const updatePayload = {
+        current_status: newStatus,
+        current_phase: newPhase,
+        color_code_status: newStatus?.toLowerCase().includes('fer') ? 'BLUE' : 'YELLOW',
+      };
+      if (newStatus?.toLowerCase().includes('fer')) {
+        const ferDate = toIsoDate(new Date());
+        updatePayload.fer_notice_date = ferDate;
+        updatePayload.fer_reply_deadline = addMonths(ferDate, 6);
+      }
+      handleUpdateApplication(projectCode, updatePayload);
+      showToast(`Prosecution task [${keyword}] accepted for ${projectCode}!`, 'success');
+
+      // Dispatch confirmation to Patent Paralegal Admin
+      const confNotif = {
+        id: `notif_conf_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        type: 'CONFIRMATION',
+        title: `Prosecution Task Accepted: ${projectCode}`,
+        message: `Prosecution task [${keyword}] for ${applicationNumber || projectCode} accepted by ${assignedDrafter}`,
+        status: 'READ',
+        createdAt: new Date().toISOString(),
+        targetRole: 'PATENT_PARALEGAL_ADMIN',
+        targetDrafterName: null,
+        payload: { projectCode, keyword, assignedDrafter },
+      };
+      setNotifications((prev) => [confNotif, ...prev.map((n) => (n.id === notif.id ? { ...n, status: 'ACCEPTED' } : n))]);
+      return;
+    }
+
+    if (notif.type === 'HEARING_FORM30' && notif.payload?.projectCode) {
+      // Workflow C (Paralegal Admin accepts Form-30)
+      const { projectCode, hearingDate, deadline } = notif.payload;
+      handleUpdateApplication(projectCode, {
+        hearing_date: hearingDate,
+        form_30_deadline: deadline,
+        form_30_status: 'Pending Filing',
+      });
+      showToast(`Form-30 statutory deadline (${deadline}) logged for ${projectCode}!`, 'success');
+      setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, status: 'ACCEPTED' } : n)));
+      return;
+    }
+
+    if (notif.type === 'HEARING_WS' && notif.payload?.projectCode) {
+      // Workflow C (Drafter accepts Written Submission)
+      const { projectCode, hearingDate, deadline, drafter, applicationNumber } = notif.payload;
+      handleUpdateApplication(projectCode, {
+        hearing_date: hearingDate,
+        ws_deadline: deadline,
+        current_status: 'Hearing notice received',
+      });
+      showToast(`Written Submission statutory deadline (${deadline}) logged for ${projectCode}!`, 'success');
+
+      // Dispatch confirmation to Patent Paralegal Admin
+      const confNotif = {
+        id: `notif_conf_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        type: 'CONFIRMATION',
+        title: `Hearing WS Accepted: ${projectCode}`,
+        message: `Hearing Written Submission filing for ${applicationNumber || projectCode} accepted by ${drafter}`,
+        status: 'READ',
+        createdAt: new Date().toISOString(),
+        targetRole: 'PATENT_PARALEGAL_ADMIN',
+        targetDrafterName: null,
+        payload: { projectCode, deadline, drafter },
+      };
+      setNotifications((prev) => [confNotif, ...prev.map((n) => (n.id === notif.id ? { ...n, status: 'ACCEPTED' } : n))]);
+      return;
+    }
+
+    setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, status: 'ACCEPTED' } : n)));
+  };
+
+  const handleDismissNotification = (notifId) => {
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, status: 'DISMISSED' } : n)));
+    showToast('Notification dismissed');
+  };
+
+  const handleIngestCliqNotifications = (newNotifs, summary) => {
+    if (!newNotifs || newNotifs.length === 0) return;
+    setNotifications((prev) => [...newNotifs, ...prev]);
+    showToast(summary || `Created ${newNotifs.length} new notification(s)`, 'success');
+  };
+
+  // ==========================================
   // CRUD 3: SAVE MANUAL SENIOR NOTES (0ms Optimistic UI)
   // ==========================================
   const handleSaveManualNotes = (projectCode, notesData) => {
@@ -1577,13 +1860,15 @@ export default function App() {
           {/* Right: Global Utility Actions & User Profile */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
 
-            {/* MS Word Compact Undo / Redo Toolbar */}
-            <ProgressiveUndoButton
-              undoStack={undoStack}
-              redoStack={redoStack}
-              onUndo={handleProgressiveUndo}
-              onRedo={handleRedo}
-            />
+            {/* 5-Step Undo for Patent Application Entries (RBAC: paralegal, patent_admin, superadmin) */}
+            {canUndoPatentEntries(currentUser) && (
+              <ProgressiveUndoButton
+                undoStack={undoStack}
+                redoStack={redoStack}
+                onUndo={handleProgressiveUndo}
+                onRedo={handleRedo}
+              />
+            )}
 
             {/* Reassign Button (Super Admin) */}
             {isSuperAdmin(currentUser) && (
@@ -1609,28 +1894,31 @@ export default function App() {
               </button>
             )}
 
-            {/* Quick Zoho Cliq Assignment Intake Button with Red Badge Notification */}
+            {/* Role-Aware Cliq & IPO Notification Hub Button */}
             <button
-              onClick={() => setIsCliqModalOpen(true)}
+              onClick={() => setIsNotificationOpen(true)}
               className="action-btn-interactive"
               style={{
                 position: 'relative',
                 padding: '6px 12px',
                 borderRadius: '6px',
-                border: '1px solid #0284C7',
-                background: 'linear-gradient(135deg, rgba(2, 132, 199, 0.1), rgba(14, 165, 233, 0.05))',
-                color: '#0284C7',
+                border: pendingNotificationCount > 0 ? '1.5px solid #7C3AED' : '1px solid var(--line)',
+                background: pendingNotificationCount > 0
+                  ? 'linear-gradient(135deg, rgba(124, 58, 237, 0.12), rgba(139, 92, 246, 0.05))'
+                  : 'var(--surface)',
+                color: pendingNotificationCount > 0 ? '#7C3AED' : 'var(--ink)',
                 fontSize: '12px',
-                fontWeight: 800,
+                fontWeight: 700,
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 cursor: 'pointer',
               }}
-              title="Review pending assignments from Zoho Cliq channel"
+              title="Role-aware Cliq assignments and IPO notifications"
             >
-              <Zap size={14} color="#0284C7" /> Cliq Assignment
-              {pendingCliqCount > 0 && (
+              <Bell size={14} color={pendingNotificationCount > 0 ? '#7C3AED' : 'currentColor'} />
+              <span>Notifications</span>
+              {pendingNotificationCount > 0 && (
                 <span
                   style={{
                     position: 'absolute',
@@ -1649,7 +1937,7 @@ export default function App() {
                     lineHeight: '13px',
                   }}
                 >
-                  {pendingCliqCount}
+                  {pendingNotificationCount}
                 </span>
               )}
             </button>
@@ -1701,27 +1989,29 @@ export default function App() {
               <Download size={14} /> Export
             </button>
 
-            {/* TV Screen Departure Board Button */}
-            <button
-              onClick={() => setIsTvMode(true)}
-              style={{
-                padding: '6px 11px',
-                borderRadius: '6px',
-                border: '1px solid var(--line)',
-                background: 'var(--surface)',
-                color: 'var(--ink)',
-                fontSize: '12px',
-                fontWeight: 700,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                cursor: 'pointer',
-              }}
-              className="action-btn-interactive"
-                title="Launch Fullscreen Operations TV Board"
-            >
-              <Tv size={14} color="#C98A2C" /> TV Board
-            </button>
+            {/* TV Screen Departure Board Button (Restricted to Paralegal Admin, Associate, & Superadmin) */}
+            {canViewTvBoard && (
+              <button
+                onClick={() => setIsTvMode(true)}
+                style={{
+                  padding: '6px 11px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--line)',
+                  background: 'var(--surface)',
+                  color: 'var(--ink)',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  cursor: 'pointer',
+                }}
+                className="action-btn-interactive"
+                  title="Launch Fullscreen Operations TV Board"
+              >
+                <Tv size={14} color="#C98A2C" /> TV Board
+              </button>
+            )}
 
             {/* Firm Settings Button */}
             <button
@@ -1958,7 +2248,7 @@ export default function App() {
             <span style={{ fontSize: '11.5px', color: 'var(--muted)', fontWeight: 600 }}>
               {isDrafter(currentUser) 
                 ? `${roleFilteredRecords.length} Assigned Patent Matters`
-                : `${records.length || 878} Active Matters • 8 Drafters`}
+                : `${records.length} Active Matters • 8 Drafters`}
             </span>
           </div>
         </div>
@@ -2012,13 +2302,30 @@ export default function App() {
               onOpenReassign={(drafter) => handleOpenReassign(drafter)}
               onNavigateToPortfolio={(filterOrMatter) => {
                 if (filterOrMatter) {
-                  if (filterOrMatter === 'OVERDUE') setActiveKpiFilter('OVERDUE_CLIENT_DATE');
-                  else if (filterOrMatter === 'DUE_7D') setActiveKpiFilter('DUE_NEXT_7_DAYS');
-                  else if (filterOrMatter === 'AWAITING_SIGNOFF') setActiveKpiFilter('READY_FOR_REVIEW');
-                  else if (filterOrMatter === 'OPEN_QUERIES') setActiveKpiFilter('WAITING_CLIENT_DATA');
-                  else {
+                  if (typeof filterOrMatter === 'object' && filterOrMatter.type === 'HEATMAP_CELL') {
+                    setSelectedHeatmapFilter(filterOrMatter);
+                    setSelectedDrafterFilter(filterOrMatter.drafter);
+                    setActiveKpiFilter(null);
+                  } else if (filterOrMatter === 'OVERDUE') {
+                    setSelectedHeatmapFilter(null);
+                    setActiveKpiFilter('OVERDUE_CLIENT_DATE');
+                  } else if (filterOrMatter === 'DUE_7D') {
+                    setSelectedHeatmapFilter(null);
+                    setActiveKpiFilter('DUE_NEXT_7_DAYS');
+                  } else if (filterOrMatter === 'AWAITING_SIGNOFF') {
+                    setSelectedHeatmapFilter(null);
+                    setActiveKpiFilter('READY_FOR_REVIEW');
+                  } else if (filterOrMatter === 'OPEN_QUERIES') {
+                    setSelectedHeatmapFilter(null);
+                    setActiveKpiFilter('WAITING_CLIENT_DATA');
+                  } else {
+                    setSelectedHeatmapFilter(null);
                     setSelectedDrafterFilter(filterOrMatter);
                   }
+                } else {
+                  setSelectedHeatmapFilter(null);
+                  setSelectedDrafterFilter(null);
+                  setActiveKpiFilter(null);
                 }
                 setActiveNavTab('PORTFOLIO');
               }}
@@ -2038,13 +2345,58 @@ export default function App() {
               currentDrafterName={currentUser.drafterName || currentUser.name}
               allRecords={records}
               selectedDrafterFilter={selectedDrafterFilter}
-              onSelectDrafter={(drafter) => setSelectedDrafterFilter(drafter)}
+              onSelectDrafter={(drafter) => {
+                setSelectedDrafterFilter(drafter);
+                setSelectedHeatmapFilter(null);
+              }}
               onOpenReassign={(drafter) => handleOpenReassign(drafter)}
               onNavigateToFormalities={null}
             />
 
-            {/* Super Admin Drafter Filter Context Banner */}
-            {currentUser.role === 'SUPER_ADMIN' && selectedDrafterFilter && (
+            {/* Heatmap Tile Specific Filter Context Banner */}
+            {selectedHeatmapFilter && (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '9px 16px',
+                  borderRadius: '6px',
+                  background: 'rgba(37, 99, 235, 0.12)',
+                  border: '1.5px solid #2563EB',
+                  marginTop: '10px',
+                  fontSize: '12.5px',
+                  color: '#1E40AF',
+                  fontWeight: 600,
+                  boxShadow: '0 1px 3px rgba(37, 99, 235, 0.1)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#2563EB', display: 'inline-block' }} />
+                  <span>
+                    Selected Heatmap Tile: <strong>{selectedHeatmapFilter.drafter}</strong> deliveries due on <strong>{selectedHeatmapFilter.dayLabel || selectedHeatmapFilter.date}</strong> — showing <strong>{roleFilteredRecords.length} matter{roleFilteredRecords.length === 1 ? '' : 's'}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setSelectedHeatmapFilter(null)}
+                  style={{
+                    background: '#2563EB',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '4px 10px',
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Clear Filter (Show All Firm Cases)
+                </button>
+              </div>
+            )}
+
+            {/* Super Admin & Drafter Admin Drafter Filter Context Banner */}
+            {(isSuperAdmin(currentUser) || isDrafterAdmin(currentUser)) && selectedDrafterFilter && !selectedHeatmapFilter && (
               <div
                 style={{
                   display: 'flex',
@@ -2086,9 +2438,10 @@ export default function App() {
               <ErrorBoundary>
                 <MasterDataGrid
                   records={roleFilteredRecords}
+                  allRecords={records}
                   onSelectRecord={(rec) => handleSelectRecord(rec)}
                   selectedCode={selectedRecord?.project_code}
-                  onOpenImport={() => setIsImporterOpen(true)}
+                  onOpenImport={canImport ? () => setIsImporterOpen(true) : null}
                   onExportExcel={handleQuickExport}
                   onOpenExportReport={(subset) => {
                     setExportRecordsSelection(subset);
@@ -2102,6 +2455,11 @@ export default function App() {
                   onOpenReassign={(item) => handleOpenReassign(item)}
                   userRole={currentUser.role}
                   selectedDrafter={currentUser.drafterName}
+                  selectedDrafterFilter={selectedDrafterFilter}
+                  onSelectDrafterFilter={(d) => {
+                    setSelectedDrafterFilter(d);
+                    setSelectedHeatmapFilter(null);
+                  }}
                   clients={clients}
                   tags={tags}
                 />
@@ -2179,19 +2537,17 @@ export default function App() {
         records={records}
       />
 
-      {/* Zoho Cliq Assignment Quick Intake & Queue Review Modal */}
-      <CliqAssignmentModal
-        isOpen={isCliqModalOpen}
-        onClose={() => setIsCliqModalOpen(false)}
-        onCreate={handleCreateApplication}
+
+      {/* Role-Aware Cliq & IPO Notification Hub (Workflows A, B, C) */}
+      <NotificationPanel
+        isOpen={isNotificationOpen}
+        onClose={() => setIsNotificationOpen(false)}
+        currentUser={currentUser}
+        notifications={notifications}
+        onAcceptNotification={handleAcceptNotification}
+        onDismissNotification={handleDismissNotification}
+        onIngestMessage={handleIngestCliqNotifications}
         records={records}
-        showToast={showToast}
-        cliqQueue={cliqQueue}
-        onUpdateQueue={handleUpdateCliqQueue}
-        onOpenSettings={() => {
-          setIsCliqModalOpen(false);
-          setIsSettingsOpen(true);
-        }}
       />
 
       {/* Export Report Modal (Requirement 9) */}
@@ -2258,7 +2614,7 @@ export default function App() {
       />
 
       {/* Enhanced Live Due Board TV Mode (Requirement 16) */}
-      {isTvMode && (
+      {isTvMode && canViewTvBoard && (
         <LiveDueBoard
           records={roleFilteredRecords}
           onBack={() => setIsTvMode(false)}

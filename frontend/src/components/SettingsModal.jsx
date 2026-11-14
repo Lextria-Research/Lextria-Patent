@@ -13,7 +13,8 @@ import {
   ROLE_OPTIONS,
   ROLES,
   ROOT_SUPER_ADMIN,
-  getRoleLabel
+  getRoleLabel,
+  isSuperAdmin as checkIsSuperAdmin
 } from '../lib/authStore';
 import { parseCliqAssignmentMessage } from '../utils/cliqAssignmentParser.js';
 
@@ -32,7 +33,7 @@ export default function SettingsModal({
 }) {
   if (!isOpen) return null;
 
-  const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  const isSuperAdmin = checkIsSuperAdmin(currentUser);
 
   const [activeTab, setActiveTab] = useState(isSuperAdmin ? 'USERS' : 'TAGS');
   const [tagList, setTagList] = useState(tags);

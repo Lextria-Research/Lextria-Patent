@@ -145,7 +145,7 @@ export default function KpiAlertRibbon({
   // =========================================================================
   // RENDER 1: DRAFTER COCKPIT (Matching Reference UI Design PDF)
   // =========================================================================
-  if (userRole === 'DRAFTER') {
+  if (userRole === 'DRAFTER' || userRole === 'PATENT_DRAFTER') {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '16px' }}>
         {/* Drafter Cockpit Title Banner */}
@@ -281,63 +281,6 @@ export default function KpiAlertRibbon({
 
         {/* 4 Large Summary Cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
-          {/* Card 1: Near client commitments */}
-          <div
-            onClick={() => onSelectFilter(activeFilter === 'commitments_near' ? null : 'commitments_near')}
-            style={{
-              padding: '14px 18px',
-              borderRadius: '8px',
-              background: activeFilter === 'commitments_near' ? 'rgba(234, 88, 12, 0.12)' : 'var(--surface)',
-              border: `1.5px solid ${activeFilter === 'commitments_near' ? '#EA580C' : 'var(--line)'}`,
-              boxShadow: 'var(--shadow-card)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
-              Near client commitments
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-              <span style={{ fontSize: '28px', fontWeight: 800, color: '#EA580C', lineHeight: 1 }}>
-                {m.nearCommitmentCount}
-              </span>
-              {m.overdueCommitmentCount > 0 ? (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    background: '#FEE2E2',
-                    color: '#DC2626',
-                    border: '1px solid #FCA5A5',
-                  }}
-                >
-                  {m.overdueCommitmentCount} overdue · SPOC alerted
-                </span>
-              ) : (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    background: '#ECFDF5',
-                    color: '#059669',
-                  }}
-                >
-                  On schedule
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
-              Delivery due to client in ≤ 7 days
-            </div>
-          </div>
-
           {/* Card 2: Problems & client tickets */}
           <div
             onClick={() => onSelectFilter(activeFilter === 'problems' ? null : 'problems')}
@@ -392,63 +335,6 @@ export default function KpiAlertRibbon({
             </div>
             <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
               Active support tickets or blocker issues
-            </div>
-          </div>
-
-          {/* Card 3: Statutory critical · < 7 days */}
-          <div
-            onClick={() => onSelectFilter(activeFilter === 'critical' ? null : 'critical')}
-            style={{
-              padding: '14px 18px',
-              borderRadius: '8px',
-              background: activeFilter === 'critical' ? 'rgba(194, 59, 46, 0.12)' : 'var(--surface)',
-              border: `1.5px solid ${activeFilter === 'critical' ? '#C23B2E' : 'var(--line)'}`,
-              boxShadow: 'var(--shadow-card)',
-              cursor: 'pointer',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px',
-              transition: 'all 0.15s ease',
-            }}
-          >
-            <div style={{ fontSize: '12px', color: 'var(--ink)', fontWeight: 700 }}>
-              Statutory critical · &lt; 7 days
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
-              <span style={{ fontSize: '28px', fontWeight: 800, color: m.criticalCount > 0 ? '#C23B2E' : '#10B981', lineHeight: 1 }}>
-                {m.criticalCount}
-              </span>
-              {m.criticalCount === 0 ? (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    background: '#ECFDF5',
-                    color: '#059669',
-                  }}
-                >
-                  All clear
-                </span>
-              ) : (
-                <span
-                  style={{
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    padding: '2px 8px',
-                    borderRadius: '10px',
-                    background: '#FEE2E2',
-                    color: '#DC2626',
-                    border: '1px solid #FCA5A5',
-                  }}
-                >
-                  Urgent action required
-                </span>
-              )}
-            </div>
-            <div style={{ fontSize: '11.5px', color: 'var(--muted)' }}>
-              Section 9 / 21 statutory cut-off dates
             </div>
           </div>
 
@@ -692,11 +578,16 @@ export default function KpiAlertRibbon({
     },
   ];
 
+  const isDrafterUser = userRole === 'DRAFTER' || userRole === 'PATENT_DRAFTER';
+  const visibleCards = isDrafterUser
+    ? standardCards.filter((c) => !['critical', 'commitments_near', 'renewals'].includes(c.id))
+    : standardCards;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
       {/* Top Firm-wide KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-        {standardCards.map((c) => {
+        {visibleCards.map((c) => {
           const Icon = c.icon;
           const isAct = activeFilter === c.id;
           return (

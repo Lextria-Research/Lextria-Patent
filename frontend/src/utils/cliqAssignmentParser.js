@@ -1,5 +1,5 @@
 // frontend/src/utils/cliqAssignmentParser.js
-import { calculateAllStatutoryDeadlines, addMonths, toIsoDate } from './statutoryDeadlines.js';
+import { calculateAllStatutoryDeadlines, addMonths, addDays, toIsoDate } from './statutoryDeadlines.js';
 import { STATUTORY_STATUSES, getStatusColor } from '../constants/patentStatuses.js';
 
 export const REGISTERED_DRAFTERS = [
@@ -661,4 +661,270 @@ Status: ${detectedStatus.status}. Form-13 is NOT required (Lextria will file the
       error: err.message || 'Failed to parse Zoho Cliq assignment message'
     };
   }
+}
+
+/**
+ * Filter notifications by the logged-in user's role and name
+ * (Drafter, Patent Paralegal Admin, Superadmin)
+ */
+export function filterNotificationsForUser(notifications = [], currentUser) {
+  if (!currentUser) return [];
+  const role = (currentUser.role || '').toUpperCase();
+  const userName = (currentUser.drafterName || currentUser.name || '').trim().toLowerCase();
+
+  const isSuper = role === 'SUPER_ADMIN';
+  const isParaAdmin = [
+    'PARALEGAL_HEAD',
+    'PATENT_PARALEGAL_ADMIN',
+    'PARALEGAL',
+    'PARALEGAL_ASSOCIATE',
+    'PATENT_PARALEGAL_ASSOCIATE',
+  ].includes(role);
+  const isDraftAdmin = role === 'PATENT_DRAFTER_ADMIN' || role === 'DRAFTER_ADMIN';
+  const isDraft = ['PATENT_DRAFTER', 'DRAFTER'].includes(role) || isDraftAdmin;
+
+  return (notifications || []).filter((notif) => {
+    // Superadmin has global oversight across all notifications
+    if (isSuper) return true;
+
+    // Direct target to Patent Paralegal Admin
+    if (notif.targetRole === 'PATENT_PARALEGAL_ADMIN' || notif.targetRole === 'PARALEGAL_ADMIN') {
+      return isParaAdmin || isSuper;
+    }
+
+    // Direct target to Drafter
+    if (notif.targetRole === 'DRAFTER') {
+      if (!isDraft && !isSuper) return false;
+      // Drafter Admin sees all drafter task notifications
+      if (isDraftAdmin) return true;
+      // Regular Drafter: must match targetDrafterName
+      if (!notif.targetDrafterName) return true;
+      const target = notif.targetDrafterName.trim().toLowerCase();
+      return userName.includes(target) || target.includes(userName);
+    }
+
+    if (notif.targetRole === 'SUPER_ADMIN') {
+      return isSuper;
+    }
+
+    if (notif.targetRole === 'ALL') return true;
+
+    return false;
+  });
+}
+
+/**
+ * Workflow Router for Zoho Cliq / IPO Ingestion
+ * Automates Workflows A, B, and C
+ */
+export function parseIncomingCliqWorkflow(text, records = []) {
+  if (!text || !text.trim()) {
+    return { success: false, error: 'Empty message text' };
+  }
+
+  const cleanText = text.trim();
+  const lower = cleanText.toLowerCase();
+
+  // 1. Extract Application Number or Project Code
+  let appNumber = '';
+  const appExplicit = cleanText.match(/(?:app(?:lication)?\s*(?:no\.?|number)?)\s*[:=-]?\s*([0-9a-zA-Z/-]+)/i);
+  if (appExplicit) {
+    appNumber = appExplicit[1].trim();
+  } else {
+    // 10-14 digit Indian patent format
+    const appRaw = cleanText.match(/\b(20[12]\d{9,11})\b/);
+    if (appRaw) {
+      appNumber = appRaw[1];
+    } else {
+      const codeMatch = cleanText.match(/\b(LEX-SEED-\d+|AR\d+|LR\d+)\b/i);
+      if (codeMatch) {
+        appNumber = codeMatch[1].toUpperCase();
+      }
+    }
+  }
+
+  // Lookup existing record in dashboard state
+  let matchedRecord = null;
+  if (appNumber) {
+    const cleanApp = appNumber.toLowerCase();
+    matchedRecord = records.find((r) => {
+      const rApp = (r.application_number || '').trim().toLowerCase();
+      const rCode = (r.project_code || '').trim().toLowerCase();
+      return rApp === cleanApp || rCode === cleanApp || (rApp && cleanApp.includes(rApp)) || (cleanApp && rApp.includes(cleanApp));
+    });
+  }
+
+  if (!matchedRecord) {
+    matchedRecord = records.find((r) => {
+      if (r.project_code && new RegExp(`\\b${r.project_code}\\b`, 'i').test(cleanText)) return true;
+      if (r.application_number && cleanText.includes(r.application_number)) return true;
+      return false;
+    });
+    if (matchedRecord && !appNumber) {
+      appNumber = matchedRecord.application_number || matchedRecord.project_code;
+    }
+  }
+
+  // 2. CHECK WORKFLOW C: Special "Hearing Date" Dual-Trigger Rule
+  const isHearingKeyword = lower.includes('hearing');
+  let hearingDate = '';
+  if (isHearingKeyword) {
+    const hearMatch = cleanText.match(/(?:hearing(?:\s*(?:notice\s*)?received\s*(?:for|on)?|\s*on|\s*scheduled\s*(?:for|on)?|\s*date|\s*fixed\s*(?:for|on)?)?)\s*[:=-]?\s*([0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{4}|[0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}\s+[A-Za-z]+\s+[0-9]{4})/i);
+    if (hearMatch) {
+      hearingDate = parseDateString(hearMatch[1]);
+    }
+    if (!hearingDate) {
+      const anyDateMatch = cleanText.match(/\b([0-9]{4}-[0-9]{2}-[0-9]{2}|[0-9]{1,2}[-/][0-9]{1,2}[-/][0-9]{4}|[0-9]{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+[0-9]{4})\b/i);
+      if (anyDateMatch) {
+        hearingDate = parseDateString(anyDateMatch[1]);
+      }
+    }
+  }
+
+  if (isHearingKeyword && hearingDate) {
+    const assignedDrafter = matchedRecord?.assigned_to || matchDrafter(cleanText) || 'Thanush';
+    const projCode = matchedRecord?.project_code || appNumber || 'LEX-HRG-01';
+    const finalAppNo = matchedRecord?.application_number || appNumber || projCode;
+    const title = matchedRecord?.title || 'Patent Matter under Hearing';
+
+    const form30Deadline = addDays(hearingDate, -3);
+    const wsDeadline = addDays(hearingDate, 15);
+
+    const now = new Date().toISOString();
+    const notifPara = {
+      id: `notif_h30_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      type: 'HEARING_FORM30',
+      title: `Hearing Form-30 Action: ${projCode}`,
+      message: `Hearing scheduled on ${hearingDate} for Application ${finalAppNo} (${title}). Action item: Accept Form-30 (Hearing Interest Filing). Statutory Deadline: ${form30Deadline} (H_Date - 3 days).`,
+      status: 'PENDING_ACCEPTANCE',
+      createdAt: now,
+      targetRole: 'PATENT_PARALEGAL_ADMIN',
+      targetDrafterName: null,
+      payload: {
+        projectCode: projCode,
+        applicationNumber: finalAppNo,
+        hearingDate,
+        deadline: form30Deadline,
+        action: 'FORM_30',
+        assignedDrafter,
+      },
+    };
+
+    const notifDrafter = {
+      id: `notif_hws_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      type: 'HEARING_WS',
+      title: `Hearing WS Filing: ${projCode}`,
+      message: `Hearing scheduled on ${hearingDate} for Application ${finalAppNo} (${title}). Action item: Accept Written Submission (WS) Filing. Statutory Deadline: ${wsDeadline} (H_Date + 15 days).`,
+      status: 'PENDING_ACCEPTANCE',
+      createdAt: now,
+      targetRole: 'DRAFTER',
+      targetDrafterName: assignedDrafter,
+      payload: {
+        projectCode: projCode,
+        applicationNumber: finalAppNo,
+        hearingDate,
+        deadline: wsDeadline,
+        action: 'WS_FILING',
+        drafter: assignedDrafter,
+      },
+    };
+
+    return {
+      success: true,
+      workflow: 'C',
+      summary: `Workflow C (Hearing Date Dual-Trigger): Dispatched Form-30 (Due: ${form30Deadline}) to Paralegal Admin and Written Submission (Due: ${wsDeadline}) to Drafter ${assignedDrafter}`,
+      notifications: [notifPara, notifDrafter],
+    };
+  }
+
+  // 3. CHECK WORKFLOW B: IPO Prosecution / Office Action Lookup by Application Number
+  let prosecutionKeyword = '';
+  let newStatus = '';
+  let newPhase = '';
+
+  if (lower.includes('pre-grant opposition') || lower.includes('pre grant opposition')) {
+    prosecutionKeyword = 'Pre-Grant Opposition';
+    newStatus = 'Pre-grant Opposition';
+    newPhase = 'PHASE_3_PUB_EXAM';
+  } else if (lower.includes('post-grant opposition') || lower.includes('post grant opposition')) {
+    prosecutionKeyword = 'Post-Grant Opposition';
+    newStatus = 'Post-grant Opposition';
+    newPhase = 'PHASE_6_GRANT_RENEWAL';
+  } else if (lower.includes('first examination report') || /\bfer\b/i.test(cleanText)) {
+    prosecutionKeyword = 'First Examination Report (FER)';
+    newStatus = 'FER Received';
+    newPhase = 'PHASE_4_FER';
+  } else if (isHearingKeyword) {
+    prosecutionKeyword = 'Hearing Notice';
+    newStatus = 'Hearing notice received';
+    newPhase = 'PHASE_5_HEARING';
+  }
+
+  if (prosecutionKeyword && (matchedRecord || appNumber)) {
+    const assignedDrafter = matchedRecord?.assigned_to || matchDrafter(cleanText) || 'Thanush';
+    const projCode = matchedRecord?.project_code || appNumber || 'LEX-PROS-01';
+    const finalAppNo = matchedRecord?.application_number || appNumber || projCode;
+    const title = matchedRecord?.title || 'Patent Matter Prosecution Task';
+
+    const notifProsecution = {
+      id: `notif_pros_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      type: 'PROSECUTION_TASK',
+      title: `IPO Office Action: ${prosecutionKeyword} on ${projCode}`,
+      message: `Official IPO action [${prosecutionKeyword}] received for Application No. ${finalAppNo} (${title}). Please review and accept prosecution task.`,
+      status: 'PENDING_ACCEPTANCE',
+      createdAt: new Date().toISOString(),
+      targetRole: 'DRAFTER',
+      targetDrafterName: assignedDrafter,
+      payload: {
+        projectCode: projCode,
+        applicationNumber: finalAppNo,
+        keyword: prosecutionKeyword,
+        newStatus,
+        newPhase,
+        assignedDrafter,
+      },
+    };
+
+    return {
+      success: true,
+      workflow: 'B',
+      summary: `Workflow B (Prosecution Office Action): Routed ${prosecutionKeyword} for ${projCode} (${finalAppNo}) to assigned drafter ${assignedDrafter}`,
+      notifications: [notifProsecution],
+    };
+  }
+
+  // 4. CHECK WORKFLOW A: New Patent Assignment via Cliq Mention
+  const parseRes = parseCliqAssignmentMessage(cleanText, records);
+  if (parseRes.success && parseRes.record) {
+    const rec = parseRes.record;
+    const assignedDrafter = rec.assigned_to;
+
+    const notifAssignment = {
+      id: `notif_assign_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+      type: 'NEW_ASSIGNMENT',
+      title: `New Patent Assignment: ${rec.project_code} - ${rec.title}`,
+      message: `New patent assignment received via Zoho Cliq for ${assignedDrafter}. Matter: ${rec.project_code} (${rec.applicant_name}). Client Delivery Target: ${rec.client_commitment_date || 'To be scheduled'}.`,
+      status: 'PENDING_ACCEPTANCE',
+      createdAt: new Date().toISOString(),
+      targetRole: 'DRAFTER',
+      targetDrafterName: assignedDrafter,
+      payload: {
+        patentRecord: rec,
+        projectCode: rec.project_code,
+        drafterName: assignedDrafter,
+      },
+    };
+
+    return {
+      success: true,
+      workflow: 'A',
+      summary: `Workflow A (New Assignment Mention): Created pending acceptance notification for ${assignedDrafter} on ${rec.project_code}`,
+      notifications: [notifAssignment],
+    };
+  }
+
+  return {
+    success: false,
+    error: 'Could not categorize incoming message into Workflow A, B, or C. Please ensure it mentions a Drafter, Application Number, or IPO keyword.',
+  };
 }
