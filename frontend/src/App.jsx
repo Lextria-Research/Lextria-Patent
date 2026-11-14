@@ -45,7 +45,7 @@ import {
 import DEFAULT_CLIENTS from './data/clients.json';
 import {
   FolderKanban, CheckSquare, Calendar, Tv, Moon, Sun, Settings, LogOut,
-  Plus, Download, UserCheck, Shield, Briefcase, Scale,
+  Plus, Download, UserCheck, Shield, Scale,
   Sparkles, CheckCircle2, AlertTriangle, Layers, Users, Zap, Bell
 } from 'lucide-react';
 
@@ -2254,32 +2254,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Drafter Filter Context Banner (Only when logged in as a Drafter) */}
-      {isDrafter(currentUser) && (
-        <div
-          style={{
-            padding: '6px 24px',
-            background: 'rgba(139, 92, 246, 0.08)',
-            borderBottom: '1px solid rgba(139, 92, 246, 0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            fontSize: '12px',
-            color: '#7C3AED',
-            fontWeight: 700,
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Briefcase size={14} />
-            <span>
-              <strong>Drafter Workspace:</strong> Logged in as <strong>{currentUser.name}</strong> ({roleFilteredRecords.length} assigned patent matters).
-            </span>
-          </div>
-          <span style={{ fontSize: '11px', color: 'var(--muted)' }}>
-            Switch account via profile pill to access firm-wide docket.
-          </span>
-        </div>
-      )}
 
       {/* Main Workspace Body */}
       <main
